@@ -513,7 +513,7 @@ enum
 
 
 /****************************************************************************
-    Following are the ASCII definitions of the functions.
+    Following are the ASTCI definitions of the functions.
 ****************************************************************************/
 
 

@@ -524,45 +524,45 @@ public:
     /**
      * Called when the mouse has dwelled in one spot on a code editor for a while.
      */
-    void OnCodeEditDwellStart(wxScintillaEvent& event);
+    void OnCodeEditDwellStart(wxStyledTextEvent& event);
 
     /**
      * Called when the mouse is no longer dwelling on a code editor.
      */
-    void OnCodeEditDwellEnd(wxScintillaEvent& event);
+    void OnCodeEditDwellEnd(wxStyledTextEvent& event);
 
     /**
      * Called when the the text in the code editor has left it's last saved
      * state modified.
      */
-    void OnCodeEditSavePointLeft(wxScintillaEvent& event);
+    void OnCodeEditSavePointLeft(wxStyledTextEvent& event);
 
     /**
      * Called when the the text in the code editor has been restored to it's
      * save state.
      */
-    void OnCodeEditSavePointReached(wxScintillaEvent& event);
+    void OnCodeEditSavePointReached(wxStyledTextEvent& event);
 
     /**
      * Called when the the UI needs to be updated for the code editor.
      */
-    void OnCodeEditUpdateUI(wxScintillaEvent& event);
+    void OnCodeEditUpdateUI(wxStyledTextEvent& event);
 
     /**
      * Called when the user clicks in the margin of the code editor.
      */
-    void OnCodeEditMarginClick(wxScintillaEvent& event);
+    void OnCodeEditMarginClick(wxStyledTextEvent& event);
 
     /**
      * Called when the user attempts to modify the contents of an editor
      * that represents a read-only file.
      */
-    void OnCodeEditReadOnlyModifyAttempt(wxScintillaEvent& event);
+    void OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event);
 
     /**
      * Called when the user changes the text in the editor.
      */
-    void OnCodeEditModified(wxScintillaEvent& event);
+    void OnCodeEditModified(wxStyledTextEvent& event);
 
     /**
      * Called when the debugger breaks on a new line.
@@ -976,7 +976,7 @@ private:
      * Gets the index of the script associated with an edit control. If there's no script
      * associated with it the method returns -1.
      */
-    unsigned int GetScriptIndex(wxScintilla* edit) const;
+    unsigned int GetScriptIndex(wxStyledTextCtrl* edit) const;
 
     /**
      * Sets the vm that the UI is controlling/inspecting.

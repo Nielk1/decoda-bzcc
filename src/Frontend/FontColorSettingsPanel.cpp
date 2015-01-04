@@ -137,7 +137,7 @@ FontColorSettingsPanel::FontColorSettingsPanel( wxWindow* parent, int id, wxPoin
 	fgSizer8->Add( fgSizer10, 1, wxEXPAND, 5 );
 	
 	wxFlexGridSizer* fgSizer13;
-	fgSizer13 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer13 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer13->AddGrowableCol( 0 );
 	fgSizer13->SetFlexibleDirection( wxBOTH );
 	

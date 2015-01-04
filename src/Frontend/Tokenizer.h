@@ -32,7 +32,7 @@ class wxString;
 
 /**
  * Returns true if the character is a white space character. This properly handles
- * extended ASCII characters.
+ * extended ASTCI characters.
  */
 bool IsSpace(char c);
 

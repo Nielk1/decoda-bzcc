@@ -269,7 +269,13 @@ KeyBinder::Key KeyBinder::GetTextAsKeyBinding(const wxString& text)
     if (str.Contains(wxT("SHIFT")))
         key.flags |= wxACCEL_SHIFT;
 
-    key.code = StringToKeyCode(str.AfterLast('+').AfterLast('-'));
+    wxString find = str.AfterLast('+').AfterLast('-');
+
+    if (find.Length() == 0)
+        key.code = 0;
+    else
+        key.code = StringToKeyCode(find);
+    
     
     return key;
 
@@ -295,7 +301,7 @@ int KeyBinder::StringToKeyCode(const wxString &keyName)
     if (keyName == wxT("SPACE")) return WXK_SPACE;
     if (keyName == wxT("DEL") || keyName == wxT("DELETE")) return WXK_DELETE;
 
-    // it should be an ASCII key...
+    // it should be an ASTCI key...
     return (int)keyName.GetChar(0);
 }
 
@@ -491,7 +497,7 @@ wxString KeyBinder::GetKeyBindingAsText(const Key& key)
         res << wxT("/"); break;
     default:
 
-        // ASCII chars...
+        // ASTCI chars...
         if (wxIsalnum(key.code))
         {
             res << (wxChar)key.code;

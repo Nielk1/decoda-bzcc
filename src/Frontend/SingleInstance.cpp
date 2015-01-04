@@ -61,15 +61,15 @@ HWND SingleInstance::Connect(HWND hWnd, const char* name)
     // Try to open the memory mapped file to see if there's an instance
     // already running.
     
-    m_hInstance = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, name);
+    m_hInstance = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, name);
 
     if (m_hInstance == NULL)
     {
         
-        m_mutex = CreateMutex(NULL, TRUE, mutexName);
+        m_mutex = CreateMutexA(NULL, TRUE, mutexName);
         
         // Create a new memory mapped file to store the instance data inside.
-        m_hInstance = CreateFileMapping((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE, 0, sizeof(Data), name);
+        m_hInstance = CreateFileMappingA((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE, 0, sizeof(Data), name);
 
         // Store the window handle for access by other instances.
         m_data = (Data*) MapViewOfFile(m_hInstance, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, sizeof(Data));
@@ -82,7 +82,7 @@ HWND SingleInstance::Connect(HWND hWnd, const char* name)
     else
     {
         
-        m_mutex = OpenMutex(MUTEX_ALL_ACCESS, TRUE, mutexName);
+        m_mutex = OpenMutexA(MUTEX_ALL_ACCESS, TRUE, mutexName);
         
         // The application is already running, so read the instance data from
         // the memory mapped file.

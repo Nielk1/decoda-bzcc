@@ -437,12 +437,12 @@ private:
     bool GetIsAttached() const;
 
     /**
-     * Converts from a string with (possibly) embedded zeros to an ASCII string. If force
-     * is true, the function will force a conversion from wide character to ASCII. Otherwise
+     * Converts from a string with (possibly) embedded zeros to an ASTCI string. If force
+     * is true, the function will force a conversion from wide character to ASTCI. Otherwise
      * it makes the decision about how to convert it based on the content. If the string was
      * converted from a multi-byte character string, the wide parameter is set to true.
      */
-    std::string GetAsciiString(const void* buffer, size_t length, bool& wide, bool force = false) const;
+    std::string GetASTCiString(const void* buffer, size_t length, bool& wide, bool force = false) const;
 
     /**
      * Creates an environment for the specified level of the stack. This table has all of the locals,

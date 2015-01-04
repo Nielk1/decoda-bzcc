@@ -24,7 +24,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #define CODE_EDIT_H
 
 #include <wx/wx.h>
-#include <wx/wxscintilla.h>
+#include <wx/stc/stc.h>
 
 //
 // Forward declarations.
@@ -38,7 +38,7 @@ class AutoCompleteManager;
 /**
  * Code editor component.
  */
-class CodeEdit : public wxScintilla
+class CodeEdit : public wxStyledTextCtrl
 {
 
     DECLARE_EVENT_TABLE()
@@ -140,17 +140,17 @@ public:
     /**
      * Called when a new character is typed in the editor.
      */
-    void OnCharAdded(wxScintillaEvent& event);
+    void OnCharAdded(wxStyledTextEvent& event);
 
     /**
      * Called when the contents of the editor change.
      */
-    void OnChange(wxScintillaEvent& event);
+    void OnChange(wxStyledTextEvent& event);
 
     /**
      *
      */
-    void OnModified(wxScintillaEvent& event);
+    void OnModified(wxStyledTextEvent& event);
 
     /**
      * Returns true if the line mapping is dirty due to modifications.

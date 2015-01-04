@@ -42,7 +42,7 @@ void ShowFileInFolder (wxFileName& inPath) {
 
   if (intializedFunction) {
     intializedFunction = false;
-    HMODULE shell32 = GetModuleHandle("shell32.dll");
+    HMODULE shell32 = GetModuleHandleA("shell32.dll");
     if (shell32 == NULL)
       return;
 

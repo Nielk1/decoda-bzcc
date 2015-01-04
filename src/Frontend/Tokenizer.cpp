@@ -27,14 +27,14 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 bool IsSymbol(char c)
 {
     // In addition to the regular tests, we need to make sure this isn't
-    // an extended ASCII character as well (ispunct throws up if it is).
+    // an extended ASTCI character as well (ispunct throws up if it is).
     return c > 0 && c != '_' && ispunct(c);
 }
 
 bool IsSpace(char c)
 {
     // In addition to the regular tests, we need to make sure this isn't
-    // an extended ASCII character as well (isspace throws up if it is).
+    // an extended ASTCI character as well (isspace throws up if it is).
     return c > 0 && isspace(c);
 }
 

@@ -54,7 +54,7 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 	sbSizer1 = new wxStaticBoxSizer( new wxStaticBox( this, -1, wxT("Debugging") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer1;
-	fgSizer1 = new wxFlexGridSizer( 2, 3, 0, 0 );
+	fgSizer1 = new wxFlexGridSizer( 0, 3, 0, 0 );
 	fgSizer1->AddGrowableCol( 1 );
 	fgSizer1->SetFlexibleDirection( wxHORIZONTAL );
 

@@ -20,14 +20,15 @@
 #define wxMEMORY_BITMAP( name ) _wxConvertMemoryToBitmap( name, sizeof( name ) )
 #define wxMEMORY_BITMAPEX( name, type ) _wxConvertMemoryToBitmap( name, sizeof( name ), type )
 
-inline wxImage _wxConvertMemoryToImage(const unsigned char* data, int length, long type = wxBITMAP_TYPE_ANY )
+inline wxImage _wxConvertMemoryToImage(const unsigned char* data, int length, wxBitmapType type = wxBITMAP_TYPE_ANY)
 {
 	wxMemoryInputStream stream( data, length );
 	return wxImage( stream, type, -1 );
 }
 
-inline wxBitmap _wxConvertMemoryToBitmap(const unsigned char* data, int length, long type = wxBITMAP_TYPE_ANY )
+inline wxBitmap _wxConvertMemoryToBitmap(const unsigned char* data, int length, wxBitmapType type = wxBITMAP_TYPE_ANY)
 {
+  wxLogNull nolog;
 	wxMemoryInputStream stream( data, length );
 	return wxBitmap( wxImage( stream, type, -1 ), -1 );
 }

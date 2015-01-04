@@ -33,13 +33,13 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <algorithm>
 
-BEGIN_EVENT_TABLE( CodeEdit, wxScintilla )
+BEGIN_EVENT_TABLE( CodeEdit, wxStyledTextCtrl )
 
     EVT_LEAVE_WINDOW(               CodeEdit::OnMouseLeave)
     EVT_KILL_FOCUS(                 CodeEdit::OnKillFocus)
-    EVT_SCI_CHARADDED(  wxID_ANY,   CodeEdit::OnCharAdded)
-    EVT_SCI_CHANGE(     wxID_ANY,   CodeEdit::OnChange)
-    EVT_SCI_MODIFIED(   wxID_ANY,   CodeEdit::OnModified)
+    EVT_STC_CHARADDED(  wxID_ANY,   CodeEdit::OnCharAdded)
+    EVT_STC_CHANGE(     wxID_ANY,   CodeEdit::OnChange)
+    EVT_STC_MODIFIED(   wxID_ANY,   CodeEdit::OnModified)
 
 END_EVENT_TABLE()
 
@@ -70,60 +70,60 @@ void CodeEdit::SetFontColorSettings(const FontColorSettings& settings)
     SetSelForeground(true, settings.GetColors(FontColorSettings::DisplayItem_Selection).foreColor);
     SetSelBackground(true, settings.GetColors(FontColorSettings::DisplayItem_Selection).backColor);
 
-    StyleSetFont(wxSCI_STYLE_DEFAULT, font);
+    StyleSetFont(wxSTC_STYLE_DEFAULT, font);
     StyleClearAll();
 
     font = settings.GetFont(FontColorSettings::DisplayItem_Default);
-    StyleSetFont(wxSCI_LUA_DEFAULT,                 font);
-    StyleSetFont(wxSCI_LUA_IDENTIFIER,              font);
-    StyleSetForeground(wxSCI_LUA_DEFAULT,           settings.GetColors(FontColorSettings::DisplayItem_Default).foreColor);
-    StyleSetBackground(wxSCI_LUA_DEFAULT,           settings.GetColors(FontColorSettings::DisplayItem_Default).backColor);
-    StyleSetForeground(wxSCI_STYLE_DEFAULT,         settings.GetColors(FontColorSettings::DisplayItem_Default).foreColor);
-    StyleSetBackground(wxSCI_STYLE_DEFAULT,         settings.GetColors(FontColorSettings::DisplayItem_Default).backColor);
-    StyleSetForeground(wxSCI_LUA_IDENTIFIER,        settings.GetColors(FontColorSettings::DisplayItem_Default).foreColor);
-    StyleSetBackground(wxSCI_LUA_IDENTIFIER,        settings.GetColors(FontColorSettings::DisplayItem_Default).backColor);
+    StyleSetFont(wxSTC_LUA_DEFAULT,                 font);
+    StyleSetFont(wxSTC_LUA_IDENTIFIER,              font);
+    StyleSetForeground(wxSTC_LUA_DEFAULT,           settings.GetColors(FontColorSettings::DisplayItem_Default).foreColor);
+    StyleSetBackground(wxSTC_LUA_DEFAULT,           settings.GetColors(FontColorSettings::DisplayItem_Default).backColor);
+    StyleSetForeground(wxSTC_STYLE_DEFAULT,         settings.GetColors(FontColorSettings::DisplayItem_Default).foreColor);
+    StyleSetBackground(wxSTC_STYLE_DEFAULT,         settings.GetColors(FontColorSettings::DisplayItem_Default).backColor);
+    StyleSetForeground(wxSTC_LUA_IDENTIFIER,        settings.GetColors(FontColorSettings::DisplayItem_Default).foreColor);
+    StyleSetBackground(wxSTC_LUA_IDENTIFIER,        settings.GetColors(FontColorSettings::DisplayItem_Default).backColor);
 
     font = settings.GetFont(FontColorSettings::DisplayItem_Comment);
-    StyleSetFont(wxSCI_LUA_COMMENT,                 font);
-    StyleSetFont(wxSCI_LUA_COMMENTLINE,             font);
-    StyleSetFont(wxSCI_LUA_COMMENTDOC,              font);
-    StyleSetForeground(wxSCI_LUA_COMMENT,           settings.GetColors(FontColorSettings::DisplayItem_Comment).foreColor);
-    StyleSetBackground(wxSCI_LUA_COMMENT,           settings.GetColors(FontColorSettings::DisplayItem_Comment).backColor);
-    StyleSetForeground(wxSCI_LUA_COMMENTLINE,       settings.GetColors(FontColorSettings::DisplayItem_Comment).foreColor);
-    StyleSetBackground(wxSCI_LUA_COMMENTLINE,       settings.GetColors(FontColorSettings::DisplayItem_Comment).backColor);
-    StyleSetForeground(wxSCI_LUA_COMMENTDOC,        settings.GetColors(FontColorSettings::DisplayItem_Comment).foreColor);
-    StyleSetBackground(wxSCI_LUA_COMMENTDOC,        settings.GetColors(FontColorSettings::DisplayItem_Comment).backColor);
+    StyleSetFont(wxSTC_LUA_COMMENT,                 font);
+    StyleSetFont(wxSTC_LUA_COMMENTLINE,             font);
+    StyleSetFont(wxSTC_LUA_COMMENTDOC,              font);
+    StyleSetForeground(wxSTC_LUA_COMMENT,           settings.GetColors(FontColorSettings::DisplayItem_Comment).foreColor);
+    StyleSetBackground(wxSTC_LUA_COMMENT,           settings.GetColors(FontColorSettings::DisplayItem_Comment).backColor);
+    StyleSetForeground(wxSTC_LUA_COMMENTLINE,       settings.GetColors(FontColorSettings::DisplayItem_Comment).foreColor);
+    StyleSetBackground(wxSTC_LUA_COMMENTLINE,       settings.GetColors(FontColorSettings::DisplayItem_Comment).backColor);
+    StyleSetForeground(wxSTC_LUA_COMMENTDOC,        settings.GetColors(FontColorSettings::DisplayItem_Comment).foreColor);
+    StyleSetBackground(wxSTC_LUA_COMMENTDOC,        settings.GetColors(FontColorSettings::DisplayItem_Comment).backColor);
 
     font = settings.GetFont(FontColorSettings::DisplayItem_Keyword);
-    StyleSetFont(wxSCI_LUA_WORD2,                   font);
-    StyleSetForeground(wxSCI_LUA_WORD2,             settings.GetColors(FontColorSettings::DisplayItem_Keyword).foreColor);
-    StyleSetBackground(wxSCI_LUA_WORD2,             settings.GetColors(FontColorSettings::DisplayItem_Keyword).backColor);
+    StyleSetFont(wxSTC_LUA_WORD2,                   font);
+    StyleSetForeground(wxSTC_LUA_WORD2,             settings.GetColors(FontColorSettings::DisplayItem_Keyword).foreColor);
+    StyleSetBackground(wxSTC_LUA_WORD2,             settings.GetColors(FontColorSettings::DisplayItem_Keyword).backColor);
 
     font = settings.GetFont(FontColorSettings::DisplayItem_Operator);
-    StyleSetFont(wxSCI_LUA_OPERATOR,                font);
-    StyleSetForeground(wxSCI_LUA_OPERATOR,          settings.GetColors(FontColorSettings::DisplayItem_Operator).foreColor);
-    StyleSetBackground(wxSCI_LUA_OPERATOR,          settings.GetColors(FontColorSettings::DisplayItem_Operator).backColor);
+    StyleSetFont(wxSTC_LUA_OPERATOR,                font);
+    StyleSetForeground(wxSTC_LUA_OPERATOR,          settings.GetColors(FontColorSettings::DisplayItem_Operator).foreColor);
+    StyleSetBackground(wxSTC_LUA_OPERATOR,          settings.GetColors(FontColorSettings::DisplayItem_Operator).backColor);
 
     font = settings.GetFont(FontColorSettings::DisplayItem_String);
-    StyleSetFont(wxSCI_LUA_STRING,                  font);
-    StyleSetForeground(wxSCI_LUA_STRING,            settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
-    StyleSetBackground(wxSCI_LUA_STRING,            settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
-    StyleSetFont(wxSCI_LUA_STRINGEOL,               font);
-    StyleSetForeground(wxSCI_LUA_STRINGEOL,         settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
-    StyleSetBackground(wxSCI_LUA_STRINGEOL,         settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
-    StyleSetFont(wxSCI_LUA_LITERALSTRING,           font);
-    StyleSetForeground(wxSCI_LUA_LITERALSTRING,     settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
-    StyleSetBackground(wxSCI_LUA_LITERALSTRING,     settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
-    StyleSetFont(wxSCI_LUA_CHARACTER,               font);
-    StyleSetForeground(wxSCI_LUA_CHARACTER,         settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
-    StyleSetBackground(wxSCI_LUA_CHARACTER,         settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
+    StyleSetFont(wxSTC_LUA_STRING,                  font);
+    StyleSetForeground(wxSTC_LUA_STRING,            settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
+    StyleSetBackground(wxSTC_LUA_STRING,            settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
+    StyleSetFont(wxSTC_LUA_STRINGEOL,               font);
+    StyleSetForeground(wxSTC_LUA_STRINGEOL,         settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
+    StyleSetBackground(wxSTC_LUA_STRINGEOL,         settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
+    StyleSetFont(wxSTC_LUA_LITERALSTRING,           font);
+    StyleSetForeground(wxSTC_LUA_LITERALSTRING,     settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
+    StyleSetBackground(wxSTC_LUA_LITERALSTRING,     settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
+    StyleSetFont(wxSTC_LUA_CHARACTER,               font);
+    StyleSetForeground(wxSTC_LUA_CHARACTER,         settings.GetColors(FontColorSettings::DisplayItem_String).foreColor);
+    StyleSetBackground(wxSTC_LUA_CHARACTER,         settings.GetColors(FontColorSettings::DisplayItem_String).backColor);
 
     font = settings.GetFont(FontColorSettings::DisplayItem_Number);
-    StyleSetFont(wxSCI_LUA_NUMBER,                  font);
-    StyleSetForeground(wxSCI_LUA_NUMBER,            settings.GetColors(FontColorSettings::DisplayItem_Number).foreColor);
-    StyleSetBackground(wxSCI_LUA_NUMBER,            settings.GetColors(FontColorSettings::DisplayItem_Number).backColor);
+    StyleSetFont(wxSTC_LUA_NUMBER,                  font);
+    StyleSetForeground(wxSTC_LUA_NUMBER,            settings.GetColors(FontColorSettings::DisplayItem_Number).foreColor);
+    StyleSetBackground(wxSTC_LUA_NUMBER,            settings.GetColors(FontColorSettings::DisplayItem_Number).backColor);
 
-    StyleSetSize(wxSCI_STYLE_LINENUMBER, font.GetPointSize());
+    StyleSetSize(wxSTC_STYLE_LINENUMBER, font.GetPointSize());
 
     // Set the caret color as the inverse of the background color so it's always visible.
     SetCaretForeground( GetInverse(settings.GetColors(FontColorSettings::DisplayItem_Default).backColor) );
@@ -156,10 +156,10 @@ void CodeEdit::SetEditorSettings(const EditorSettings& settings)
 
         // Figure out how wide the margin needs to be do display
         // the most number of linqes we'd reasonbly have.
-        int marginSize = TextWidth(wxSCI_STYLE_LINENUMBER, "_99999");
+        int marginSize = TextWidth(wxSTC_STYLE_LINENUMBER, "_99999");
         SetMarginWidth(0, marginSize);
 
-        SetMarginType(0,wxSCI_MARGIN_NUMBER);
+        SetMarginType(0,wxSTC_MARGIN_NUMBER);
 
     }
     else
@@ -174,7 +174,7 @@ void CodeEdit::SetEditorSettings(const EditorSettings& settings)
 void CodeEdit::SetDefaultLexer()
 {
 
-    SetLexer(wxSCI_LEX_NULL);
+    SetLexer(wxSTC_LEX_NULL);
 
     SetKeyWords(1, "");
 
@@ -190,7 +190,7 @@ void CodeEdit::SetDefaultLexer()
     SetMouseDwellTime(300);
 
     SetMarginSensitive(1, true);
-    SetMarginType(1, wxSCI_MARGIN_SYMBOL);
+    SetMarginType(1, wxSTC_MARGIN_SYMBOL);
 
     // Set the autocomplete icons.
 
@@ -213,7 +213,7 @@ void CodeEdit::SetLuaLexer()
 
     SetDefaultLexer();
 
-    SetLexer(wxSCI_LEX_LUA);
+    SetLexer(wxSTC_LEX_LUA);
 
     const char* keywords =
         "and       break     do        else      elseif "
@@ -300,7 +300,7 @@ bool CodeEdit::Untabify(wxString& text) const
 void CodeEdit::CommentSelection()
 {
 
-    if (GetLexer() == wxSCI_LEX_LUA)
+    if (GetLexer() == wxSTC_LEX_LUA)
     {
         CommentSelection("--");
     }
@@ -368,7 +368,7 @@ void CodeEdit::CommentSelection(const wxString& comment)
 void CodeEdit::UncommentSelection()
 {
 
-    if (GetLexer() == wxSCI_LEX_LUA)
+    if (GetLexer() == wxSTC_LEX_LUA)
     {
         UncommentSelection("--");
     }
@@ -514,11 +514,11 @@ void CodeEdit::OnKillFocus(wxFocusEvent& event)
     event.Skip();
 }
 
-void CodeEdit::OnCharAdded(wxScintillaEvent& event)
+void CodeEdit::OnCharAdded(wxStyledTextEvent& event)
 {
 
     // Indent the line to the same indentation as the previous line.
-    // Adapted from http://scintilla.sourceforge.net/ScintillaUsage.html
+    // Adapted from http://STCntilla.sourceforge.net/STCntillaUsage.html
 
     char ch = event.GetKey();
 
@@ -569,13 +569,13 @@ void CodeEdit::OnCharAdded(wxScintillaEvent& event)
 
 }
 
-void CodeEdit::OnChange(wxScintillaEvent& event)
+void CodeEdit::OnChange(wxStyledTextEvent& event)
 {
     m_lineMappingDirty = true;
     event.Skip();
 }
 
-void CodeEdit::OnModified(wxScintillaEvent& event)
+void CodeEdit::OnModified(wxStyledTextEvent& event)
 {
     
     event.Skip();    
@@ -583,7 +583,7 @@ void CodeEdit::OnModified(wxScintillaEvent& event)
     int linesAdded = event.GetLinesAdded();
         
     // If we're inserting new lines before a line, so we need to move the
-    // markers down. Scintilla doesn't do this automatically for the current line.
+    // markers down. STCntilla doesn't do this automatically for the current line.
 
     if (linesAdded > 0)
     {
@@ -673,7 +673,7 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
     wxString newToken;
     bool member = false;
 
-    if (GetLexer() == wxSCI_LEX_LUA)
+    if (GetLexer() == wxSTC_LEX_LUA)
     {
 
         int end1 = token.Find('.', true);

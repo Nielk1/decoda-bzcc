@@ -94,6 +94,10 @@ public:
     virtual bool DoWriteString(const wxString& key, const wxString& value);
     virtual bool DoWriteLong(const wxString& key, long value);
 
+    virtual bool DoReadBinary(const wxString &, wxMemoryBuffer *) const { return false; }
+    virtual bool DoWriteBinary(const wxString &, const wxMemoryBuffer &) { return false; }
+
+
 private:
 
     wxXmlNode* CreateSubNode(wxString& key);

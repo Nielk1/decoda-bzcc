@@ -103,7 +103,7 @@ ExternalToolsDialog::ExternalToolsDialog( wxWindow* parent, int id)
 	fgSizer1->Add( fgSizer4, 1, wxEXPAND | wxALL, 10 );
 	
 	wxFlexGridSizer* fgSizer2;
-	fgSizer2 = new wxFlexGridSizer( 4, 2, 0, 0 );
+	fgSizer2 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer2->AddGrowableCol( 1 );
 	fgSizer2->SetFlexibleDirection( wxHORIZONTAL );
 	

@@ -40,7 +40,7 @@ EditorSettingsPanel::EditorSettingsPanel( wxWindow* parent, int id, wxPoint pos,
 {
 
 	wxFlexGridSizer* fgSizer2;
-	fgSizer2 = new wxFlexGridSizer( 1, 1, 0, 0 );
+	fgSizer2 = new wxFlexGridSizer( 2, 1, 0, 0 );
 	fgSizer2->AddGrowableCol( 0 );
 	fgSizer2->AddGrowableRow( 0 );
 	fgSizer2->SetFlexibleDirection( wxHORIZONTAL );

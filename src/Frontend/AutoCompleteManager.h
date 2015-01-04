@@ -60,7 +60,7 @@ public:
     /**
      * Gets a list of the autocompletions matching the specified prefix. If member is true,
      * only autocompletions that are members of some scope are included. The return items
-     * string is in the format used by Scintilla to display autocompletions.
+     * string is in the format used by STCntilla to display autocompletions.
      */
     void GetMatchingItems(const wxString& token, const wxString& prefix, bool member, wxString& items) const;
 

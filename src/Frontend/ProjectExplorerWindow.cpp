@@ -33,7 +33,6 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/listctrl.h>
 #include <wx/dir.h>
 #include <wx/stack.h>
-WX_DECLARE_STACK(wxTreeItemId, wxStack);
 
 #include <hash_map>
 
@@ -279,7 +278,8 @@ void ProjectExplorerWindow::Rebuild()
 
     // Select the first item in the newly created list
     wxTreeItemId firstItem = m_tree->GetFirstVisibleItem();
-    m_tree->SelectItem(firstItem);
+    if (firstItem.IsOk())
+     m_tree->SelectItem(firstItem);
 
 }
 
@@ -379,7 +379,7 @@ bool ProjectExplorerWindow::MatchesFilter(const wxString& string, const wxString
 
         for (unsigned int i = 0; i < filter.Length(); ++i)
         {
-            if (tolower(string[i]) != filter[i])
+            if ((char)tolower(string[i]) != filter[i])
             {
                 return false;
             }
@@ -458,13 +458,13 @@ void ProjectExplorerWindow::AddFile(wxTreeItemId parent, Project::File* file)
         {
 
             stdext::hash_map<std::string, wxTreeItemId>::const_iterator iterator;
-            iterator = groups.find(file->symbols[i]->module.ToAscii());
+            iterator = groups.find(std::string(file->symbols[i]->module.ToAscii()));
 
             if (iterator == groups.end())
             {
                 node = m_tree->AppendItem(fileNode, file->symbols[i]->module, Image_Module, Image_Module);
                 m_tree->SetItemTextColour(node, m_itemColor);
-                groups.insert(std::make_pair(file->symbols[i]->module.ToAscii(), node));
+                groups.insert(std::make_pair(std::string(file->symbols[i]->module.ToAscii()), node));
             }
             else
             {
@@ -868,7 +868,7 @@ void ProjectExplorerWindow::UpdateFile(Project::File* file)
     wxTreeItemId node = m_root;
     if (file->directoryPath.IsEmpty() == false)
     {
-      wxStack stack;
+      wxStack<wxTreeItemId> stack;
 
       wxTreeItemIdValue cookie;
       wxTreeItemId temp = m_tree->GetFirstChild(node, cookie);
@@ -1067,7 +1067,7 @@ void ProjectExplorerWindow::LoadExpansion()
     {
       if (data && data->file == expand_file)
       {
-        wxStack treeStack;
+        wxStack<wxTreeItemId> treeStack;
 
         //Collect all parent nodes
         wxTreeItemId node = m_tree->GetItemParent(item);
@@ -1110,7 +1110,7 @@ wxString ProjectExplorerWindow::GetSelectedDirectoryName()
 
     if (itemData == NULL)
     {
-      wxStack treeStack;
+      wxStack<wxTreeItemId> treeStack;
 
       treeStack.push(selection);
 

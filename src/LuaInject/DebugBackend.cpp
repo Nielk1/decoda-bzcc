@@ -2357,7 +2357,7 @@ TiXmlNode* DebugBackend::GetValueAsText(unsigned long api, lua_State* L, int n, 
                 text += "L\"";
             }
             
-            text += GetAsciiString(string, length, wide, true);
+            text += GetASTCiString(string, length, wide, true);
             
             if (!displayAsKey)
             {
@@ -2376,7 +2376,7 @@ TiXmlNode* DebugBackend::GetValueAsText(unsigned long api, lua_State* L, int n, 
             const char* string = lua_tolstring_dll(api, L, -1, &length); 
 
             bool wide;
-            std::string result = GetAsciiString(string, length, wide);
+            std::string result = GetASTCiString(string, length, wide);
 
             std::string text;
 
@@ -2818,7 +2818,7 @@ bool DebugBackend::GetIsExceptionIgnored(const std::string& message) const
     return m_ignoreExceptions.find(message) != m_ignoreExceptions.end();
 }
 
-std::string DebugBackend::GetAsciiString(const void* buffer, size_t length, bool& wide, bool force) const
+std::string DebugBackend::GetASTCiString(const void* buffer, size_t length, bool& wide, bool force) const
 {
     
     wide = false;

@@ -40,7 +40,7 @@ ProcessesDialog::ProcessesDialog( wxWindow* parent )
 {
 	
 	wxFlexGridSizer* fgSizer2;
-	fgSizer2 = new wxFlexGridSizer( 1, 1, 0, 0 );
+	fgSizer2 = new wxFlexGridSizer( 0, 1, 0, 0 );
 	fgSizer2->AddGrowableCol( 0 );
 	fgSizer2->AddGrowableRow( 0 );
 	fgSizer2->SetFlexibleDirection( wxBOTH );
@@ -228,7 +228,7 @@ int ProcessesDialog::SortCompareFunction(long item1, long item2, long sortData)
 
     if (self->m_sortColumn == 0)
     {
-        result = strcmp(self->m_processes[item1].name.c_str(), self->m_processes[item2].name.c_str());
+        result = wcscmp(self->m_processes[item1].name.c_str(), self->m_processes[item2].name.c_str());
     }
     else if (self->m_sortColumn == 1)
     {

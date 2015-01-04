@@ -249,14 +249,14 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_LIST_ITEM_ACTIVATED(ID_CallStack,           MainFrame::OnCallStackDoubleClick)
     EVT_LIST_ITEM_ACTIVATED(ID_VmList,              MainFrame::OnVmListDoubleClick)
     
-    EVT_SCI_DWELLSTART(wxID_ANY,                    MainFrame::OnCodeEditDwellStart)
-    EVT_SCI_DWELLEND(wxID_ANY,                      MainFrame::OnCodeEditDwellEnd)
-    EVT_SCI_SAVEPOINTLEFT(wxID_ANY,                 MainFrame::OnCodeEditSavePointLeft)
-    EVT_SCI_SAVEPOINTREACHED(wxID_ANY,              MainFrame::OnCodeEditSavePointReached)
-    EVT_SCI_UPDATEUI(wxID_ANY,                      MainFrame::OnCodeEditUpdateUI)
-    EVT_SCI_MARGINCLICK(wxID_ANY,                   MainFrame::OnCodeEditMarginClick)
-    EVT_SCI_ROMODIFYATTEMPT(wxID_ANY,               MainFrame::OnCodeEditReadOnlyModifyAttempt)
-    EVT_SCI_MODIFIED(wxID_ANY,                      MainFrame::OnCodeEditModified)
+    EVT_STC_DWELLSTART(wxID_ANY,                    MainFrame::OnCodeEditDwellStart)
+    EVT_STC_DWELLEND(wxID_ANY,                      MainFrame::OnCodeEditDwellEnd)
+    EVT_STC_SAVEPOINTLEFT(wxID_ANY,                 MainFrame::OnCodeEditSavePointLeft)
+    EVT_STC_SAVEPOINTREACHED(wxID_ANY,              MainFrame::OnCodeEditSavePointReached)
+    EVT_STC_UPDATEUI(wxID_ANY,                      MainFrame::OnCodeEditUpdateUI)
+    EVT_STC_MARGINCLICK(wxID_ANY,                   MainFrame::OnCodeEditMarginClick)
+    EVT_STC_ROMODIFYATTEMPT(wxID_ANY,               MainFrame::OnCodeEditReadOnlyModifyAttempt)
+    EVT_STC_MODIFIED(wxID_ANY,                      MainFrame::OnCodeEditModified)
     
     EVT_IDLE(                                       MainFrame::OnIdle)
     EVT_TIMER(wxID_ANY,                             MainFrame::OnTimer)
@@ -271,7 +271,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_FIND_NEXT(wxID_ANY,                         MainFrame::OnFindNext)
     
     EVT_ACTIVATE(                                   MainFrame::OnActivate)
-    EVT_THREAD(                                     MainFrame::OnThreadExit)
+    EVENT_THREAD(                                   MainFrame::OnThreadExit)
     
     EVT_COMMAND(wxID_ANY, wxEVT_SHOW_HELP_EVENT,    MainFrame::OnShowHelp)
     EVT_COMMAND(wxID_ANY, wxEVT_UPDATE_INFO_EVENT,  MainFrame::OnUpdateInfo)
@@ -301,7 +301,7 @@ wxString GetExecutablePath()
 
         char buf[512];
         *buf = '\0';
-        GetModuleFileName(NULL, buf, 511);
+        GetModuleFileNameA(NULL, buf, 511);
         path = wxPathOnly(buf);
 
 #elif defined(__WXMAC__)
@@ -2019,7 +2019,7 @@ void MainFrame::OnDebugEvent(wxDebugEvent& event)
             }
             else if (result == ExceptionDialog::ID_IgnoreAlways)
             {
-                DebugFrontend::Get().IgnoreException(event.GetMessage().ToAscii());
+                DebugFrontend::Get().IgnoreException(std::string(event.GetMessage().ToAscii()));
                 DebugFrontend::Get().Continue(m_vm);
                 UpdateForNewState();
             }
@@ -2345,7 +2345,7 @@ void MainFrame::OnVmListDoubleClick(wxListEvent& event)
     SetContext(m_vms[selectedItem], 0);
 }
 
-void MainFrame::OnCodeEditDwellStart(wxScintillaEvent& event)
+void MainFrame::OnCodeEditDwellStart(wxStyledTextEvent& event)
 {
 
     CodeEdit* edit = static_cast<CodeEdit*>(event.GetEventObject());
@@ -2358,7 +2358,7 @@ void MainFrame::OnCodeEditDwellStart(wxScintillaEvent& event)
     {
 
         // Check that the mouse cursor is within the code edit window.
-        // This seems like something Scintilla should handle, but it
+        // This seems like something STCntilla should handle, but it
         // doesn't.
 
         wxPoint mousePosition;
@@ -2378,7 +2378,7 @@ void MainFrame::OnCodeEditDwellStart(wxScintillaEvent& event)
         if (edit->GetHoverText(position, expression))
         {
 
-            // Scintilla uses 0 based line numbers, we use 1 based.
+            // STCntilla uses 0 based line numbers, we use 1 based.
             unsigned int line = edit->LineFromPosition(position) + 1;
             
             std::string result;
@@ -2411,13 +2411,13 @@ void MainFrame::OnCodeEditDwellStart(wxScintillaEvent& event)
 
 }
 
-void MainFrame::OnCodeEditDwellEnd(wxScintillaEvent& event)
+void MainFrame::OnCodeEditDwellEnd(wxStyledTextEvent& event)
 {
     CodeEdit* edit = static_cast<CodeEdit*>(event.GetEventObject());
     edit->HideToolTip();
 }
 
-void MainFrame::OnCodeEditSavePointLeft(wxScintillaEvent& event)
+void MainFrame::OnCodeEditSavePointLeft(wxStyledTextEvent& event)
 {
     for (unsigned int page = 0; page < m_openFiles.size(); ++page)
     {
@@ -2428,7 +2428,7 @@ void MainFrame::OnCodeEditSavePointLeft(wxScintillaEvent& event)
     }
 }
 
-void MainFrame::OnCodeEditSavePointReached(wxScintillaEvent& event)
+void MainFrame::OnCodeEditSavePointReached(wxStyledTextEvent& event)
 {
     for (unsigned int page = 0; page < m_openFiles.size(); ++page)
     {
@@ -2439,12 +2439,12 @@ void MainFrame::OnCodeEditSavePointReached(wxScintillaEvent& event)
     }
 }
 
-void MainFrame::OnCodeEditUpdateUI(wxScintillaEvent& event)
+void MainFrame::OnCodeEditUpdateUI(wxStyledTextEvent& event)
 {
     UpdateStatusBarLineAndColumn();
 }
 
-void MainFrame::OnCodeEditMarginClick(wxScintillaEvent& event)
+void MainFrame::OnCodeEditMarginClick(wxStyledTextEvent& event)
 {
 
     // Toggle a break point.
@@ -2525,7 +2525,7 @@ void MainFrame::UpdateLineMappingIfNecessary(Project::File* file)
 
 }
 
-void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxScintillaEvent& event)
+void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event)
 {
 
     // Show a message indicating the file is ready only.
@@ -2591,7 +2591,7 @@ void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxScintillaEvent& event)
 
 }
 
-void MainFrame::OnCodeEditModified(wxScintillaEvent& event)
+void MainFrame::OnCodeEditModified(wxStyledTextEvent& event)
 {
 
     int linesAdded = event.GetLinesAdded();
@@ -2631,7 +2631,7 @@ void MainFrame::OnCodeEditModified(wxScintillaEvent& event)
     unsigned int line = edit->LineFromPosition(position);
     unsigned int lineStartPosition = edit->PositionFromLine(line);
 
-    // Shift the breakpoints (note Scintilla automatically moves the markers).
+    // Shift the breakpoints (note STCntilla automatically moves the markers).
 
     Project::File* file = m_openFiles[pageIndex]->file;
 
@@ -2663,7 +2663,7 @@ void MainFrame::OnCodeEditModified(wxScintillaEvent& event)
 
             unsigned int l = *iterator;
 
-            // Note, the breakpoint marker on the first line is not decremented by Scintinlla
+            // Note, the breakpoint marker on the first line is not decremented by STCntinlla
             // so we reproduce this (undesireable) behavior here to keep things in sync.
             if (*iterator >= line)
             {
@@ -3172,7 +3172,7 @@ bool MainFrame::ParseLuacErrorMessage(const wxString& error, wxString& fileName,
 
 }
 
-unsigned int MainFrame::GetScriptIndex(wxScintilla* edit) const
+unsigned int MainFrame::GetScriptIndex(wxStyledTextCtrl* edit) const
 {
     for (unsigned int i = 0; i < m_openFiles.size(); ++i)
     {
@@ -3570,12 +3570,12 @@ void MainFrame::OnFindReplace(wxFindDialogEvent& event)
 
         if (event.GetFlags() & wxFR_WHOLEWORD)
         {
-            flags |= wxSCI_FIND_WHOLEWORD;
+            flags |= wxSTC_FIND_WHOLEWORD;
         }
 
         if (event.GetFlags() & wxFR_MATCHCASE)
         {
-            flags |= wxSCI_FIND_MATCHCASE;
+            flags |= wxSTC_FIND_MATCHCASE;
         }
 
         int searchStart = file->edit->GetSelectionStart();
@@ -3616,12 +3616,12 @@ void MainFrame::OnFindReplaceAll(wxFindDialogEvent& event)
 
         if (event.GetFlags() & wxFR_WHOLEWORD)
         {
-            flags |= wxSCI_FIND_WHOLEWORD;
+            flags |= wxSTC_FIND_WHOLEWORD;
         }
 
         if (event.GetFlags() & wxFR_MATCHCASE)
         {
-            flags |= wxSCI_FIND_MATCHCASE;
+            flags |= wxSTC_FIND_MATCHCASE;
         }
 
         int replaces = 0;
@@ -3699,12 +3699,12 @@ void MainFrame::FindText(OpenFile* file, const wxString& text, int flags)
 
     if (flags & wxFR_WHOLEWORD)
     {
-        f |= wxSCI_FIND_WHOLEWORD;
+        f |= wxSTC_FIND_WHOLEWORD;
     }
 
     if (flags & wxFR_MATCHCASE)
     {
-        f |= wxSCI_FIND_MATCHCASE;
+        f |= wxSTC_FIND_MATCHCASE;
     }
 
     if (!(flags & wxFR_DOWN))
@@ -4197,7 +4197,7 @@ bool MainFrame::SaveProject(bool promptForName)
 
     if (fileName.empty() || promptForName)
     {
-        fileName = wxFileSelector("Save Project", "", "", "", "Decoda Project files (*.deproj)|*.deproj|All files (*.*)|*.*", wxSAVE, this);
+        fileName = wxFileSelector("Save Project", "", "", "", "Decoda Project files (*.deproj)|*.deproj|All files (*.*)|*.*", wxFD_SAVE, this);
     }
 
     if (!fileName.empty())
@@ -4633,7 +4633,7 @@ bool MainFrame::SaveFile(OpenFile* file, bool promptForName)
         wxString p = fileName.GetPath();
 
         fullPath = wxFileSelector(_("Save As"), fileName.GetPath(),
-            file->file->GetDisplayName(), "", s_scriptExtensions, wxSAVE, this);
+            file->file->GetDisplayName(), "", s_scriptExtensions, wxFD_SAVE, this);
 
         if (fullPath.IsEmpty())
         {
@@ -4807,7 +4807,7 @@ void MainFrame::UpdateEditorOptions()
     this->Refresh();
 
     // Set the font of the watch window to match the code editor so
-    // that non-ASCII text will be displayed properly.
+    // that non-ASTCI text will be displayed properly.
     m_watch->SetValueFont( m_fontColorSettings.GetFont() );
 
 }
@@ -4917,7 +4917,7 @@ void MainFrame::ToggleBreakpoint(Project::File* file, unsigned int newLine)
     if (openFile != NULL)
     {
 
-        // Make sure we're not past the end of the document. Note Scintlla adds one extra line at the line
+        // Make sure we're not past the end of the document. Note STCntlla adds one extra line at the line
         // that doesn't have text. We don't allow breakpoints on that line since we don't get deletion
         // notifications for that line.
         if (newLine >= static_cast<unsigned int>(openFile->edit->GetLineCount()))
@@ -5402,7 +5402,7 @@ void MainFrame::ReloadFile(OpenFile* file)
     editor.LoadFile(file->file->fileName.GetFullPath());
     file->timeStamp = GetFileModifiedTime(file->file->fileName.GetFullPath());
 
-    editor.SetModEventMask(wxSCI_MODEVENTMASKALL);
+    editor.SetModEventMask(wxSTC_MODEVENTMASKALL);
     
     unsigned int newLineCount = editor.GetLineCount();
     
@@ -5664,6 +5664,21 @@ void MainFrame::StartProcess(bool debug, bool startBroken)
 
 #endif
 
+    //Make the command local to the project
+    if (command.StartsWith("."))
+    {
+      wxFileName path(command);
+      path.Normalize(wxPATH_NORM_ALL, m_project->GetBaseDirectory());
+      command = path.GetFullPath();
+    }
+
+    if (workingDirectory.StartsWith("."))
+    {
+      wxFileName path(workingDirectory);
+      path.Normalize(wxPATH_NORM_ALL, m_project->GetBaseDirectory());
+      workingDirectory = path.GetFullPath();
+    }
+
     if (!command.IsEmpty())
     {
         StartProcess(command, commandArguments, workingDirectory, symbolsDirectory, debug, startBroken);
@@ -5718,7 +5733,7 @@ void MainFrame::EnableWhenFileHasFocus(wxUpdateUIEvent& event)
     
     int pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetSCIFocus())
+    if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetSTCFocus())
     {
         event.Enable(true);
     }
@@ -5736,7 +5751,7 @@ void MainFrame::EnableWhenTextIsSelected(wxUpdateUIEvent& event)
 
     int pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetSCIFocus())
+    if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetSTCFocus())
     {
         int length = m_openFiles[pageIndex]->edit->GetSelectionEnd() - m_openFiles[pageIndex]->edit->GetSelectionStart();
         selected = length > 0;
@@ -5972,7 +5987,7 @@ wxString MainFrame::GetAppDataDirectory() const
 {
     TCHAR path[_MAX_PATH];
     SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, path);
-    strcat(path, "\\Decoda\\");
+    wcscat(path, L"\\Decoda\\");
     return path;
 }
 

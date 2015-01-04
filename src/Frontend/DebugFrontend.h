@@ -67,7 +67,7 @@ public:
     struct Process
     {
         unsigned int    id;     // Windows process identifier
-        std::string     name;   // Executable name
+        std::wstring     name;   // Executable name
         std::string     title;  // Name from the main window of the process.
     };
 

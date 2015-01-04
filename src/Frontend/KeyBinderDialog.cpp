@@ -147,7 +147,7 @@ void KeyBinderDialog::Initialize()
     {
 
         stdext::hash_map<std::string, wxTreeItemId>::const_iterator iterator;
-        iterator = groups.find(m_commands[i]->group.ToAscii());
+        iterator = groups.find(std::string(m_commands[i]->group.ToAscii()));
 
         wxTreeItemId groupNode;
 
@@ -155,7 +155,7 @@ void KeyBinderDialog::Initialize()
         {
             // We haven't encountered this group yet, so create a new node for it.
             groupNode = m_commandTreeCtrl->AppendItem(root, m_commands[i]->group);
-            groups.insert(std::make_pair(m_commands[i]->group.ToAscii(), groupNode));
+            groups.insert(std::make_pair(std::string(m_commands[i]->group.ToAscii()), groupNode));
         }
         else
         {

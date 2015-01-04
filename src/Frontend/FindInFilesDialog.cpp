@@ -31,12 +31,12 @@ FindInFilesDialog::FindInFilesDialog( wxWindow* parent, int id )
 {
 
 	wxFlexGridSizer* fgSizer18;
-	fgSizer18 = new wxFlexGridSizer( 2, 1, 0, 0 );
+	fgSizer18 = new wxFlexGridSizer( 0, 1, 0, 0 );
 	fgSizer18->AddGrowableCol( 0 );
 	fgSizer18->SetFlexibleDirection( wxBOTH );
 	
 	wxFlexGridSizer* fgSizer19;
-	fgSizer19 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer19 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer19->AddGrowableCol( 1 );
 	fgSizer19->SetFlexibleDirection( wxHORIZONTAL );
 	

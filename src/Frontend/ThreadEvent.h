@@ -53,7 +53,7 @@ public:
 
 typedef void (wxEvtHandler::*ThreadEventFunction)(ThreadEvent&);
 
-#define EVT_THREAD(fn) \
+#define EVENT_THREAD(fn) \
     DECLARE_EVENT_TABLE_ENTRY( wxEVT_THREAD_EVENT, 0, -1, \
     (wxObjectEventFunction) (wxEventFunction) wxStaticCastEvent( ThreadEventFunction, & fn ), (wxObject *) NULL ),
 

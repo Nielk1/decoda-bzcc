@@ -29,7 +29,7 @@ AboutDialog::AboutDialog( wxWindow* parent ) :
 {
 
 	wxFlexGridSizer* fgSizer1;
-	fgSizer1 = new wxFlexGridSizer( 2, 1, 0, 0 );
+	fgSizer1 = new wxFlexGridSizer( 2, 0, 0, 0 );
 	fgSizer1->AddGrowableCol( 0 );
 	fgSizer1->SetFlexibleDirection( wxBOTH );
 	
@@ -86,7 +86,7 @@ AboutDialog::AboutDialog( wxWindow* parent ) :
 	fgSizer1->Add( fgSizer4, 1, wxALIGN_CENTER, 5 );
 	
 	wxFlexGridSizer* fgSizer2;
-	fgSizer2 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer2 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer2->AddGrowableRow( 1 );
 	fgSizer2->SetFlexibleDirection( wxBOTH );
 	
@@ -105,7 +105,7 @@ AboutDialog::AboutDialog( wxWindow* parent ) :
 	
 	fgSizer2->Add( m_staticText11, 0, wxALL, 5 );
 	
-	m_staticText12 = new wxStaticText( this, wxID_ANY, wxT("Charlie Cleveland, Bram de Greve, Garry Newman, Kurt Miller,\nJames Clarendon, Dan Higgins, Paul Nettle, Peter Loveday, Jeff Petkau,\nBrian Weed and the developers of wxWidgets, Scintilla and Lua"), wxDefaultPosition, wxSize( -1,70 ), 0 );
+	m_staticText12 = new wxStaticText( this, wxID_ANY, wxT("Charlie Cleveland, Bram de Greve, Garry Newman, Kurt Miller,\nJames Clarendon, Dan Higgins, Paul Nettle, Peter Loveday, Jeff Petkau,\nBrian Weed and the developers of wxWidgets, STCntilla and Lua"), wxDefaultPosition, wxSize( -1,70 ), 0 );
 	m_staticText12->SetFont( wxFont( 8, 74, 90, 90, false, wxT("Tahoma") ) );
 	
 	fgSizer2->Add( m_staticText12, 0, wxALL, 5 );
