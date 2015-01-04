@@ -150,6 +150,10 @@ void CodeEdit::SetEditorSettings(const EditorSettings& settings)
     SetTabIndents(useTabs);
     SetBackSpaceUnIndents(useTabs);
     SetViewWhiteSpace(showWhiteSpace);
+    SetMultipleSelection(true);
+    SetAdditionalSelectionTyping(true);
+    SetMultiPaste(1);
+    SetVirtualSpaceOptions(1);
 
     if (settings.GetShowLineNumbers())
     {

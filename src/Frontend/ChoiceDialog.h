@@ -37,7 +37,7 @@ public:
      * Constructor.
      */
     ChoiceDialog(wxWindow *parent, const wxString& message, const wxString& caption, const wxArrayString& choices,
-        long styleDlg = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxYES | wxNO | wxCANCEL | wxCENTRE, const wxPoint& pos = wxDefaultPosition);
+        long styleDlg = wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxCENTRE, const wxPoint& pos = wxDefaultPosition);
 
     /**
      * Called when the user presses the no button.

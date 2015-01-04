@@ -29,6 +29,10 @@ END_EVENT_TABLE()
 ChoiceDialog::ChoiceDialog(wxWindow *parent, const wxString& message, const wxString& caption, const wxArrayString& choices, long styleDlg, const wxPoint& pos)
     : wxMultiChoiceDialog(parent, message, caption, choices, styleDlg, pos)
 {
+  wxSizer *sizer = GetSizer();
+  sizer->Add(CreateButtonSizer(wxYES | wxNO | wxCANCEL));
+  Fit();
+  Layout();
 }
 
 void ChoiceDialog::OnNo(wxCommandEvent& event)
