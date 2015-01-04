@@ -35,6 +35,10 @@ class EditorSettings;
 class ToolTipWindow;
 class AutoCompleteManager;
 
+enum {
+  idcmdGotoDefinition = 101
+};
+
 /**
  * Code editor component.
  */
@@ -151,6 +155,11 @@ public:
      *
      */
     void OnModified(wxStyledTextEvent& event);
+
+    /**
+    *  Called when a context menu needs to be created
+    */
+    void CreateContextMenu(wxStyledTextEvent& event);
 
     /**
      * Returns true if the line mapping is dirty due to modifications.

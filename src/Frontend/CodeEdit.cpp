@@ -617,6 +617,11 @@ void CodeEdit::OnModified(wxStyledTextEvent& event)
 
 }
 
+void CodeEdit::CreateContextMenu(wxStyledTextEvent& event)
+{
+  AddToPopUp("Go To Definition", idcmdGotoDefinition);
+}
+
 bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxString& token)
 {
 

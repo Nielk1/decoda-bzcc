@@ -257,6 +257,8 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_STC_MARGINCLICK(wxID_ANY,                   MainFrame::OnCodeEditMarginClick)
     EVT_STC_ROMODIFYATTEMPT(wxID_ANY,               MainFrame::OnCodeEditReadOnlyModifyAttempt)
     EVT_STC_MODIFIED(wxID_ANY,                      MainFrame::OnCodeEditModified)
+    EVT_STC_DO_CONTEXT_COMMAND(wxID_ANY,            MainFrame::OnCodeContextCommand)
+    EVT_STC_ON_CONTEXT_MENU(wxID_ANY,               MainFrame::OnCodeContextMenu)
     
     EVT_IDLE(                                       MainFrame::OnIdle)
     EVT_TIMER(wxID_ANY,                             MainFrame::OnTimer)
@@ -2699,6 +2701,148 @@ void MainFrame::OnCodeEditModified(wxStyledTextEvent& event)
 
     m_breakpointsWindow->UpdateBreakpoints(file);
 
+}
+
+void MainFrame::OnCodeContextMenu(wxStyledTextEvent& event)
+{
+  CodeEdit* edit = static_cast<CodeEdit*>(event.GetEventObject());
+  edit->CreateContextMenu(event);
+  m_contextSelection = event.GetPosition();
+}
+
+inline bool IsDelimiter(char c)
+{
+  return c == '.' || c == ':' || c == '[' || c == ']';
+}
+
+//Helper function for Context Commands
+wxVector<wxString> FindVariableNames(CodeEdit *page, int position)
+{
+  
+  int size = 64;
+
+  //Get text in both directions, should be enough to get the variable name
+  wxString text = page->GetTextRange(std::max(position - size, 0), std::min(position + size, page->GetLength()));
+
+  //Find the first character of the name
+  int startPos = size > position ? position - 1 : size - 1;
+  int pos = startPos;
+  while (pos > 0)
+  {
+    bool alpha = IsCharAlphaNumeric(text[pos]);
+    bool delim = IsDelimiter(text[pos]);
+
+    if (alpha == false && delim == false)
+    {
+      break;
+    }
+
+      //Handle brackets
+      if (delim &&text[pos] == ']')
+      {
+        pos--;
+
+        while (pos > 0)
+        {
+          if (text[pos] == '[')
+            break;
+          if (text[pos] != '"' && !IsCharAlphaNumeric(text[pos]))
+          {
+            pos++;
+            break;
+          }
+
+          pos--;
+        }
+      }
+    pos--;
+  }
+  pos++;
+
+  wxString curName;
+  wxVector<wxString> names;
+  while (pos < text.size())
+  {
+    bool alpha = IsCharAlphaNumeric(text[pos]);
+    bool delim = IsDelimiter(text[pos]);
+
+    if (alpha == false && delim == false)
+      break;
+
+    if (alpha)
+    {
+      curName += text[pos];
+    }
+    else if (delim)
+    {
+      names.push_back(curName);
+      curName.clear();
+
+      //Handle brackets
+      if (text[pos] == '[')
+      {
+        pos++;
+        while (pos < text.size())
+        {
+          if (text[pos] == ']')
+            break;
+
+          if (text[pos] != '"')
+            curName += text[pos];
+
+          pos++;
+        }
+        pos++;
+
+        names.push_back(curName);
+        curName.clear();
+      }
+    }
+
+    //If we hit a delimiter after the clicked position, don't go further.
+    if (pos > startPos && delim)
+      break;
+
+    pos++;
+  }
+  if (curName.length() > 0)
+  {
+    names.push_back(curName);
+  }
+
+  return names;
+}
+
+void MainFrame::OnCodeContextCommand(wxStyledTextEvent& event)
+{
+  int pageIndex = GetSelectedPage();
+
+  // If for some reason the event didn't come from the edit we have open,
+  // search for the correct one.
+  if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetId() != event.GetId())
+  {
+    pageIndex = -1;
+    for (unsigned int i = 0; i < m_openFiles.size(); ++i)
+    {
+      if (m_openFiles[i]->edit->GetId() == event.GetId())
+      {
+        pageIndex = i;
+      }
+    }
+  }
+
+  if (pageIndex == -1)
+  {
+    // No matching file.
+    return;
+  }
+
+  CodeEdit* edit = m_openFiles[pageIndex]->edit;
+  if (event.GetInt() == idcmdGotoDefinition)
+  {
+    int startPos = m_contextSelection;
+    wxVector<wxString> names = FindVariableNames(edit, startPos);
+  }
 }
 
 MainFrame::OpenFile* MainFrame::OpenScript(unsigned int scriptIndex)

@@ -565,6 +565,16 @@ public:
     void OnCodeEditModified(wxStyledTextEvent& event);
 
     /**
+    * Called when the context menu pops up.
+    */
+    void OnCodeContextMenu(wxStyledTextEvent& event);
+
+    /**
+    * Called when the user clicks on a custom context command
+    */
+    void OnCodeContextCommand(wxStyledTextEvent& event);
+
+    /**
      * Called when the debugger breaks on a new line.
      */
     void OnBreak(wxDebugEvent& event);
@@ -1545,6 +1555,8 @@ private:
 
     std::vector<int>                m_tabOrder;
     int                             m_tabOrderIndex;
+
+    int                             m_contextSelection;
 };
 
 #endif
