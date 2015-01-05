@@ -5823,6 +5823,13 @@ void MainFrame::StartProcess(bool debug, bool startBroken)
       workingDirectory = path.GetFullPath();
     }
 
+    if (symbolsDirectory.StartsWith("."))
+    {
+      wxFileName path(symbolsDirectory);
+      path.Normalize(wxPATH_NORM_ALL, m_project->GetBaseDirectory());
+      symbolsDirectory = path.GetFullPath();
+    }
+
     if (!command.IsEmpty())
     {
         StartProcess(command, commandArguments, workingDirectory, symbolsDirectory, debug, startBroken);
