@@ -239,6 +239,11 @@ public:
     void LoadExpansion();
 
     /**
+    * Expands the tree to the specified file
+    */
+    void ExpandFromFile(Project::File *file);
+
+    /**
     * Rebuilds the entire list in the tree control. This should be done when
     * the filter changes.
     */
@@ -360,6 +365,7 @@ private:
     wxMenu*                      m_directoryContextMenu;
                                  
     wxColor                      m_itemColor;
+    wxColor                      m_itemSelectBackground;
 };
 
 

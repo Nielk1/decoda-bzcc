@@ -244,6 +244,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_AUINOTEBOOK_TAB_MIDDLE_UP(ID_Notebook,      MainFrame::OnNotebookTabMiddleUp)
     EVT_AUINOTEBOOK_TAB_RIGHT_UP(ID_Notebook,       MainFrame::OnNotebookTabRightUp)
     EVT_AUINOTEBOOK_TAB_RIGHT_DOWN(ID_Notebook,     MainFrame::OnNotebookTabRightDown)
+    EVT_AUINOTEBOOK_BEGIN_DRAG(ID_Notebook, MainFrame::OnNotebookTabDragDone)
 
 
     EVT_LIST_ITEM_ACTIVATED(ID_CallStack,           MainFrame::OnCallStackDoubleClick)
@@ -340,9 +341,9 @@ wxString GetExecutablePath()
         return path;
     }
 }
-
+// & ~wxCAPTION & ~wxRESIZE_BORDER
 MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint& pos, const wxSize& size)
-    : wxFrame(NULL, -1, title, pos, size), m_timerIdleWakeUp(this)
+    : wxFrame(NULL, -1, title, pos, size, wxDEFAULT_FRAME_STYLE), m_timerIdleWakeUp(this)
 {
 
     m_project = NULL;
@@ -567,7 +568,7 @@ MainFrame::~MainFrame()
 void MainFrame::OnClose(wxCloseEvent& event)
 {
 
-    if ((CloseAllFiles() && SaveProjectIfNeeded()) || !event.CanVeto())
+    if ((SaveProjectIfNeeded() && CloseAllFiles()) || !event.CanVeto())
     {
 
         // Detach the debugger if it's currently running. This will allow the application
@@ -720,7 +721,15 @@ void MainFrame::InitializeMenu()
     menuBar->Append( menuWindow,                        _("&Window"));
     menuBar->Append( menuHelp,                          _("&Help"));
 
-    SetMenuBar( menuBar );
+    //wxMenuBar* menuBar2 = new wxMenuBar;
+    //wxMenu* menuFile2 = new wxMenu;
+    //menuFile2->Append(ID_FileNew, _("&New..."));
+    //menuBar2->Append(menuFile2, _("&File"));
+    //
+    //menuBar2->AddChild(menuBar);
+    
+    //AttachMenuBar(menuBar2);
+    AttachMenuBar(menuBar);
 }
 
 void MainFrame::OnFileNewProject(wxCommandEvent& WXUNUSED(event))
@@ -767,6 +776,16 @@ bool MainFrame::OpenProject(const wxString& fileName, bool reportError)
     m_projectFileHistory.AddFileToHistory(fileName);
 
     SetProject(project);
+
+    std::vector<Project::File*> files = project->GetOpenFiles();
+    project->GetOpenFiles().clear();
+
+    for (Project::File *file : files)
+    {
+      OpenProjectFile(file);
+      m_projectExplorer->ExpandFromFile(file);
+    }
+    
 
     // Remember that we loaded this project.
     m_lastProjectLoaded = fileName;
@@ -1335,28 +1354,35 @@ void MainFrame::OnProjectAddNewFile(wxCommandEvent& WXUNUSED(event))
                 file.Close();
                 Project::File* file = m_project->AddFile(fileName.GetFullPath());
                 
-                if (file->localPath.IsEmpty())
+                if (file == nullptr)
                 {
-                  UpdateForNewFile(file);
-
-                  if (m_sourceControl.GetIsInitialized() && dialog.GetAddToSourceContrl())
-                  {
-                    // Add the file to source control.
-                    m_sourceControl.AddFiles(std::string(fileName.GetFullPath()), NULL);
-                  }
-
-                  // Update the status for the new files.
-                  UpdateProjectFileStatus(file);
+                  wxMessageBox(_("Error creating file."), s_applicationName, wxOK | wxICON_ERROR, this);
                 }
                 else
                 {
-                  m_projectExplorer->SaveExpansion();
-                  m_projectExplorer->Rebuild();
-                  m_projectExplorer->LoadExpansion();
-                }
+                  if (file->localPath.IsEmpty())
+                  {
+                    UpdateForNewFile(file);
 
-                // Open the file in the editor.
-                OpenProjectFile(file);
+                    if (m_sourceControl.GetIsInitialized() && dialog.GetAddToSourceContrl())
+                    {
+                      // Add the file to source control.
+                      m_sourceControl.AddFiles(std::string(fileName.GetFullPath()), NULL);
+                    }
+
+                    // Update the status for the new files.
+                    UpdateProjectFileStatus(file);
+                  }
+                  else
+                  {
+                    m_projectExplorer->SaveExpansion();
+                    m_projectExplorer->Rebuild();
+                    m_projectExplorer->LoadExpansion();
+                  }
+
+                  // Open the file in the editor.
+                  OpenProjectFile(file);
+                }
             }
             else
             {
@@ -2205,6 +2231,11 @@ void MainFrame::OnNotebookPageChanged(wxAuiNotebookEvent& event)
 
 }
 
+void MainFrame::OnNotebookTabDragDone(wxAuiNotebookEvent& event)
+{
+  wxMessageBox(_("test1"));
+}
+
 void MainFrame::OnNotebookTabMiddleUp(wxAuiNotebookEvent& event)
 {
     int page = event.GetSelection();
@@ -2425,7 +2456,8 @@ void MainFrame::OnCodeEditSavePointLeft(wxStyledTextEvent& event)
     {
         if (m_openFiles[page]->edit == event.GetEventObject())
         {
-            m_notebook->SetPageText(page, m_openFiles[page]->file->GetDisplayName() + "*");
+            int pageIndex = m_notebook->GetPageIndex(m_openFiles[page]->edit);
+            m_notebook->SetPageText(pageIndex, m_openFiles[page]->file->GetDisplayName() + "*");
         }
     }
 }
@@ -2436,7 +2468,8 @@ void MainFrame::OnCodeEditSavePointReached(wxStyledTextEvent& event)
     {
         if (m_openFiles[page]->edit == event.GetEventObject())
         {
-            m_notebook->SetPageText(page, m_openFiles[page]->file->GetDisplayName());
+          int pageIndex = m_notebook->GetPageIndex(m_openFiles[page]->edit);
+          m_notebook->SetPageText(pageIndex, m_openFiles[page]->file->GetDisplayName());
         }
     }
 }
@@ -3904,6 +3937,18 @@ void MainFrame::FindText(OpenFile* file, const wxString& text, int flags)
 
         // Select the found text.
         file->edit->SetSelection(start, start + length);
+
+        int firstLine = file->edit->GetFirstVisibleLine();
+        int totalLines = file->edit->LinesOnScreen();
+        int lastLine = firstLine + totalLines;
+
+        int chosenLine = file->edit->LineFromPosition(start);
+
+        if (chosenLine < firstLine || chosenLine > lastLine)
+        {
+          file->edit->ScrollToLine(chosenLine - (totalLines) / 2);
+        }
+        
         m_lastFindPosition = file->edit->GetCurrentPos();
 
         // Check to see if we reached the start point of the search.
@@ -4636,6 +4681,8 @@ MainFrame::OpenFile* MainFrame::OpenProjectFile(Project::File* file)
     m_openFiles.push_back(openFile);
     m_notebook->AddPage(openFile->edit, tabName, true);
 
+    m_project->AddOpenedFile(file);
+
     return openFile;
 
 }
@@ -4891,7 +4938,6 @@ MainFrame::OpenFile* MainFrame::OpenDocument(const wxString& fileName)
 
         m_fileHistory.AddFileToHistory(param);
         openFile = OpenProjectFile(file);
-
     }
 
     if (openFile != NULL && lineNumber != 0)
@@ -5020,7 +5066,7 @@ void MainFrame::UpdateStatusBarLineAndColumn()
 {
 
     // Update the line and column number in the status bar.
-
+  /*
     int pageIndex = GetSelectedPage();
 
     if (pageIndex != -1)
@@ -5044,7 +5090,7 @@ void MainFrame::UpdateStatusBarLineAndColumn()
         m_statusBar->SetStatusText(_(""), 2);
 
     }
-
+    */
 }
 
 void MainFrame::ToggleBreakpoint(Project::File* file, unsigned int newLine)
@@ -6328,6 +6374,8 @@ bool MainFrame::PreNotebookPageClose(int page, bool promptForSave)
         m_project->RemoveFile(file);
         m_breakpointsWindow->RemoveFile(file);
     }
+
+    m_project->RemoveOpenedFile(file);
 
     // Update the tab order
     RemovePageFromTabOrder(page);

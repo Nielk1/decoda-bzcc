@@ -334,6 +334,22 @@ public:
     */
     wxString GetBaseDirectory() const;
 
+    /**
+    * Adds a file to the list of open files
+    */
+    void AddOpenedFile(Project::File *file);
+
+    /**
+    * Removes a file to the list of open files
+    */
+    void RemoveOpenedFile(Project::File *file);
+
+    /**
+    * Gets the list of open files
+    */
+    std::vector<Project::File *> &GetOpenFiles();
+
+
 private:
 
     /**
@@ -375,6 +391,12 @@ private:
      * a files node, the method returns false.
      */
     bool LoadUserFilesNode(const wxString& baseDirectory, wxXmlNode* node);
+
+    /**
+    * Loads the user data for a opened files from an XML node. If the XML node is not
+    * a open file node, the method returns false.
+    */
+    bool LoadOpenFilesNode(wxXmlNode* node);
 
     /**
      * Loads the breakpoint node. If the XML node is not a breakpoint node,
@@ -433,6 +455,8 @@ private:
                              
     std::vector<File*>       m_files;
     std::vector<Directory *> m_directories;
+
+    std::vector<File *>      m_openFiles;
                              
     unsigned int             m_tempIndex;
                              

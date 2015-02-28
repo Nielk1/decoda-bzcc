@@ -25,63 +25,15 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <wx/xml/xml.h>
 
-const char* FontColorSettings::s_displayItemName[] = { "Default", "Comment", "Keyword", "Operator", "String", "Number", "Error", "Warning", "Selection", "Window" };
+const char* FontColorSettings::s_displayItemName[] = { DisplayColorsDef(DisplayColorString) };
 
 FontColorSettings::FontColorSettings()
 {
-
     m_font = wxFont(8, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
-    m_colors[DisplayItem_Default].foreColor     = wxColor(0x00, 0x00, 0x00);
-    m_colors[DisplayItem_Default].backColor     = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Default].bold          = false;
-    m_colors[DisplayItem_Default].italic        = false;
+    DisplayColorsDef(DisplayColorInit);
 
-    m_colors[DisplayItem_Comment].foreColor     = wxColor(0x00, 0x80, 0x00);
-    m_colors[DisplayItem_Comment].backColor     = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Comment].bold          = false;
-    m_colors[DisplayItem_Comment].italic        = false;
-
-    m_colors[DisplayItem_Keyword].foreColor     = wxColor(0x00, 0x00, 0xFF);
-    m_colors[DisplayItem_Keyword].backColor     = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Keyword].bold          = false;
-    m_colors[DisplayItem_Keyword].italic        = false;
-    
-    m_colors[DisplayItem_Operator].foreColor    = wxColor(0x80, 0x80, 0x80);
-    m_colors[DisplayItem_Operator].backColor    = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Operator].bold         = false;
-    m_colors[DisplayItem_Operator].italic       = false;
-
-    m_colors[DisplayItem_String].foreColor      = wxColor(0xFF, 0x80, 0x80);
-    m_colors[DisplayItem_String].backColor      = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_String].bold           = false;
-    m_colors[DisplayItem_String].italic         = false;
-    
-    m_colors[DisplayItem_Number].foreColor      = wxColor(0xFF, 0x00, 0x00);
-    m_colors[DisplayItem_Number].backColor      = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Number].bold           = false;
-    m_colors[DisplayItem_Number].italic         = false;
-
-    m_colors[DisplayItem_Error].foreColor       = wxColor(0xFF, 0x00, 0x00);
-    m_colors[DisplayItem_Error].backColor       = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Error].bold            = true;
-    m_colors[DisplayItem_Error].italic          = false;
-
-    m_colors[DisplayItem_Warning].foreColor     = wxColor(0xFF, 0x00, 0x00);
-    m_colors[DisplayItem_Warning].backColor     = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Warning].bold          = false;
-    m_colors[DisplayItem_Warning].italic        = false;
-
-    m_colors[DisplayItem_Selection].foreColor   = wxColor(0xFF, 0xFF, 0xFF);
-    m_colors[DisplayItem_Selection].backColor   = wxColor(0x0A, 0x24, 0x6A);
-    m_colors[DisplayItem_Selection].bold        = false;
-    m_colors[DisplayItem_Selection].italic      = false;
-
-    m_colors[DisplayItem_Window].foreColor = wxColor(255,255,255);
-    m_colors[DisplayItem_Window].backColor = wxColor(51,51,51);
-    m_colors[DisplayItem_Window].bold = false;
-    m_colors[DisplayItem_Window].italic = false;
-
+    int a = 1;
 }
 
 unsigned int FontColorSettings::GetNumDisplayItems() const

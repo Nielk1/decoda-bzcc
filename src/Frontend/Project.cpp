@@ -567,6 +567,17 @@ void Project::RemoveFile(File* file)
 
       ++dirIterator;
     }
+
+    iterator = m_openFiles.begin();
+    while (iterator != m_openFiles.end())
+    {
+      if (file == *iterator)
+      {
+        m_openFiles.erase(iterator);
+        break;
+      }
+      ++iterator;
+    }
 }
 
 void Project::RemoveDirectory(Directory* directory)
@@ -581,6 +592,17 @@ void Project::RemoveDirectory(Directory* directory)
       {
         ClearVector(file->symbols);
         delete file;
+
+        std::vector<File*>::iterator iterator = m_openFiles.begin();
+        while (iterator != m_openFiles.end())
+        {
+          if (file == *iterator)
+          {
+            m_openFiles.erase(iterator);
+            break;
+          }
+          ++iterator;
+        }
       }
 
       m_directories.erase(iterator);
@@ -919,6 +941,57 @@ bool Project::LoadUserFileNode(const wxString& baseDirectory, wxXmlNode* root)
 
 }
 
+bool Project::LoadOpenFilesNode(wxXmlNode* root)
+{
+
+  if (root->GetName() != "openfiles")
+  {
+    return false;
+  }
+
+  wxXmlNode* node = root->GetChildren();
+
+  while (node != NULL)
+  {
+    wxString filename;
+    wxString localPath;
+
+    wxXmlNode* child = node->GetChildren();
+    while (child != NULL)
+    {
+      ReadXmlNode(child, wxT("filename"), filename);
+      ReadXmlNode(child, wxT("localpath"), localPath);
+      child = child->GetNext();
+    }
+
+    for (File *file : m_files)
+    {
+      if (file->fileName.GetFullName() == filename && file->localPath == localPath)
+      {
+        m_openFiles.push_back(file);
+        break;
+      }
+    }
+
+    for (Directory *directory : m_directories)
+    {
+      for (File *file : directory->files)
+      {
+        if (file->fileName.GetFullName() == filename && file->localPath == localPath)
+        {
+          m_openFiles.push_back(file);
+          break;
+        }
+      }
+    }
+
+    node = node->GetNext();
+  }
+
+  return true;
+
+}
+
 bool Project::LoadBreakpointNode(wxXmlNode* root, std::vector<unsigned int>& breakpoints)
 {
 
@@ -1166,6 +1239,30 @@ bool Project::SaveUserSettings(const wxString& fileName)
         root->AddChild(filesNode);
     }
 
+    wxXmlNode* openFilesNode = NULL;
+    for (unsigned int fileIndex = 0; fileIndex < m_openFiles.size(); ++fileIndex)
+    {
+      const File* file = m_openFiles[fileIndex];
+
+      wxXmlNode* node = new wxXmlNode(wxXML_ELEMENT_NODE, "file");
+      node->AddChild(WriteXmlNode("filename", file->fileName.GetFullName()));
+      node->AddChild(WriteXmlNode("localpath", file->localPath));
+
+      if (node != NULL)
+      {
+        if (openFilesNode == NULL)
+        {
+          openFilesNode = new wxXmlNode(wxXML_ELEMENT_NODE, "openfiles");
+        }
+        openFilesNode->AddChild(node);
+      }
+    }
+
+    if (openFilesNode != NULL)
+    {
+      root->AddChild(openFilesNode);
+    }
+
     return document.Save(fileName);
 
 }
@@ -1204,7 +1301,8 @@ bool Project::LoadUserSettings(const wxString& fileName)
         || ReadXmlNode(node, "symbols_directory",   m_symbolsDirectory)
 #endif
         || LoadSccNode(node)
-        || LoadUserFilesNode(baseDirectory, node);
+        || LoadUserFilesNode(baseDirectory, node)
+        || LoadOpenFilesNode(node);
         
         node = node->GetNext();
 
@@ -1287,4 +1385,31 @@ bool Project::LoadSccNode(wxXmlNode* root)
 wxString Project::GetBaseDirectory() const
 {
   return m_baseDirectory;
+}
+
+void Project::AddOpenedFile(Project::File *file)
+{
+  m_openFiles.push_back(file);
+  m_needsUserSave = true;
+}
+
+void Project::RemoveOpenedFile(Project::File *file)
+{
+  std::vector<File*>::iterator iterator = m_openFiles.begin();
+  while (iterator != m_openFiles.end())
+  {
+    if (file == *iterator)
+    {
+      m_openFiles.erase(iterator);
+      break;
+    }
+    ++iterator;
+  }
+
+  m_needsUserSave = true;
+}
+
+std::vector<Project::File *> &Project::GetOpenFiles()
+{
+  return m_openFiles;
 }

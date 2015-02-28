@@ -96,7 +96,6 @@ MainApp::MainApp()
 
 bool MainApp::OnInit()
 {
-
     UINT openFilesMessage = RegisterWindowMessage(L"Decoda_OpenFiles");
 
     // Check to see if another instances is running.
@@ -109,7 +108,6 @@ bool MainApp::OnInit()
     wxImage::AddHandler(new wxPNGHandler);
 
     MainFrame* frame = new MainFrame("Script Debugger", openFilesMessage, wxDefaultPosition, wxSize(1024,768));
-
     HWND hWndPrev = m_singleInstance.Connect(reinterpret_cast<HWND>(frame->GetHandle()), "Decoda");
 
     // If we're loading files from the command line (but not a project) file,

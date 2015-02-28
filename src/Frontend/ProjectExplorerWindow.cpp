@@ -69,7 +69,6 @@ END_EVENT_TABLE()
 ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
     : wxPanel(parent, winid)
 {
-
     SetSize(250, 300);
 
     m_stopExpansion = 0;
@@ -117,7 +116,7 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
 
     gSizer1->Add( gSizer2, 1, wxEXPAND, 5  );
 
-    m_tree = new wxProjectTree(this, winid, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_MULTIPLE | wxTR_EXTENDED);
+    m_tree = new wxProjectTree(this, winid, wxDefaultPosition, wxDefaultSize, wxTR_NO_LINES | wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_MULTIPLE | wxTR_EXTENDED | wxTR_FULL_ROW_HIGHLIGHT);
     m_tree->AssignImageList(imageList);
 
     // The "best size" for the tree component must be 0 so that the tree control doesn't
@@ -161,7 +160,8 @@ void ProjectExplorerWindow::SetFontColorSettings(const FontColorSettings& settin
 
   m_infoBox->SetFontColorSettings(settings);
 
-  m_itemColor = settings.GetColors(FontColorSettings::DisplayItem_Window).foreColor;
+  m_itemColor = settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).foreColor;
+  m_itemSelectBackground = settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).backColor;
 
   Rebuild();
 }
@@ -269,6 +269,11 @@ void ProjectExplorerWindow::Rebuild()
     }
 
     SortTree(m_tree->GetRootItem());
+
+    TraverseTree(m_root, [&,this](wxTreeItemId const &id)
+    {
+      m_tree->SetItemSelectedColour(id, m_itemSelectBackground);
+    });
 
     // For whatever reason the unselect event isn't reported properly
     // after deleting all items, so explicitly clear out the info box.
@@ -889,7 +894,7 @@ void ProjectExplorerWindow::UpdateFile(Project::File* file)
     }
 
     RebuildForFile(node, file);
-    SortTree(m_tree->GetRootItem());
+    //SortTree(m_tree->GetRootItem());
     if (isSelected)
     {
       m_tree->SelectItem(FindFile(m_tree->GetRootItem(), file));
@@ -1090,6 +1095,40 @@ void ProjectExplorerWindow::LoadExpansion()
 
         m_tree->Collapse(item);
       }
+    }
+  });
+}
+
+void ProjectExplorerWindow::ExpandFromFile(Project::File *file)
+{
+  //Only expand the previously expanded items.
+  TraverseTree(m_root, [&, this](wxTreeItemId const &item)
+  {
+    ItemData* data = static_cast<ItemData*>(m_tree->GetItemData(item));
+    if (data && data->file == file)
+    {
+      wxStack<wxTreeItemId> treeStack;
+
+      //Collect all parent nodes
+      wxTreeItemId node = m_tree->GetItemParent(item);
+      while (node.IsOk())
+      {
+        if (node != m_root)
+          treeStack.push(node);
+
+        node = m_tree->GetItemParent(node);
+      }
+
+      //Expand them in reverse order
+      while (treeStack.size() > 0)
+      {
+        node = treeStack.top();
+        treeStack.pop();
+
+        m_tree->Expand(node);
+      }
+
+      m_tree->Collapse(item);
     }
   });
 }

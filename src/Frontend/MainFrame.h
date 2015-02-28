@@ -450,6 +450,11 @@ public:
     void OnNotebookPageChanged(wxAuiNotebookEvent& event);
     
     /**
+    * Called when the user drags a tab
+    */
+    void OnNotebookTabDragDone(wxAuiNotebookEvent& event);
+
+    /**
      * Called when the user clicks the middle mouse button on a notebook tab.
      */
     void OnNotebookTabMiddleUp(wxAuiNotebookEvent& event);

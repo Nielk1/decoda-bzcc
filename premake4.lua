@@ -65,11 +65,11 @@ project "Frontend"
 
     configuration "Release"
         defines { "NDEBUG" }
-        flags { "Optimize" }
+        flags { "Optimize", "Symbols" }
         targetdir "bin/release"
 		includedirs { "libs/wxWidgets/lib/vc_lib/msw" }
 		links {
-			"wxbase28",
+			"wxbase30u",
 			"wxmsw30u_core",
       "wxmsw30u_stc",
 			"wxmsw30u_aui",
@@ -116,7 +116,7 @@ project "LuaInject"
 
     configuration "Release"
         defines { "NDEBUG" }
-        flags { "Optimize" }
+        flags { "Optimize", "Symbols" }
         targetdir "bin/release"				
 		links { "tinyxml_STL" }
 		

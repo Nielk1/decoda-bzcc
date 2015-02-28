@@ -62,7 +62,6 @@ CodeEdit::CodeEdit()
 
 void CodeEdit::SetFontColorSettings(const FontColorSettings& settings)
 {
-
     // For some reason StyleSetFont takes a (non-const) reference, so we need to make
     // a copy before passing it in.
     wxFont font = settings.GetFont();
@@ -128,6 +127,10 @@ void CodeEdit::SetFontColorSettings(const FontColorSettings& settings)
     // Set the caret color as the inverse of the background color so it's always visible.
     SetCaretForeground( GetInverse(settings.GetColors(FontColorSettings::DisplayItem_Default).backColor) );
 
+
+    StyleSetBackground(wxSTC_STYLE_LINENUMBER, settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).backColor);
+    StyleSetForeground(wxSTC_STYLE_LINENUMBER, settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).foreColor);
+    //SetFoldMarginHiColour(true, settings.GetColors(FontColorSettings::DisplayItem_Window).backColor);
 }
 
 void CodeEdit::SetAutoCompleteManager(const AutoCompleteManager* autoCompleteManager)
@@ -137,7 +140,6 @@ void CodeEdit::SetAutoCompleteManager(const AutoCompleteManager* autoCompleteMan
 
 void CodeEdit::SetEditorSettings(const EditorSettings& settings)
 {
-
     m_indentationSize = settings.GetIndentSize();
 
     SetIndent(m_indentationSize);
@@ -177,7 +179,6 @@ void CodeEdit::SetEditorSettings(const EditorSettings& settings)
 
 void CodeEdit::SetDefaultLexer()
 {
-
     SetLexer(wxSTC_LEX_NULL);
 
     SetKeyWords(1, "");
@@ -214,7 +215,6 @@ void CodeEdit::SetDefaultLexer()
 
 void CodeEdit::SetLuaLexer()
 {
-
     SetDefaultLexer();
 
     SetLexer(wxSTC_LEX_LUA);

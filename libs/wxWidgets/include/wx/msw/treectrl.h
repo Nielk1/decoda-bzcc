@@ -106,6 +106,8 @@ public:
                                    const wxColour& col);
     virtual void SetItemBackgroundColour(const wxTreeItemId& item,
                                          const wxColour& col);
+    virtual void SetItemSelectedColour(const wxTreeItemId& item,
+                                       const wxColour& col);
     virtual void SetItemFont(const wxTreeItemId& item, const wxFont& font);
 
     // item status inquiries

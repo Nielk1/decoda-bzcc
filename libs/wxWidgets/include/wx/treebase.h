@@ -217,20 +217,25 @@ public:
     // setters
     void SetTextColour(const wxColour& colText) { m_colText = colText; }
     void SetBackgroundColour(const wxColour& colBack) { m_colBack = colBack; }
+    void SetSelectedColour(const wxColour& colSel) { m_selBack = colSel; }
     void SetFont(const wxFont& font) { m_font = font; }
 
     // accessors
     bool HasTextColour() const { return m_colText.IsOk(); }
     bool HasBackgroundColour() const { return m_colBack.IsOk(); }
+    bool HasSelectedColour() const { return m_selBack.IsOk(); }
     bool HasFont() const { return m_font.IsOk(); }
 
     const wxColour& GetTextColour() const { return m_colText; }
     const wxColour& GetBackgroundColour() const { return m_colBack; }
+    const wxColour& GetSelectedColour() const { return m_selBack; }
     const wxFont& GetFont() const { return m_font; }
 
 private:
     wxColour m_colText,
-             m_colBack;
+             m_colBack,
+             m_selBack;
+
     wxFont   m_font;
 };
 

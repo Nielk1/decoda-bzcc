@@ -36,6 +36,28 @@ class wxXmlNode;
  * This class stores font and color settings for code display and syntax
  * highlighting.
  */
+
+#define DisplayColorsDef(_) \
+  _(Default,        wxColor(0x00, 0x00, 0x00), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(Comment,        wxColor(0x00, 0x80, 0x00), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(Keyword,        wxColor(0x00, 0x00, 0xFF), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(Operator,       wxColor(0x80, 0x80, 0x80), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(String,         wxColor(0xFF, 0x80, 0x80), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(Number,         wxColor(0xFF, 0x00, 0x00), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(Error,          wxColor(0xFF, 0x00, 0x00), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(Warning,        wxColor(0xFF, 0x00, 0x00), wxColor(0xFF, 0xFF, 0xFF), false, false) \
+  _(Selection,      wxColor(0xFF, 0xFF, 0xFF), wxColor(0x0A, 0x24, 0x6A), false, false) \
+  _(Window,         wxColor(0xFF, 0xFF, 0xFF), wxColor(0x33, 0x33, 0x33), false, false) \
+  _(WindowMargin,   wxColor(0xFF, 0xFF, 0xFF), wxColor(0x3F, 0x3F, 0x46), false, false) \
+
+#define DisplayColorEnum(name, fore, back, bold, ital) DisplayItem_ ## name,
+#define DisplayColorString(name, fore, back, bold, ital) #name,
+#define DisplayColorInit(name, fore, back, bold_, ital_) \
+  m_colors[DisplayItem_ ## name ## ].foreColor = fore; \
+  m_colors[DisplayItem_ ## name ## ].backColor = back; \
+  m_colors[DisplayItem_ ## name ## ].bold = bold_;      \
+  m_colors[DisplayItem_ ## name ## ].italic = ital_;    \
+
 class FontColorSettings
 {
 
@@ -43,16 +65,7 @@ public:
 
     enum DisplayItem
     {
-        DisplayItem_Default,
-        DisplayItem_Comment,
-        DisplayItem_Keyword,
-        DisplayItem_Operator,
-        DisplayItem_String,
-        DisplayItem_Number,
-        DisplayItem_Error,
-        DisplayItem_Warning,
-        DisplayItem_Selection,
-        DisplayItem_Window,
+        DisplayColorsDef(DisplayColorEnum)
         DisplayItem_Last,
     };
 
