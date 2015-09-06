@@ -277,7 +277,7 @@ private:
     /**
      * Adds a new symbol to the tree.
      */
-    void AddSymbol(wxTreeItemId parent, Project::File* file, Symbol* symbol);
+    wxTreeItemId AddSymbol(wxTreeItemId parent, Project::File* file, Symbol* symbol);
 
     /**
      * Removes any child nodes of the specified node that reference the file.

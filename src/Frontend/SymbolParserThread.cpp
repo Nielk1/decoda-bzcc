@@ -28,6 +28,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <wx/wfstream.h>
 #include <wx/sstream.h>
+#include <wx/stack.h>
 
 SymbolParserThread::SymbolParserThread() : wxThread(wxTHREAD_JOINABLE), m_itemsAvailable(0, 1)
 {
@@ -138,6 +139,63 @@ void SymbolParserThread::QueueForParsing(const wxString& code, unsigned int file
 
 }
 
+Symbol *GetSymbol(wxString name, std::vector<Symbol*>& symbols, SymbolSearch search = SymbolSearch::Standard)
+{
+  for (Symbol *symbol : symbols)
+  {
+    if (symbol->name == name)
+    {
+      if (search == SymbolSearch::Standard && symbol->type != SymbolType::Prefix)
+        return symbol;
+      else if (search == SymbolSearch::PrefixOnly && symbol->type == SymbolType::Prefix)
+        return symbol;
+    }
+  }
+
+  return nullptr;
+}
+
+void DecodaDefRecursive(wxInputStream& input, std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module)
+{
+  wxString token;
+  if (!GetToken(input, token, lineNumber)) return;
+
+  Symbol *lastModule = nullptr;
+  while (token != "}")
+  {
+    if (token == "{")
+    {
+      DecodaDefRecursive(input, symbols, lineNumber, lastModule);
+    }
+    else
+    {
+      lastModule = new Symbol(module, token, lineNumber);
+      symbols.push_back(lastModule);
+    }
+
+    if (!GetToken(input, token, lineNumber)) return;
+  }
+}
+
+void DecodaPrefixRecursive(wxInputStream& input, std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module)
+{
+  wxString t1;
+  if (!GetToken(input, t1, lineNumber)) return;
+
+  wxString t2;
+  if (!GetToken(input, t2, lineNumber)) return;
+
+  while (t1 != "}" && t2 != "}")
+  {
+    Symbol *sym = new Symbol(module, t2, lineNumber, SymbolType::Prefix);
+    sym->requiredModule = t1;
+    symbols.push_back(sym);
+
+    if (!GetToken(input, t1, lineNumber)) return;
+    if (!GetToken(input, t2, lineNumber)) return;
+  }
+}
+
 void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symbol*>& symbols)
 {
 
@@ -150,12 +208,16 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
     unsigned int lineNumber = 1;
 
+    wxStack<Symbol *> symStack;
+    symStack.push(nullptr);
+
     while (GetToken(input, token, lineNumber))
     {
         if (token == "function")
         {
 
             unsigned int defLineNumber = lineNumber;
+            Symbol *function = nullptr;
 
             // Lua functions can have these forms:
             //    function (...)
@@ -180,8 +242,9 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
             if (t2 == "(")
             {
+              function = new Symbol(symStack.top(), t1, defLineNumber);
                 // The form function Name (...).
-                symbols.push_back(new Symbol("", t1, defLineNumber));
+              symbols.push_back(function);
             }
             else
             {
@@ -191,12 +254,88 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
                 if (t2 == "." || t2 == ":")
                 {
-                    symbols.push_back(new Symbol(t1, t3, defLineNumber));
+                  Symbol *module = GetSymbol(t1, symbols);
+                  if (module == nullptr)
+                  {
+                    module = new Symbol(symStack.top(), t1, defLineNumber, SymbolType::Module);
+                    symbols.push_back(module);
+                  }
+
+                  function = new Symbol(module, t3, defLineNumber);
+
+                  symbols.push_back(function);
                 }
 
             }
 
 
+            if (function)
+              symStack.push(function);
+
+        }
+        else if (token == "decodadef")
+        {
+          //A decodadef will be in the form:
+          //decodadef name { Definitions }
+
+          unsigned int defLineNumber = lineNumber;
+
+          wxString module;
+          if (!GetToken(input, module, lineNumber)) break;
+
+          wxString t1;
+          if (!GetToken(input, t1, lineNumber)) break;
+
+          if (t1 == "{")
+          {
+            Symbol *sym_module = new Symbol(symStack.top(), module, lineNumber);
+            symbols.push_back(sym_module);
+            DecodaDefRecursive(input, symbols, lineNumber, sym_module);
+          }
+        }
+        else if (token == "end")
+        {
+          if (symStack.size() > 1)
+            symStack.pop();
+        }
+        else if (token == "decodaprefix")
+        {
+          //A decodaprefix will be in the form:
+          //decodaprefix Module name
+
+          /*
+          decodaprefix this __FILENAME__
+          decodaprefix this { Weapon nil }
+          
+          */
+
+          unsigned int defLineNumber = lineNumber;
+
+          wxString moduleName;
+          if (!GetToken(input, moduleName, lineNumber)) break;
+
+
+          Symbol *module = GetSymbol(moduleName, symbols, SymbolSearch::PrefixOnly);
+          if (module == nullptr)
+          {
+            module = new Symbol(nullptr, moduleName, defLineNumber, SymbolType::Prefix);
+            symbols.push_back(module);
+          }
+
+          wxString t1;
+          if (!GetToken(input, t1, lineNumber)) break;
+
+          //List of 
+          if (t1 == "{")
+          {
+            DecodaPrefixRecursive(input, symbols, lineNumber, module);
+          }
+          else
+          {
+            Symbol *sym_prefix = new Symbol(module, t1, defLineNumber, SymbolType::Prefix);
+            sym_prefix->requiredModule = moduleName;
+            symbols.push_back(sym_prefix);
+          }
         }
     }
 

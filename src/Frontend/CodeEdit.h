@@ -25,6 +25,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <wx/wx.h>
 #include <wx/stc/stc.h>
+#include "Project.h"
 
 //
 // Forward declarations.
@@ -171,6 +172,8 @@ public:
      */
     void SetIsLineMappingDirty(bool lineMappingDirty);
 
+    Project::File *file = NULL;
+
 private:
 
     /**
@@ -216,6 +219,7 @@ private:
      * visible on top of the original color.
      */ 
     wxColor GetInverse(const wxColor& color);
+
 
 private:
 

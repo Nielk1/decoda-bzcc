@@ -26,20 +26,42 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/wx.h>
 #include <wx/string.h>
 
+enum class SymbolSearch
+{
+  Standard,
+  PrefixOnly
+};
+
+enum class SymbolType
+{
+  Function,
+  Type,
+  Module,
+  Prefix
+};
+
 class Symbol
 {
     
 public:
 
     Symbol();
-    Symbol(const wxString& module, const wxString& name, unsigned int line);
+    Symbol(Symbol *parent, const wxString& name, unsigned int line, SymbolType type = SymbolType::Function);
+
+    bool operator<(const Symbol& entry) const;
 
 public:
 
-    wxString            module;
-    wxString            name;
-    unsigned int        line;
+  wxString GetModuleName();
+  wxString GetParentsName();
+  Symbol *GetCurrentModule();
+  wxString GetScope(int level = 0);
 
+  Symbol*             parent = nullptr;
+  wxString            name;
+  unsigned int        line;
+  SymbolType          type;
+  wxString            requiredModule;
 };
 
 #endif

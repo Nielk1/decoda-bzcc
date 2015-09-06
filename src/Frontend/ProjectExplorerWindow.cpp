@@ -452,39 +452,45 @@ void ProjectExplorerWindow::AddFile(wxTreeItemId parent, Project::File* file)
     m_tree->SetItemTextColour(fileNode, m_itemColor);
     // Add the symbols.
 
-    stdext::hash_map<std::string, wxTreeItemId> groups;
+    stdext::hash_map<Symbol *, wxTreeItemId> groups;
 
     for (unsigned int i = 0; i < file->symbols.size(); ++i)
     {
 
         wxTreeItemId node = fileNode;
 
-        if (!file->symbols[i]->module.IsEmpty())
+        if (file->symbols[i]->parent != nullptr)
         {
-
-            stdext::hash_map<std::string, wxTreeItemId>::const_iterator iterator;
-            iterator = groups.find(std::string(file->symbols[i]->module.ToAscii()));
-
+          Symbol *parent = file->symbols[i]->parent;
+          stdext::hash_map<Symbol *, wxTreeItemId>::const_iterator iterator;
+          while (parent != nullptr)
+          {
+            iterator = groups.find(parent);
             if (iterator == groups.end())
             {
-                node = m_tree->AppendItem(fileNode, file->symbols[i]->module, Image_Module, Image_Module);
-                m_tree->SetItemTextColour(node, m_itemColor);
-                groups.insert(std::make_pair(std::string(file->symbols[i]->module.ToAscii()), node));
-            }
-            else
-            {
-                node = iterator->second;
+              node = AddSymbol(node, file, parent);
+              iterator = groups.insert(std::make_pair(parent, node)).first;
             }
 
+            parent = parent->parent;
+          }
+
+          iterator = groups.find(file->symbols[i]->parent);
+          node = iterator->second;
         }
 
-        AddSymbol(node, file, file->symbols[i]);
-
+        stdext::hash_map<Symbol *, wxTreeItemId>::const_iterator iterator;
+        iterator = groups.find(file->symbols[i]);
+        if (iterator == groups.end())
+        {
+          node = AddSymbol(node, file, file->symbols[i]);
+          groups.insert(std::make_pair(file->symbols[i], node));
+        }
     }
 
 }
 
-void ProjectExplorerWindow::AddSymbol(wxTreeItemId parent, Project::File* file, Symbol* symbol)
+wxTreeItemId ProjectExplorerWindow::AddSymbol(wxTreeItemId parent, Project::File* file, Symbol* symbol)
 {
 
     ItemData* data = new ItemData;
@@ -492,15 +498,28 @@ void ProjectExplorerWindow::AddSymbol(wxTreeItemId parent, Project::File* file, 
     data->symbol    = symbol;
     data->isFile    = true;
 
-    wxString fullName = symbol->name + " ()";
+    wxString fullName = symbol->name;
 
-    if (!symbol->module.IsEmpty())
+    //if (symbol->parent != nullptr)
+    //{
+    //  fullName += " - " + symbol->GetModuleName();
+    //}
+
+    int image = 0;
+    if (symbol->type == SymbolType::Function)
     {
-        fullName += " - " + symbol->module;
+      image = Image_Function;
+      fullName += "()";
+    }
+    if (symbol->type == SymbolType::Module)
+    {
+      image = Image_Module;
     }
 
-    wxTreeItemId node = m_tree->AppendItem(parent, fullName, Image_Function, Image_Function, data);
+    wxTreeItemId node = m_tree->AppendItem(parent, fullName, image, image, data);
     m_tree->SetItemTextColour(node, m_itemColor);
+
+    return node;
 }
 
 void ProjectExplorerWindow::OnTreeItemExpanding(wxTreeEvent& event)
@@ -850,6 +869,7 @@ void ProjectExplorerWindow::OnFilterButton(wxCommandEvent& event)
 
 void ProjectExplorerWindow::UpdateFile(Project::File* file)
 {
+    int scroll_pos = m_tree->GetScrollPos(wxVERTICAL);
     m_tree->Freeze();
 
     wxArrayTreeItemIds selectedItems;
@@ -894,16 +914,10 @@ void ProjectExplorerWindow::UpdateFile(Project::File* file)
     }
 
     RebuildForFile(node, file);
-    //SortTree(m_tree->GetRootItem());
-    if (isSelected)
-    {
-      m_tree->SelectItem(FindFile(m_tree->GetRootItem(), file));
 
-      //Deselect the other node
-      if (selectedItems.size() == 1)
-        m_tree->SelectItem(selectedItems[0], false);
-    }
+    SortTree(m_tree->GetRootItem());
 
+    m_tree->SetScrollPos(wxVERTICAL, scroll_pos);
     m_tree->Thaw();
 }
 

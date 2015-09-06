@@ -728,6 +728,7 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
         return;
     }
 
+    m_autoCompleteManager->ParsePrefix(prefix, file, GetCurrentLine());
     m_autoCompleteManager->GetMatchingItems(newToken, prefix, member, items);
 
     if (!AutoCompActive() || m_autoCompleteItems != items)

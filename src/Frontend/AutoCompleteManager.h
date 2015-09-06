@@ -64,13 +64,15 @@ public:
      */
     void GetMatchingItems(const wxString& token, const wxString& prefix, bool member, wxString& items) const;
 
+    void ParsePrefix(wxString& prefix, const Project::File *file, int current_line) const;
+
 private:
 
     struct Entry
     {
 
         Entry();
-        Entry(const wxString& name, Type type, const wxString& scope = "");
+        Entry(const wxString& name, Type type, const Project::File *file, Symbol *symbol);
 
         bool operator<(const Entry& entry) const;
 
@@ -79,6 +81,8 @@ private:
         Type        type;
 
         wxString    scope;
+        const Project::File *file;
+        Symbol *symbol;
 
     };
 
@@ -90,7 +94,8 @@ private:
 private:
 
     std::vector<Entry>  m_entries;
-
+    std::vector<Entry>  m_prefixModules;
+    std::vector<Entry>  m_prefixNames;
 };
 
 #endif

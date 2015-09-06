@@ -4593,6 +4593,7 @@ MainFrame::OpenFile* MainFrame::OpenProjectFile(Project::File* file)
     openFile->edit->SetAutoCompleteManager( &m_autoCompleteManager );
     openFile->edit->Create(m_notebook);
     openFile->edit->SetDropTarget( new CodeEditDropTarget(openFile->edit, this) );
+    openFile->edit->file = file;
     
     wxString fileName = openFile->file->fileName.GetFullPath();
 

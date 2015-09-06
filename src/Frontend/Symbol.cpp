@@ -27,9 +27,70 @@ Symbol::Symbol()
     line = 0;
 }
 
-Symbol::Symbol(const wxString& _module, const wxString& _name, unsigned int _line)
+Symbol::Symbol(Symbol *_parent, const wxString& _name, unsigned int _line, SymbolType _type)
+  :requiredModule(wxString())
 {
-    module = _module;
-    name   = _name;
-    line   = _line;
+  parent = _parent;
+  name   = _name;
+  line   = _line;
+  type   = _type;
+}
+
+bool Symbol::operator<(const Symbol& symbol) const
+{
+  return name.Cmp(symbol.name) < 0;
+}
+
+wxString Symbol::GetScope(int level)
+{
+  if (parent)
+  {
+    wxString str = parent->GetScope(level + 1);
+    if (level == 0)
+      return str;
+    else if (level == 1)
+      return str + name;
+    else
+      return str + name + ".";
+  }
+  else
+  {
+    if (level == 0)
+      return "";
+    else if (level > 1)
+      return name + ".";
+    else
+      return name;
+  }
+
+  return "";
+}
+
+
+wxString Symbol::GetModuleName()
+{
+  if (parent)
+    return parent->GetModuleName() + "." + name;
+  else
+    return name;
+}
+
+wxString Symbol::GetParentsName()
+{
+  if (parent)
+    return parent->name;
+  else
+    return wxString();
+}
+
+Symbol *Symbol::GetCurrentModule()
+{
+  if (type == SymbolType::Module && parent == nullptr)
+    return this;
+  else if (parent)
+  {
+    return parent->GetCurrentModule();
+  }
+
+  return nullptr;
 }
