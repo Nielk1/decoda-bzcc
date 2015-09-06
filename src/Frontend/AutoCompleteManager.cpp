@@ -24,6 +24,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "Symbol.h"
 
 #include <algorithm>
+#include <wx/tokenzr.h>
 
 AutoCompleteManager::Entry::Entry()
 {
@@ -87,80 +88,103 @@ void AutoCompleteManager::BuildFromFile(const Project::File* file)
 
 }
 
-void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *file, int current_line) const
+void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes) const
 {
-  const Entry *closest_entry = nullptr;
-  unsigned closest_length = UINT_MAX;
+  wxStringTokenizer tokenizer(prefix, wxT("."));
 
-  for (unsigned int i = 0; i < m_entries.size(); ++i)
+  wxVector<wxString> tokens;
+  while (tokenizer.HasMoreTokens())
   {
-    Entry const &entry = m_entries[i];
-    if (entry.file == file && entry.type == Type_Function)
+    wxString token = tokenizer.GetNextToken();
+
+    const Entry *closest_entry = nullptr;
+    unsigned closest_length = UINT_MAX;
+
+    for (unsigned int i = 0; i < m_entries.size(); ++i)
     {
-      int line_difference = current_line - (int)entry.symbol->line;
-      if (line_difference > 0 && line_difference < closest_length)
+      Entry const &entry = m_entries[i];
+      if (entry.file == file && entry.type == Type_Function)
       {
-        closest_length = line_difference;
-        closest_entry = &entry;
+        int line_difference = current_line - (int)entry.symbol->line;
+        if (line_difference > 0 && line_difference < closest_length)
+        {
+          closest_length = line_difference;
+          closest_entry = &entry;
+        }
       }
     }
+
+    Symbol *module = nullptr;
+    if (closest_entry != nullptr)
+      module = closest_entry->symbol->GetCurrentModule();
+
+    for (const Entry &entry : m_prefixNames)
+    {
+      if (token == entry.name)
+      {
+        wxString replacement;
+        if (module != nullptr)
+        {
+          for (const Entry &module_entry : m_prefixModules)
+          {
+            //If the module's parent matches the matched name's symbol, we can start searching for a replacement
+            if (module_entry.symbol->parent == entry.symbol && module_entry.symbol->requiredModule == module->name)
+            {
+              replacement = module_entry.name;
+              break;
+            }
+          }
+        }
+
+        //If the string is empty, either we have no module or the module search failed. In either case, go with the default.
+        if (replacement.IsEmpty())
+        {
+          for (const Entry &module_entry : m_prefixModules)
+          {
+            //If the module's parent matches the matched name's symbol, and the required module is the matched name, it is the deault
+            if (module_entry.symbol->parent == entry.symbol && module_entry.symbol->requiredModule == entry.name)
+            {
+              replacement = module_entry.name;
+              break;
+            }
+          }
+        }
+
+        if (replacement.IsEmpty() == false)
+        {
+          if (replacement == "__FILENAME__")
+            replacement = file->fileName.GetName();
+          else if (replacement == "__MODULENAME__")
+          {
+            if (module)
+              replacement = module->name;
+            else
+              replacement = "nil";
+          }
+
+          token = replacement;
+        }
+      }
+    }
+
+    tokens.push_back(token);
   }
 
-  Symbol *module = nullptr;
-  if (closest_entry != nullptr)
-    module = closest_entry->symbol->GetCurrentModule();
-
-  for (const Entry &entry : m_prefixNames)
+  wxString totalString;
+  for (int i = 0; i < tokens.size(); ++i)
   {
-    if (prefix == entry.name)
+    if (i == tokens.size() - 1)
     {
-      wxString replacement;
-      if (module != nullptr)
-      {
-        for (const Entry &module_entry : m_prefixModules)
-        {
-          //If the module's parent matches the matched name's symbol, we can start searching for a replacement
-          if (module_entry.symbol->parent == entry.symbol && module_entry.symbol->requiredModule == module->name)
-          {
-            replacement = module_entry.name;
-            break;
-          }
-        }
-      }
-
-      //If the string is empty, either we have no module or the module search failed. In either case, go with the default.
-      if (replacement.IsEmpty())
-      {
-        for (const Entry &module_entry : m_prefixModules)
-        {
-          //If the module's parent matches the matched name's symbol, and the required module is the matched name, it is the deault
-          if (module_entry.symbol->parent == entry.symbol && module_entry.symbol->requiredModule == entry.name)
-          {
-            replacement = module_entry.name;
-            break;
-          }
-        }
-      }
-
-      if (replacement.IsEmpty() == false)
-      {
-        if (replacement == "__FILENAME__")
-          replacement = file->fileName.GetName();
-        else if (replacement == "__MODULENAME__")
-        {
-          if (module)
-            replacement = module->name;
-          else
-            replacement = "nil";
-        }
-        
-        prefix = replacement;
-      }
+      prefixes.push_back(tokens[i]);
+      totalString += tokens[i];
+      prefixes.push_back(totalString);
     }
+    else
+      totalString += tokens[i] + ".";
   }
 }
 
-void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxString& prefix, bool member, wxString& items) const
+void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items) const
 {
     // Autocompletion selection is case insensitive so transform everything
     // to lowercase.
@@ -178,6 +202,12 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxString
       if (m_entries[i].symbol->type == SymbolType::Module)
         continue;
 
+      if (m_entries[i].symbol->type == SymbolType::Function && !function)
+        continue;
+
+      if (m_entries[i].symbol->type == SymbolType::Variable && function)
+        continue;
+
         bool inScope = false;
 
         if (/**/true)
@@ -187,7 +217,10 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxString
             // all members if the prefix contains a member selection operator (. or :)
             if (!m_entries[i].scope.IsEmpty() && member)
             {
-              inScope = m_entries[i].scope == prefix;
+              for (wxString const &prefix : prefixes)
+              {
+                inScope = inScope || m_entries[i].scope == prefix;
+              }
             }
             else
             {

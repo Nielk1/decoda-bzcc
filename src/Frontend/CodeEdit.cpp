@@ -681,6 +681,7 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
     wxString prefix;
     wxString newToken;
     bool member = false;
+    bool function = false;
 
     if (GetLexer() == wxSTC_LEX_LUA)
     {
@@ -709,6 +710,7 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
             // Skip the ':' character.
             ++end2;
             member = true;
+            function = true;
         }
 
         int end = std::max(end1, end2);
@@ -728,8 +730,10 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
         return;
     }
 
-    m_autoCompleteManager->ParsePrefix(prefix, file, GetCurrentLine());
-    m_autoCompleteManager->GetMatchingItems(newToken, prefix, member, items);
+    wxVector<wxString> prefixes;
+
+    m_autoCompleteManager->ParsePrefix(prefix, file, GetCurrentLine(), prefixes);
+    m_autoCompleteManager->GetMatchingItems(newToken, prefixes, member, function, items);
 
     if (!AutoCompActive() || m_autoCompleteItems != items)
     {

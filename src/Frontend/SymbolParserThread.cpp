@@ -169,7 +169,14 @@ void DecodaDefRecursive(wxInputStream& input, std::vector<Symbol*>& symbols, uns
     }
     else
     {
-      lastModule = new Symbol(module, token, lineNumber);
+      SymbolType type = SymbolType::Function;
+      if (token == "__variable")
+      {
+        type = SymbolType::Variable;
+        if (!GetToken(input, token, lineNumber)) return;
+      }
+
+      lastModule = new Symbol(module, token, lineNumber, type);
       symbols.push_back(lastModule);
     }
 
@@ -280,17 +287,22 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
           unsigned int defLineNumber = lineNumber;
 
-          wxString module;
-          if (!GetToken(input, module, lineNumber)) break;
+          wxString moduleName;
+          if (!GetToken(input, moduleName, lineNumber)) break;
 
           wxString t1;
           if (!GetToken(input, t1, lineNumber)) break;
 
           if (t1 == "{")
           {
-            Symbol *sym_module = new Symbol(symStack.top(), module, lineNumber);
-            symbols.push_back(sym_module);
-            DecodaDefRecursive(input, symbols, lineNumber, sym_module);
+            Symbol *module = GetSymbol(moduleName, symbols);
+            if (module == nullptr)
+            {
+              module = new Symbol(symStack.top(), moduleName, lineNumber, SymbolType::Module);
+              symbols.push_back(module);
+            }
+
+            DecodaDefRecursive(input, symbols, lineNumber, module);
           }
         }
         else if (token == "end")

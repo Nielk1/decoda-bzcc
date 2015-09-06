@@ -37,6 +37,7 @@ enum class SymbolType
   Function,
   Type,
   Module,
+  Variable,
   Prefix
 };
 
