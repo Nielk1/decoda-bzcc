@@ -64,7 +64,7 @@ public:
      */
     void GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items) const;
 
-    void ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes) const;
+    void ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes, bool parsing_assignment = false) const;
 
 private:
 
@@ -93,9 +93,11 @@ private:
 
 private:
 
-    std::vector<Entry>  m_entries;
-    std::vector<Entry>  m_prefixModules;
-    std::vector<Entry>  m_prefixNames;
+    std::vector<Entry>    m_entries;
+    std::vector<Entry>    m_prefixModules;
+    std::vector<Entry>    m_prefixNames;
+    std::vector<Entry>    m_assignments;
+    std::vector<Symbol *> m_symbols;
 };
 
 #endif

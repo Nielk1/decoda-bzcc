@@ -645,8 +645,16 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
 
         int start = seek;
 
-        while (start > 0 && (GetIsIdentifierChar(text[start - 1]) || joiners.Find(text[start - 1]) != wxNOT_FOUND))
+        while (start > 0 && (GetIsIdentifierChar(text[start - 1]) || joiners.Find(text[start - 1]) != wxNOT_FOUND || text[start - 1] == ')'))
         {
+          if (text[start - 1] == ')')
+          {
+            while (start > 0 && text[start - 1] != '(')
+              start--;
+
+            start--;
+          }
+          else
             --start;
         }
 
@@ -654,8 +662,16 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
 
         unsigned int end = seek;
 
-        while (end + 1 < text.Length() && GetIsIdentifierChar(text[end + 1]))
+        while (end + 1 < text.Length() && (GetIsIdentifierChar(text[end + 1]) || text[end + 1] == '('))
         {
+          if (text[end + 1] == '(')
+          {
+            while (end + 1 < text.Length() && text[end + 1] != ')')
+              ++end;
+
+            ++end;
+          }
+
             ++end;
         }
 
@@ -710,12 +726,14 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
             // Skip the ':' character.
             ++end2;
             member = true;
-            function = true;
         }
 
         int end = std::max(end1, end2);
         newToken = token.Right(token.Length() - end);
         prefix = token.Left(end - 1);
+
+        if (end != 0 && token[end - 1] == ':')
+          function = true;
     }
     else
     {

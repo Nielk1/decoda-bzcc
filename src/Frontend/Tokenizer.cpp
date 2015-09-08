@@ -57,16 +57,57 @@ static void SkipWhitespace(wxInputStream& input, unsigned int& lineNumber)
         }
         else if (c == '-')
         {
-            input.GetC();
+            c = input.GetC();
             char c2 = input.Peek();
             if (c2 == '-')
             {
-                // Lua single line comment.
-                while (!input.Eof() && input.GetC() != '\n')
+              c = input.GetC();
+              char c3 = input.Peek();
+              if (c3 != '#')
+              {
+                if (c3 == '[')
                 {
+                  c = input.GetC();
+
+                  //Multi-line lua comment
+                  if (input.Peek() == '[')
+                  {
+                    c = input.GetC();
+
+                    // --[[# denoted a comment that should be parsed
+                    if (input.Peek() != '#')
+                    {
+                      while (!input.Eof())
+                      {
+                        c = input.GetC();
+                        if (c == '\n')
+                        {
+                          ++lineNumber;
+                        }
+                        if (c == ']' && input.Peek() == ']')
+                        {
+                          c = input.GetC();
+                          break;
+                        }
+                      }
+                      continue;
+                    }
+                    else
+                      c = input.GetC();
+                  }
                 }
-                ++lineNumber;
-                continue;
+                else
+                {
+                  // Lua single line comment.
+                  while (!input.Eof() && input.GetC() != '\n')
+                  {
+                  }
+                  ++lineNumber;
+                  continue;
+                }
+              }
+              else
+                c = input.GetC();
             }
         }
         else if (c == '/')

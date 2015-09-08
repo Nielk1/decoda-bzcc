@@ -34,6 +34,11 @@ Symbol::Symbol(Symbol *_parent, const wxString& _name, unsigned int _line, Symbo
   name   = _name;
   line   = _line;
   type   = _type;
+
+  if (parent)
+  {
+    parent->children.push_back(this);
+  }
 }
 
 bool Symbol::operator<(const Symbol& symbol) const

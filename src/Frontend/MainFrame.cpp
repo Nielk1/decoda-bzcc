@@ -341,6 +341,9 @@ wxString GetExecutablePath()
         return path;
     }
 }
+
+extern OutputWindow *outputWin;
+
 // & ~wxCAPTION & ~wxRESIZE_BORDER
 MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint& pos, const wxSize& size)
     : wxFrame(NULL, -1, title, pos, size, wxDEFAULT_FRAME_STYLE), m_timerIdleWakeUp(this)
@@ -368,6 +371,7 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
                                     
     // Create the output window.
     m_output = new OutputWindow(this, ID_Output);
+    outputWin = m_output;
     
     // Create the call stack window.
     m_callStack = new ListWindow(this, ID_CallStack);
@@ -6518,8 +6522,9 @@ void MainFrame::OnSymbolsParsed(SymbolParserEvent& event)
     {
         if (!event.GetIsFinalQueueItem())
         {
-            //Don't add symbol data yet.
-            return;
+          //Don't add symbol data yet.
+          file->symbolsUpdated = true;
+          return;
         }
         else
         {
@@ -6540,6 +6545,7 @@ void MainFrame::OnSymbolsParsed(SymbolParserEvent& event)
     if (file != NULL)
     {
         m_projectExplorer->UpdateFile(file);
+        file->symbolsUpdated = true;
     }
 
     m_autoCompleteManager.BuildFromProject(m_project);

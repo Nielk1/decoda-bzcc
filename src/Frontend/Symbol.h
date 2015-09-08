@@ -32,14 +32,27 @@ enum class SymbolSearch
   PrefixOnly
 };
 
-enum class SymbolType
+enum class SymbolType : int
 {
-  Function,
-  Type,
-  Module,
-  Variable,
-  Prefix
+  Function   = 0x01,
+  Type       = 0x02,
+  Module     = 0x04,
+  Variable   = 0x08,
+  Prefix     = 0x10,
+  Assignment = 0x20,
 };
+
+using T = std::underlying_type<SymbolType>::type;
+
+inline SymbolType operator | (SymbolType lhs, SymbolType rhs)
+{
+  return (SymbolType)(static_cast<T>(lhs) | static_cast<T>(rhs));
+}
+
+inline bool operator & (SymbolType lhs, SymbolType rhs)
+{
+  return (static_cast<T>(lhs) & static_cast<T>(rhs)) != 0;
+}
 
 class Symbol
 {
@@ -51,6 +64,7 @@ public:
 
     bool operator<(const Symbol& entry) const;
 
+    static const SymbolType Type_Standard = (SymbolType)((int)SymbolType::Function | (int)SymbolType::Type | (int)SymbolType::Module | (int)SymbolType::Variable);
 public:
 
   wxString GetModuleName();
@@ -59,10 +73,14 @@ public:
   wxString GetScope(int level = 0);
 
   Symbol*             parent = nullptr;
+  Symbol*             typeSymbol = nullptr;
+
+  wxVector<Symbol *>  children;
   wxString            name;
   unsigned int        line;
   SymbolType          type;
   wxString            requiredModule;
+  wxString            rhs;
 };
 
 #endif

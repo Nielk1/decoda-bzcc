@@ -456,6 +456,9 @@ void ProjectExplorerWindow::AddFile(wxTreeItemId parent, Project::File* file)
 
     for (unsigned int i = 0; i < file->symbols.size(); ++i)
     {
+      //Only add standard symbols
+      if (!(file->symbols[i]->type & Symbol::Type_Standard))
+        continue;
 
         wxTreeItemId node = fileNode;
 
@@ -915,7 +918,7 @@ void ProjectExplorerWindow::UpdateFile(Project::File* file)
 
     RebuildForFile(node, file);
 
-    SortTree(m_tree->GetRootItem());
+    //SortTree(m_tree->GetRootItem());
 
     m_tree->SetScrollPos(wxVERTICAL, scroll_pos);
     m_tree->Thaw();

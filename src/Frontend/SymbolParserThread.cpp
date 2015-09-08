@@ -25,6 +25,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "Symbol.h"
 #include "StlUtility.h"
 #include "Tokenizer.h"
+#include "OutputWindow.h"
 
 #include <wx/wfstream.h>
 #include <wx/sstream.h>
@@ -139,33 +140,99 @@ void SymbolParserThread::QueueForParsing(const wxString& code, unsigned int file
 
 }
 
-Symbol *GetSymbol(wxString name, std::vector<Symbol*>& symbols, SymbolSearch search = SymbolSearch::Standard)
+Symbol *GetSymbol(wxString name, std::vector<Symbol*>& symbols, SymbolType search = Symbol::Type_Standard, bool onlyRoot = false)
 {
   for (Symbol *symbol : symbols)
   {
     if (symbol->name == name)
     {
-      if (search == SymbolSearch::Standard && symbol->type != SymbolType::Prefix)
-        return symbol;
-      else if (search == SymbolSearch::PrefixOnly && symbol->type == SymbolType::Prefix)
-        return symbol;
+      Symbol *found = nullptr;
+
+      if (symbol->type & search)
+        found = symbol;
+
+      if (found)
+      {
+        if (onlyRoot == true && found->parent == nullptr)
+          return found;
+        else if (onlyRoot == false)
+          return found;
+      }
     }
   }
 
   return nullptr;
 }
 
-void DecodaDefRecursive(wxInputStream& input, std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module)
+struct Token
+{
+  Token(wxString const &t, int ln)
+    :token(t), lineNumber(ln)
+  {}
+
+  wxString token;
+  unsigned int lineNumber;
+};
+
+wxString PeekPrevToken(std::vector<Token> const &tokens, unsigned int &iter, unsigned int &lineNumber)
+{
+  if (iter - 1 > 0)
+  {
+    lineNumber = tokens[iter - 1].lineNumber;
+    return tokens[iter - 1].token;
+  }
+
+  return "";
+}
+
+wxString PeekNextToken(std::vector<Token> const &tokens, unsigned int &iter, unsigned int &lineNumber)
+{
+  if (iter + 1 < tokens.size())
+  {
+    lineNumber = tokens[iter + 1].lineNumber;
+    return tokens[iter + 1].token;
+  }
+
+  return "";
+}
+
+bool GetPrevToken(std::vector<Token> const &tokens, wxString &str, unsigned int &lineNumber, unsigned int &iter)
+{
+  iter -= 1;
+  if (iter > 0)
+  {
+    str = tokens[iter].token;
+    lineNumber = tokens[iter].lineNumber;
+    return true;
+  }
+
+  return false;
+}
+
+bool GetNextToken(std::vector<Token> const &tokens, wxString &str, unsigned int &lineNumber, unsigned int &iter)
+{
+  iter += 1;
+  if (iter < tokens.size())
+  {
+    str = tokens[iter].token;
+    lineNumber = tokens[iter].lineNumber;
+    return true;
+  }
+
+  return false;
+}
+
+void DecodaDefRecursive(std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module, std::vector<Token> const &tokens, unsigned int &current_token)
 {
   wxString token;
-  if (!GetToken(input, token, lineNumber)) return;
+  if (!GetNextToken(tokens, token, lineNumber, current_token)) return;
 
   Symbol *lastModule = nullptr;
   while (token != "}")
   {
     if (token == "{")
     {
-      DecodaDefRecursive(input, symbols, lineNumber, lastModule);
+      DecodaDefRecursive(symbols, lineNumber, lastModule, tokens, current_token);
     }
     else
     {
@@ -173,24 +240,53 @@ void DecodaDefRecursive(wxInputStream& input, std::vector<Symbol*>& symbols, uns
       if (token == "__variable")
       {
         type = SymbolType::Variable;
-        if (!GetToken(input, token, lineNumber)) return;
+        if (!GetNextToken(tokens, token, lineNumber, current_token)) return;
+      }
+      
+      if (type == SymbolType::Function && token == "operator")
+      {
+        wxString oper;
+        if (!GetNextToken(tokens, oper, lineNumber, current_token)) return;
+
+        while (oper == "+" || oper == "-" || oper == "*" || oper == "/" || 
+               oper == "=" || oper == "<" || oper == ">" || oper == "!" || 
+               oper == "(" || oper == ")")
+        {
+          token += oper;
+          if (!GetNextToken(tokens, oper, lineNumber, current_token)) return;
+        }
+
+        current_token--;
       }
 
+      wxString typeName;
+      if (!GetNextToken(tokens, typeName, lineNumber, current_token)) return;
+
       lastModule = new Symbol(module, token, lineNumber, type);
+
+      Symbol *typeSymbol = GetSymbol(typeName, symbols);
+      if (typeSymbol == nullptr)
+      {
+        typeSymbol = new Symbol(nullptr, typeName, lineNumber, SymbolType::Type);
+        symbols.push_back(typeSymbol);
+      }
+
+      lastModule->typeSymbol = typeSymbol;
+
       symbols.push_back(lastModule);
     }
 
-    if (!GetToken(input, token, lineNumber)) return;
+    if (!GetNextToken(tokens, token, lineNumber, current_token)) return;
   }
 }
 
-void DecodaPrefixRecursive(wxInputStream& input, std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module)
+void DecodaPrefixRecursive(std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module, std::vector<Token> const &tokens, unsigned int &current_token)
 {
   wxString t1;
-  if (!GetToken(input, t1, lineNumber)) return;
+  if (!GetNextToken(tokens, t1, lineNumber, current_token)) return;
 
   wxString t2;
-  if (!GetToken(input, t2, lineNumber)) return;
+  if (!GetNextToken(tokens, t2, lineNumber, current_token)) return;
 
   while (t1 != "}" && t2 != "}")
   {
@@ -198,10 +294,12 @@ void DecodaPrefixRecursive(wxInputStream& input, std::vector<Symbol*>& symbols, 
     sym->requiredModule = t1;
     symbols.push_back(sym);
 
-    if (!GetToken(input, t1, lineNumber)) return;
-    if (!GetToken(input, t2, lineNumber)) return;
+    if (!GetNextToken(tokens, t1, lineNumber, current_token)) return;
+    if (!GetNextToken(tokens, t2, lineNumber, current_token)) return;
   }
 }
+
+OutputWindow *outputWin = nullptr;
 
 void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symbol*>& symbols)
 {
@@ -215,140 +313,364 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
     unsigned int lineNumber = 1;
 
+    Symbol *return_symbol = nullptr;
+
     wxStack<Symbol *> symStack;
     symStack.push(nullptr);
 
+    std::vector<Token> tokens;
     while (GetToken(input, token, lineNumber))
     {
-        if (token == "function")
+      tokens.emplace_back(token, lineNumber);
+    }
+
+    for (unsigned current_token = 0; current_token < tokens.size(); ++current_token)
+    {
+      token = tokens[current_token].token;
+      lineNumber = tokens[current_token].lineNumber;
+
+      if (token == "function")
+      {
+        unsigned int defLineNumber = lineNumber;
+        Symbol *function = nullptr;
+
+        // Lua functions can have these forms:
+        //    function (...)
+        //    function Name (...)
+        //    function Module.Function (...)
+        //    function Class:Method (...)
+
+        wxString t1;
+        if (!GetNextToken(tokens, t1, lineNumber, current_token)) break;
+
+        if (t1 == "(")
         {
-
-            unsigned int defLineNumber = lineNumber;
-            Symbol *function = nullptr;
-
-            // Lua functions can have these forms:
-            //    function (...)
-            //    function Name (...)
-            //    function Module.Function (...)
-            //    function Class:Method (...)
-
-            wxString t1;
-            if (!GetToken(input, t1, lineNumber)) break;
-
-            if (t1 == "(")
-            {
-                // The form function (...) which doesn't have a name. If we
-                // were being really clever we could check to see what is being
-                // done with this value, but we're not.
-                continue;
-            }
-
-            wxString t2;
-            
-            if (!GetToken(input, t2, lineNumber)) break;
-
-            if (t2 == "(")
-            {
-              function = new Symbol(symStack.top(), t1, defLineNumber);
-                // The form function Name (...).
-              symbols.push_back(function);
-            }
-            else
-            {
-                
-                wxString t3;
-                if (!GetToken(input, t3, lineNumber)) break;
-
-                if (t2 == "." || t2 == ":")
-                {
-                  Symbol *module = GetSymbol(t1, symbols);
-                  if (module == nullptr)
-                  {
-                    module = new Symbol(symStack.top(), t1, defLineNumber, SymbolType::Module);
-                    symbols.push_back(module);
-                  }
-
-                  function = new Symbol(module, t3, defLineNumber);
-
-                  symbols.push_back(function);
-                }
-
-            }
-
-
-            if (function)
-              symStack.push(function);
-
+          // The form function (...) which doesn't have a name. If we
+          // were being really clever we could check to see what is being
+          // done with this value, but we're not.
+          continue;
         }
-        else if (token == "decodadef")
+
+        wxString t2;
+
+        if (!GetNextToken(tokens, t2, lineNumber, current_token)) break;
+
+        if (t2 == "(")
         {
-          //A decodadef will be in the form:
-          //decodadef name { Definitions }
+          function = new Symbol(symStack.top(), t1, defLineNumber);
 
-          unsigned int defLineNumber = lineNumber;
-
-          wxString moduleName;
-          if (!GetToken(input, moduleName, lineNumber)) break;
-
-          wxString t1;
-          if (!GetToken(input, t1, lineNumber)) break;
-
-          if (t1 == "{")
+          if (return_symbol)
           {
-            Symbol *module = GetSymbol(moduleName, symbols);
+            function->typeSymbol = return_symbol;
+            return_symbol = nullptr;
+          }
+
+          // The form function Name (...).
+          symbols.push_back(function);
+        }
+        else
+        {
+
+          wxString t3;
+          if (!GetNextToken(tokens, t3, lineNumber, current_token)) break;
+
+          if (t2 == "." || t2 == ":")
+          {
+            Symbol *module = GetSymbol(t1, symbols);
             if (module == nullptr)
             {
-              module = new Symbol(symStack.top(), moduleName, lineNumber, SymbolType::Module);
+              module = new Symbol(symStack.top(), t1, defLineNumber, SymbolType::Module);
               symbols.push_back(module);
             }
 
-            DecodaDefRecursive(input, symbols, lineNumber, module);
+            function = new Symbol(module, t3, defLineNumber);
+            if (return_symbol)
+            {
+              function->typeSymbol = return_symbol;
+              return_symbol = nullptr;
+            }
+
+            symbols.push_back(function);
           }
+
         }
-        else if (token == "end")
+
+
+        if (function)
+          symStack.push(function);
+
+      }
+      else if (token == "decodadef")
+      {
+        //A decodadef will be in the form:
+        //decodadef name { Definitions }
+
+        unsigned int defLineNumber = lineNumber;
+
+        wxString moduleName;
+        if (!GetNextToken(tokens, moduleName, lineNumber, current_token)) break;
+
+        wxString t1;
+        if (!GetNextToken(tokens, t1, lineNumber, current_token)) break;
+
+        if (t1 == "{")
         {
-          if (symStack.size() > 1)
-            symStack.pop();
-        }
-        else if (token == "decodaprefix")
-        {
-          //A decodaprefix will be in the form:
-          //decodaprefix Module name
+          //outputWin->OutputMessage("Processing " + moduleName);
 
-          /*
-          decodaprefix this __FILENAME__
-          decodaprefix this { Weapon nil }
-          
-          */
-
-          unsigned int defLineNumber = lineNumber;
-
-          wxString moduleName;
-          if (!GetToken(input, moduleName, lineNumber)) break;
-
-
-          Symbol *module = GetSymbol(moduleName, symbols, SymbolSearch::PrefixOnly);
+          Symbol *module = GetSymbol(moduleName, symbols);
           if (module == nullptr)
           {
-            module = new Symbol(nullptr, moduleName, defLineNumber, SymbolType::Prefix);
+            module = new Symbol(symStack.top(), moduleName, lineNumber, SymbolType::Type);
             symbols.push_back(module);
           }
 
-          wxString t1;
-          if (!GetToken(input, t1, lineNumber)) break;
+          DecodaDefRecursive(symbols, lineNumber, module, tokens, current_token);
+        }
+      }
+      else if (token == "end")
+      {
+        if (symStack.size() > 1)
+          symStack.pop();
+      }
+      else if (token == "decodaprefix")
+      {
+        //A decodaprefix will be in the form:
+        //decodaprefix Module name
 
-          //List of 
-          if (t1 == "{")
+        /*
+        decodaprefix this __FILENAME__
+        decodaprefix this { Weapon nil }
+
+        */
+
+        unsigned int defLineNumber = lineNumber;
+
+        wxString moduleName;
+        if (!GetNextToken(tokens, moduleName, lineNumber, current_token)) break;
+
+
+        Symbol *module = GetSymbol(moduleName, symbols, SymbolType::Prefix);
+        if (module == nullptr)
+        {
+          module = new Symbol(nullptr, moduleName, defLineNumber, SymbolType::Prefix);
+          symbols.push_back(module);
+        }
+
+        wxString t1;
+        if (!GetNextToken(tokens, t1, lineNumber, current_token)) break;
+
+        //List of 
+        if (t1 == "{")
+        {
+          DecodaPrefixRecursive(symbols, lineNumber, module, tokens, current_token);
+        }
+        else
+        {
+          Symbol *sym_prefix = new Symbol(module, t1, defLineNumber, SymbolType::Prefix);
+          sym_prefix->requiredModule = moduleName;
+          symbols.push_back(sym_prefix);
+        }
+      }
+      else if (token == "decodareturn")
+      {
+        //A decodaprefix will be in the form:
+        //decodareturn Module
+
+        unsigned int defLineNumber = lineNumber;
+
+        wxString moduleName;
+        if (!GetNextToken(tokens, moduleName, lineNumber, current_token)) break;
+
+        Symbol *module = GetSymbol(moduleName, symbols);
+        if (module == nullptr)
+        {
+          module = new Symbol(symStack.top(), moduleName, lineNumber, SymbolType::Type);
+          symbols.push_back(module);
+        }
+
+        return_symbol = module;
+      }
+      else if (token == "=")
+      {
+        unsigned int defLineNumber = lineNumber;
+
+        //If we find an equal sign, we need to find the left and right hand side
+        unsigned start = current_token;
+
+        //First handle +=, -=, *=, /=
+        wxString prev = PeekPrevToken(tokens, current_token, lineNumber);
+        if (prev == "+" || prev == "-" || prev == "*" || prev == "/")
+          GetPrevToken(tokens, prev, lineNumber, current_token);
+
+        wxStack<wxString> lhs_stack;
+        wxString lhs;
+        if (!GetPrevToken(tokens, lhs, lineNumber, current_token)) break;
+        
+        lhs_stack.push(lhs);
+
+        int currentLine = lineNumber;
+
+        prev = PeekPrevToken(tokens, current_token, lineNumber);
+        while ((prev == "." || prev == ":" || prev == ")" || prev == "]") && lineNumber == currentLine)
+        {
+          if (prev == "." || prev == ":")
           {
-            DecodaPrefixRecursive(input, symbols, lineNumber, module);
+            GetPrevToken(tokens, prev, lineNumber, current_token);
+            lhs_stack.push(prev);
+
+            wxString part;
+            if (!GetPrevToken(tokens, part, lineNumber, current_token)) return;
+            if (part == ")" || part == "]")
+            {
+              current_token++;
+              prev = part;
+              continue;
+            }
+
+            lhs_stack.push(part);
           }
-          else
+          else if (prev == ")" || prev == "]")
           {
-            Symbol *sym_prefix = new Symbol(module, t1, defLineNumber, SymbolType::Prefix);
-            sym_prefix->requiredModule = moduleName;
-            symbols.push_back(sym_prefix);
+            GetPrevToken(tokens, prev, lineNumber, current_token);
+            lhs_stack.push(prev);
+
+            wxString open;
+            wxString close;
+
+            if (prev == ")")
+            {
+              open = "(";
+              close = ")";
+            }
+            else if (prev == "]")
+            {
+              open = "[";
+              close = "]";
+            }
+
+
+            int parenStack = 0;
+            wxString part;
+            if (!GetPrevToken(tokens, part, lineNumber, current_token)) return;
+            for (;;)
+            {
+              if (part == close)
+                parenStack++;
+              if (part == open)
+              {
+                if (parenStack == 0)
+                  break;
+                parenStack--;
+              }
+
+              lhs_stack.push(part);
+              if (!GetPrevToken(tokens, part, lineNumber, current_token)) return;
+            }
+            lhs_stack.push(part);
+
+            if (!GetPrevToken(tokens, part, lineNumber, current_token)) return;
+            lhs_stack.push(part);
+          }
+
+          prev = PeekPrevToken(tokens, current_token, lineNumber);
+        }
+
+        //Parse rhs
+        current_token = start;
+
+        //First handle +=, -=, *=, /=
+        wxString next = PeekNextToken(tokens, current_token, lineNumber);
+        bool valid = true;
+        for (int i = 0; i < next.size(); ++i)
+        {
+          if (IsSymbol(next[i]) || IsSpace(next[i]))
+          {
+            valid = false;
+            break;
           }
         }
-    }
 
+        wxString rhs;
+
+        if (valid)
+        {
+          GetNextToken(tokens, next, lineNumber, current_token);
+          rhs.Append(next);
+
+          next = PeekNextToken(tokens, current_token, lineNumber);
+          while ((next == "." || next == ":" || next == "(" || next == "[") && lineNumber == currentLine)
+          {
+            if (next == "." || next == ":")
+            {
+              GetNextToken(tokens, next, lineNumber, current_token);
+              rhs.Append(next);
+
+              wxString part;
+              if (!GetNextToken(tokens, part, lineNumber, current_token)) return;
+              rhs.Append(part);
+            }
+            else if (next == "(" || next == "[")
+            {
+              GetNextToken(tokens, next, lineNumber, current_token);
+              rhs.Append(next);
+
+              wxString open;
+              wxString close;
+
+              if (next == "(")
+              {
+                open = "(";
+                close = ")";
+              }
+              else if (next == "[")
+              {
+                open = "[";
+                close = "]";
+              }
+
+
+              int parenStack = 0;
+              wxString part;
+              if (!GetNextToken(tokens, part, lineNumber, current_token)) return;
+              for (;;)
+              {
+                if (part == open)
+                  parenStack++;
+                if (part == close)
+                {
+                  if (parenStack == 0)
+                    break;
+                  parenStack--;
+                }
+
+                rhs.Append(part);
+                if (!GetNextToken(tokens, part, lineNumber, current_token)) return;
+              }
+              rhs.Append(part);
+            }
+
+            next = PeekNextToken(tokens, current_token, lineNumber);
+          }
+        }
+
+        //Build up the strings with the stacks
+        if (lhs_stack.size() > 0 && rhs.size() > 0)
+        {
+          lhs.Empty();
+
+          while (!lhs_stack.empty())
+          {
+            lhs.Append(lhs_stack.top());
+            lhs_stack.pop();
+          }
+
+          Symbol *assignment = new Symbol(symStack.top(), lhs, defLineNumber, SymbolType::Assignment);
+          assignment->rhs = rhs;
+          symbols.push_back(assignment);
+        }
+
+        //Reset token
+        current_token = start;
+      }
+    }
 }

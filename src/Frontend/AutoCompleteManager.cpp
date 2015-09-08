@@ -25,6 +25,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <algorithm>
 #include <wx/tokenzr.h>
+#include "Tokenizer.h"
 
 AutoCompleteManager::Entry::Entry()
 {
@@ -44,15 +45,13 @@ bool AutoCompleteManager::Entry::operator<(const Entry& entry) const
 
 void AutoCompleteManager::BuildFromProject(const Project* project)
 {
-    
-    m_entries.clear();
-    m_prefixModules.clear();
-    m_prefixNames.clear();
-
+    wxVector<Project::File *> updatedFiles;
 
     for (unsigned int fileIndex = 0; fileIndex < project->GetNumFiles(); ++fileIndex)
     {
-        BuildFromFile(project->GetFile(fileIndex));
+      Project::File *file = (Project::File *)project->GetFile(fileIndex);
+      if (file->symbolsUpdated)
+        updatedFiles.push_back(file);
     }
     for (unsigned int directoryIndex = 0; directoryIndex < project->GetNumDirectories(); ++directoryIndex)
     {
@@ -60,8 +59,78 @@ void AutoCompleteManager::BuildFromProject(const Project* project)
 
       for (unsigned int fileIndex = 0; fileIndex < directory->files.size(); ++fileIndex)
       {
-        BuildFromFile(directory->files[fileIndex]);
+        Project::File *file = (Project::File *)directory->files[fileIndex];
+        if (file->symbolsUpdated)
+          updatedFiles.push_back(file);
       }
+    }
+
+    wxVector<Symbol *> removedSymbols;
+
+    auto ClearFromEntries = [&removedSymbols](std::vector<Entry> &entries, const Project::File *file){
+      for (int i = 0; i < entries.size();)
+      {
+        if (entries[i].file == file)
+        {
+          removedSymbols.push_back(entries[i].symbol);
+          std::swap(entries[i], entries[entries.size() - 1]);
+          entries.pop_back();
+        }
+        else
+          ++i;
+      }
+    };
+
+    //Clear entries
+    for (const Project::File *file : updatedFiles)
+    {
+      ClearFromEntries(m_entries, file);
+      ClearFromEntries(m_prefixModules, file);
+      ClearFromEntries(m_prefixNames, file);
+      ClearFromEntries(m_assignments, file);
+    }
+
+    //Remove symbols from the deleted entries
+    for (int i = 0; i < m_symbols.size();)
+    {
+      bool deleted = false;
+      for (Symbol *s : removedSymbols)
+      {
+        if (m_symbols[i] == s)
+        {
+          delete s;
+          std::swap(m_symbols[i], m_symbols[m_symbols.size() - 1]);
+          m_symbols.pop_back();
+          deleted = true;
+
+          if (i == m_symbols.size())
+            break;
+        }
+      }
+      if (!deleted)
+        ++i;
+    }
+
+    //Rebuild symbols
+    for (const Project::File *file : updatedFiles)
+    {
+      BuildFromFile(file);
+    }
+
+    for (Entry &entry : m_assignments)
+    {
+      if (entry.file->symbolsUpdated)
+      {
+        wxVector<wxString> prefixes;
+        ParsePrefix(entry.symbol->rhs, entry.file, entry.symbol->line, prefixes, true);
+        if (prefixes.size() >= 1)
+          entry.symbol->rhs = prefixes[1];
+      }
+    }
+
+    for (Project::File *file : updatedFiles)
+    {
+      file->symbolsUpdated = false;
     }
 
     // Sort the autocompletions (necessary for binary search).
@@ -69,12 +138,63 @@ void AutoCompleteManager::BuildFromProject(const Project* project)
 
 }
 
+Symbol *GetSymbol(wxString name, std::vector<Symbol*>& symbols, SymbolType search = Symbol::Type_Standard, bool onlyRoot = false);
+
+Symbol *AddSymbolRecursive(Symbol *symbol, std::vector<Symbol *> &symbols)
+{
+  if (symbol == nullptr)
+    return nullptr;
+
+  SymbolType search = Symbol::Type_Standard;
+  if ((symbol->type & search) == false)
+  {
+    search = symbol->type;
+  }
+
+  Symbol *parent = symbol->parent;
+  if (parent)
+  {
+    parent = AddSymbolRecursive(parent, symbols);
+    Symbol *new_symbol = new Symbol(parent, symbol->name, symbol->line, symbol->type);
+    symbols.push_back(new_symbol);
+
+    new_symbol->requiredModule = symbol->requiredModule;
+    new_symbol->rhs = symbol->rhs;
+    new_symbol->typeSymbol = AddSymbolRecursive(symbol->typeSymbol, symbols);
+
+    symbol = new_symbol;
+  }
+  else
+  {
+    Symbol *foundSymbol = GetSymbol(symbol->name, symbols, search, true);
+    if (foundSymbol == nullptr)
+    {
+      foundSymbol = new Symbol(parent, symbol->name, symbol->line, symbol->type);
+      symbols.push_back(foundSymbol);
+
+      foundSymbol->requiredModule = symbol->requiredModule;
+      foundSymbol->rhs = symbol->rhs;
+      foundSymbol->typeSymbol = AddSymbolRecursive(symbol->typeSymbol, symbols);
+    }
+
+    symbol = foundSymbol;
+  }
+
+  return symbol;
+}
+
 void AutoCompleteManager::BuildFromFile(const Project::File* file)
 {
 
     for (unsigned int symbolIndex = 0; symbolIndex < file->symbols.size(); ++symbolIndex)
     {
-        Symbol* symbol = file->symbols[symbolIndex];
+      if (file->symbols[symbolIndex]->type == SymbolType::Assignment)
+      {
+        m_assignments.push_back(Entry(file->symbols[symbolIndex]->name, Type_Function, file, file->symbols[symbolIndex]));
+        continue;
+      }
+
+        Symbol* symbol = AddSymbolRecursive(file->symbols[symbolIndex], m_symbols);
         if (symbol->type == SymbolType::Prefix)
         {
           if (symbol->requiredModule.IsEmpty() == false)
@@ -88,14 +208,79 @@ void AutoCompleteManager::BuildFromFile(const Project::File* file)
 
 }
 
-void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes) const
+wxString GetNextToken(wxString& string, unsigned int &str_pos)
 {
-  wxStringTokenizer tokenizer(prefix, wxT("."));
+  wxString token;
+
+  auto AddToToken = [&string, &token, &str_pos]()
+  {
+    if (str_pos < string.length())
+    {
+      token.Append(string[str_pos]);
+      ++str_pos;
+    }
+  };
+
+  for (; str_pos < string.length();)
+  {
+    if (string[str_pos] == '.' || string[str_pos] == ':')
+    {
+      str_pos++;
+      break;
+    }
+    else if (string[str_pos] == '(' || string[str_pos] == '[')
+    {
+      WCHAR open;
+      WCHAR close;
+
+      if (string[str_pos] == '(')
+      {
+        open = '(';
+        close = ')';
+      }
+      else if (string[str_pos] == '[')
+      {
+        open = '[';
+        close = ']';
+      }
+
+      AddToToken();
+
+      int parenStack = 0;
+      for (; str_pos < string.length();)
+      {
+        if (string[str_pos] == close)
+        {
+          if (parenStack == 0)
+            break;
+          parenStack--;
+        }
+
+        if (string[str_pos] == open)
+          parenStack++;
+
+        AddToToken();
+      }
+    }
+
+    AddToToken();
+  }
+
+  return token;
+}
+
+void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes, bool parsing_assignment) const
+{
+  unsigned int str_pos = 0;
+  //wxStringTokenizer tokenizer(prefix, wxT(".:"));
 
   wxVector<wxString> tokens;
-  while (tokenizer.HasMoreTokens())
+  for (;;)
   {
-    wxString token = tokenizer.GetNextToken();
+    wxString token = GetNextToken(prefix, str_pos);
+
+    if (token.empty())
+      break;
 
     const Entry *closest_entry = nullptr;
     unsigned closest_length = UINT_MAX;
@@ -170,6 +355,193 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
     tokens.push_back(token);
   }
 
+  if (!parsing_assignment)
+  {
+
+    //Try to decode entire symbol if possible
+    wxString tempString;
+    for (int i = 0; i < tokens.size(); ++i)
+    {
+      if (i == tokens.size() - 1)
+      {
+        tempString += tokens[i];
+      }
+      else
+        tempString += tokens[i] + ".";
+    }
+
+    const Entry *closest_entry = nullptr;
+    unsigned closest_length = UINT_MAX;
+    for (Entry const &entry : m_assignments)
+    {
+      if (entry.file == file && entry.name == tempString)
+      {
+        int line_difference = current_line - (int)entry.symbol->line;
+        if (line_difference >= 0 && line_difference < closest_length)
+        {
+          closest_length = line_difference;
+          closest_entry = &entry;
+        }
+      }
+    }
+
+    if (closest_entry != nullptr)
+    {
+      wxString newToken = closest_entry->symbol->rhs;
+
+      int end1 = newToken.Find('.', true);
+      if (end1 == wxNOT_FOUND)
+        end1 = 0;
+      else
+        // Skip the '.' character.
+        ++end1;
+
+      int end2 = newToken.Find(':', true);
+      if (end2 == wxNOT_FOUND)
+        end2 = 0;
+      else
+        // Skip the ':' character.
+        ++end2;
+
+      int end = std::max(end1, end2);
+      prefixes.push_back(newToken.Right(newToken.Length() - end));
+      prefixes.push_back(newToken);
+      return;
+    }
+
+    //No exact match, try to help with a substring
+    int end1 = tempString.Find('.', false);
+    if (end1 == wxNOT_FOUND)
+      end1 = 0;
+
+    int end2 = tempString.Find(':', false);
+    if (end2 == wxNOT_FOUND)
+      end2 = 0;
+
+    closest_entry = nullptr;
+    closest_length = UINT_MAX;
+    unsigned int closest_name_length = std::max(end1, end2);
+
+    for (Entry const &entry : m_assignments)
+    {
+      if (entry.file == file)
+      {
+        if (tempString.StartsWith(entry.name) && entry.name.length() >= closest_name_length)
+        {
+          int line_difference = current_line - (int)entry.symbol->line;
+          if (line_difference >= 0 && line_difference < closest_length)
+          {
+            closest_length = line_difference;
+            closest_entry = &entry;
+            closest_name_length = entry.name.length();
+          }
+        }
+      }
+    }
+
+    //We found a substring, replace it and re-tokenize
+    if (closest_entry)
+    {
+      wxString right = tempString.Right(tempString.length() - closest_name_length);
+      wxString newToken = closest_entry->symbol->rhs;
+
+      int end1 = newToken.Find('.', true);
+      if (end1 == wxNOT_FOUND)
+        end1 = 0;
+      else
+        // Skip the '.' character.
+        ++end1;
+
+      int end2 = newToken.Find(':', true);
+      if (end2 == wxNOT_FOUND)
+        end2 = 0;
+      else
+        // Skip the ':' character.
+        ++end2;
+
+      int end = std::max(end1, end2);
+
+      tempString = newToken.Right(newToken.Length() - end) + right;
+      str_pos = 0;
+      tokens.clear();
+      for (;;)
+      {
+        wxString token = GetNextToken(tempString, str_pos);
+        if (token.empty())
+          break;
+
+        tokens.push_back(token);
+      }
+    }
+  }
+
+  //Try to decode token using types
+  Symbol *currentToken = nullptr;
+  if (tokens.size() >= 1)
+  {
+    for (const Entry &entry : m_entries)
+    {
+      if (entry.symbol->parent == nullptr && entry.name == tokens[0])
+      {
+        currentToken = entry.symbol;
+        break;
+      }
+    }
+
+    //Go through the symbols to find the true type
+    for (int i = 1; i < tokens.size(); ++i)
+    {
+      if (currentToken != nullptr)
+      {
+        Symbol *foundSymbol = nullptr;
+        wxString token = tokens[i];
+        
+        //Strip function call
+        if (token[token.size() - 1] == ')')
+        {
+          int paren_loc = -1;
+          int paren_stack = 0;
+          for (int i = token.size() - 2; i >= 0; --i)
+          {
+            if (token[i] == '(' && paren_stack == 0)
+            {
+              paren_loc = i;
+              break;
+            }
+            if (token[i] == ')')
+              paren_stack--;
+            if (token[i] == '(')
+              paren_stack++;
+          }
+
+          if (paren_loc != -1)
+            token.RemoveLast(token.size() - paren_loc);
+        }
+
+        for (Symbol *symbol : currentToken->children)
+        {
+          if (symbol->name == token)
+          {
+            foundSymbol = symbol;
+            break;
+          }
+        }
+
+        //If we found a symbol replace it with its type
+        if (foundSymbol && foundSymbol->typeSymbol)
+        {
+          tokens[i] = foundSymbol->typeSymbol->name;
+          foundSymbol = foundSymbol->typeSymbol;
+        }
+        else
+          foundSymbol = nullptr;
+
+        currentToken = foundSymbol;
+      }
+    }
+  }
+
+
   wxString totalString;
   for (int i = 0; i < tokens.size(); ++i)
   {
@@ -195,6 +567,7 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
     // alphabetical order.
 
     wxVector<const Entry *> matches;
+    wxVector<wxString> assign_matches;
 
     for (unsigned int i = 0; i < m_entries.size(); ++i)
     {
@@ -208,41 +581,113 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
       if (m_entries[i].symbol->type == SymbolType::Variable && function)
         continue;
 
-        bool inScope = false;
+      bool inScope = false;
 
-        if (/**/true)
-        {
-            // We've got no way of knowing the type of the variable in Lua (since
-            // variables don't have types, only values have types), so we display
-            // all members if the prefix contains a member selection operator (. or :)
-            if (!m_entries[i].scope.IsEmpty() && member)
-            {
-              for (wxString const &prefix : prefixes)
-              {
-                inScope = inScope || m_entries[i].scope == prefix;
-              }
-            }
-            else
-            {
-              inScope = m_entries[i].scope.IsEmpty() != member;
-            }
-        }
-        
-        if (inScope && m_entries[i].lowerCaseName.StartsWith(test))
-        {
-          bool canPush = true;
-          for (const Entry *entry : matches)
+      if (/**/true)
+      {
+          // We've got no way of knowing the type of the variable in Lua (since
+          // variables don't have types, only values have types), so we display
+          // all members if the prefix contains a member selection operator (. or :)
+          if (!m_entries[i].scope.IsEmpty() && member)
           {
-            if (entry->name == m_entries[i].name)
+            for (wxString const &prefix : prefixes)
             {
-              canPush = false;
-              break;
+              inScope = inScope || m_entries[i].scope == prefix;
             }
           }
-
-          if (canPush)
-            matches.push_back(&m_entries[i]);
+          else
+          {
+            inScope = m_entries[i].scope.IsEmpty() != member;
+          }
+      }
+        
+      if (inScope && m_entries[i].lowerCaseName.StartsWith(test))
+      {
+        bool canPush = true;
+        for (const Entry *entry : matches)
+        {
+          if (entry->name == m_entries[i].name)
+          {
+            canPush = false;
+            break;
+          }
         }
+
+        if (canPush)
+          matches.push_back(&m_entries[i]);
+      }
+    }
+
+    for (unsigned int i = 0; i < m_assignments.size(); ++i)
+    {
+      bool inScope = false;
+
+      if (/**/true)
+      {
+        // We've got no way of knowing the type of the variable in Lua (since
+        // variables don't have types, only values have types), so we display
+        // all members if the prefix contains a member selection operator (. or :)
+        if (!m_assignments[i].scope.IsEmpty() && member)
+        {
+          for (wxString const &prefix : prefixes)
+          {
+            inScope = inScope || m_assignments[i].scope == prefix;
+          }
+        }
+        else
+        {
+          inScope = m_assignments[i].scope.IsEmpty() != member;
+        }
+      }
+
+      if (inScope && m_assignments[i].lowerCaseName.StartsWith(test))
+      {
+        wxString const &str = m_assignments[i].name;
+        int end = str.Length() - 1;
+
+        for (int i = test.Length() - 1; i < str.Length(); ++i)
+        {
+          if (IsSymbol(str[i]))
+          {
+            end = i - 1;
+            break;
+          }
+        }
+
+        int start = 0;
+        for (int i = end; i > 0; --i)
+        {
+          if (IsSymbol(str[i]))
+          {
+            start = i;
+            break;
+          }
+        }
+
+        wxString newToken = str.SubString(start, end);
+
+        bool canPush = true;
+        for (const Entry *entry : matches)
+        {
+          if (entry->name == newToken)
+          {
+            canPush = false;
+            break;
+          }
+        }
+
+        for (const wxString &str : assign_matches)
+        {
+          if (str == newToken)
+          {
+            canPush = false;
+            break;
+          }
+        }
+
+        if (canPush)
+          assign_matches.push_back(newToken);
+      }
     }
 
     for (const Entry *entry : matches)
@@ -256,6 +701,12 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
         items += '0' + entry->type;
       }
 
+      items += ' ';
+    }
+
+    for (const wxString &str : assign_matches)
+    {
+      items += str;
       items += ' ';
     }
 
