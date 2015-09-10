@@ -169,7 +169,10 @@ void NewFileDialog::OnBrowse(wxCommandEvent& event)
 
 void NewFileDialog::OnFileNameTextEnter(wxCommandEvent& event)
 {
-    VerifyFileNameAndEnd();
+  m_selectedId = -1;
+  m_selectedId = m_listCtrl->GetNextItem(m_selectedId, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+  
+  VerifyFileNameAndEnd();
 }
 
 void NewFileDialog::OnOk(wxCommandEvent& event)
