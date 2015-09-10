@@ -91,6 +91,17 @@ public:
       std::vector<File *> files;
     };
 
+    struct Template
+    {
+      Template(wxString name, wxString ext, wxString cont)
+        :name(name), extension(ext), content(cont)
+      {}
+
+      wxString name;
+      wxString extension;
+      wxString content;
+    };
+
     /**
      * Constructor.
      */
@@ -350,6 +361,11 @@ public:
     */
     std::vector<Project::File *> &GetOpenFiles();
 
+    std::vector<Template> &GetTemplates()
+    {
+      return m_templates;
+    }
+
 
 private:
 
@@ -380,6 +396,9 @@ private:
     bool LoadFileNode(const wxString& baseDirectory, wxXmlNode* node);
 
     bool LoadDirectoryNode(const wxString& baseDirectory, wxXmlNode* node);
+
+    bool LoadTemplateNodes(const wxString& baseDirectory, wxXmlNode* node);
+
 
     /**
      * Loads the user data for a file from an XML node. If the XML node is not 
@@ -458,6 +477,7 @@ private:
     std::vector<Directory *> m_directories;
 
     std::vector<File *>      m_openFiles;
+    std::vector<Template>    m_templates;
                              
     unsigned int             m_tempIndex;
                              

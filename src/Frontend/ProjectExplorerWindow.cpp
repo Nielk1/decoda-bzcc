@@ -918,7 +918,7 @@ void ProjectExplorerWindow::UpdateFile(Project::File* file)
 
     RebuildForFile(node, file);
 
-    //SortTree(m_tree->GetRootItem());
+    SortTree(m_tree->GetRootItem());
 
     m_tree->SetScrollPos(wxVERTICAL, scroll_pos);
     m_tree->Thaw();

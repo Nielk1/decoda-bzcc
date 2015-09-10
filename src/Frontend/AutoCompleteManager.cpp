@@ -35,7 +35,9 @@ AutoCompleteManager::Entry::Entry(const wxString& _name, Type _type, const Proje
   : name(_name), type(_type), file(file), symbol(symbol)
 {
     lowerCaseName = name.Lower();
-    scope = symbol->GetScope();
+
+    if (symbol)
+     scope = symbol->GetScope();
 }
 
 bool AutoCompleteManager::Entry::operator<(const Entry& entry) const
@@ -45,96 +47,122 @@ bool AutoCompleteManager::Entry::operator<(const Entry& entry) const
 
 void AutoCompleteManager::BuildFromProject(const Project* project)
 {
-    wxVector<Project::File *> updatedFiles;
+  if (m_firstBuild)
+  {
+    m_languageEntries.push_back(Entry("and", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("break", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("do", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("else", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("elseif", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("end", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("false", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("for", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("function", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("if", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("in", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("local", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("nil", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("not", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("or", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("repeat", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("return", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("then", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("true", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("until", Type_Function, nullptr, nullptr));
+    m_languageEntries.push_back(Entry("while", Type_Function, nullptr, nullptr));
+    m_firstBuild = false;
+  }
 
-    for (unsigned int fileIndex = 0; fileIndex < project->GetNumFiles(); ++fileIndex)
+  wxVector<Project::File *> updatedFiles;
+
+  for (unsigned int fileIndex = 0; fileIndex < project->GetNumFiles(); ++fileIndex)
+  {
+    Project::File *file = (Project::File *)project->GetFile(fileIndex);
+    if (file->symbolsUpdated)
+      updatedFiles.push_back(file);
+  }
+  for (unsigned int directoryIndex = 0; directoryIndex < project->GetNumDirectories(); ++directoryIndex)
+  {
+    Project::Directory const *directory = project->GetDirectory(directoryIndex);
+
+    for (unsigned int fileIndex = 0; fileIndex < directory->files.size(); ++fileIndex)
     {
-      Project::File *file = (Project::File *)project->GetFile(fileIndex);
+      Project::File *file = (Project::File *)directory->files[fileIndex];
       if (file->symbolsUpdated)
         updatedFiles.push_back(file);
     }
-    for (unsigned int directoryIndex = 0; directoryIndex < project->GetNumDirectories(); ++directoryIndex)
+  }
+
+  wxVector<Symbol *> removedSymbols;
+
+  auto ClearFromEntries = [&removedSymbols](std::vector<Entry> &entries, const Project::File *file){
+    for (int i = 0; i < entries.size();)
     {
-      Project::Directory const *directory = project->GetDirectory(directoryIndex);
-
-      for (unsigned int fileIndex = 0; fileIndex < directory->files.size(); ++fileIndex)
+      if (entries[i].file == file)
       {
-        Project::File *file = (Project::File *)directory->files[fileIndex];
-        if (file->symbolsUpdated)
-          updatedFiles.push_back(file);
+        removedSymbols.push_back(entries[i].symbol);
+        std::swap(entries[i], entries[entries.size() - 1]);
+        entries.pop_back();
       }
-    }
-
-    wxVector<Symbol *> removedSymbols;
-
-    auto ClearFromEntries = [&removedSymbols](std::vector<Entry> &entries, const Project::File *file){
-      for (int i = 0; i < entries.size();)
-      {
-        if (entries[i].file == file)
-        {
-          removedSymbols.push_back(entries[i].symbol);
-          std::swap(entries[i], entries[entries.size() - 1]);
-          entries.pop_back();
-        }
-        else
-          ++i;
-      }
-    };
-
-    //Clear entries
-    for (const Project::File *file : updatedFiles)
-    {
-      ClearFromEntries(m_entries, file);
-      ClearFromEntries(m_prefixModules, file);
-      ClearFromEntries(m_prefixNames, file);
-      ClearFromEntries(m_assignments, file);
-    }
-
-    //Remove symbols from the deleted entries
-    for (int i = 0; i < m_symbols.size();)
-    {
-      bool deleted = false;
-      for (Symbol *s : removedSymbols)
-      {
-        if (m_symbols[i] == s)
-        {
-          delete s;
-          std::swap(m_symbols[i], m_symbols[m_symbols.size() - 1]);
-          m_symbols.pop_back();
-          deleted = true;
-
-          if (i == m_symbols.size())
-            break;
-        }
-      }
-      if (!deleted)
+      else
         ++i;
     }
+  };
 
-    //Rebuild symbols
-    for (const Project::File *file : updatedFiles)
-    {
-      BuildFromFile(file);
-    }
+  //Clear entries
+  for (const Project::File *file : updatedFiles)
+  {
+    ClearFromEntries(m_entries, file);
+    ClearFromEntries(m_prefixModules, file);
+    ClearFromEntries(m_prefixNames, file);
+    ClearFromEntries(m_assignments, file);
+  }
 
-    for (Entry &entry : m_assignments)
+  //Remove symbols from the deleted entries
+  for (int i = 0; i < m_symbols.size();)
+  {
+    bool deleted = false;
+    for (Symbol *s : removedSymbols)
     {
-      if (entry.file->symbolsUpdated)
+      if (m_symbols[i] == s)
       {
-        wxVector<wxString> prefixes;
-        ParsePrefix(entry.symbol->rhs, entry.file, entry.symbol->line, prefixes, true);
-        if (prefixes.size() >= 1)
-          entry.symbol->rhs = prefixes[1];
+        delete s;
+        std::swap(m_symbols[i], m_symbols[m_symbols.size() - 1]);
+        m_symbols.pop_back();
+        deleted = true;
+
+        if (i == m_symbols.size())
+          break;
       }
     }
+    if (!deleted)
+      ++i;
+  }
 
-    for (Project::File *file : updatedFiles)
+  //Rebuild symbols
+  for (const Project::File *file : updatedFiles)
+  {
+    BuildFromFile(file);
+  }
+
+  for (Entry &entry : m_assignments)
+  {
+    if (entry.file->symbolsUpdated)
     {
-      file->symbolsUpdated = false;
+      wxVector<wxString> prefixes;
+      ParsePrefix(entry.symbol->rhs, entry.file, entry.symbol->line, prefixes, true);
+      if (prefixes.size() >= 1)
+        entry.symbol->rhs = prefixes[1];
     }
+  }
 
-    // Sort the autocompletions (necessary for binary search).
-    std::sort(m_entries.begin(), m_entries.end());
+  for (Project::File *file : updatedFiles)
+  {
+    file->symbolsUpdated = false;
+  }
+
+  // Sort the autocompletions (necessary for binary search).
+  std::sort(m_entries.begin(), m_entries.end());
 
 }
 
@@ -562,6 +590,21 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
     // to lowercase.
     wxString test = token.Lower();
 
+    for (unsigned int i = 0; i < m_languageEntries.size(); ++i)
+    {
+      if (m_languageEntries[i].name == test)
+      {
+        items.Empty();
+        return;
+      }
+
+      if (m_languageEntries[i].lowerCaseName.StartsWith(test))
+      {
+        items += m_languageEntries[i].name;
+        items += ' ';
+      }
+    }
+
     // Add the items to the list that begin with the specified prefix. This
     // could be done much fater with a binary search since our items are in
     // alphabetical order.
@@ -709,5 +752,4 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
       items += str;
       items += ' ';
     }
-
 }

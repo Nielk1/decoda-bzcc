@@ -1326,7 +1326,7 @@ void MainFrame::OnProjectAddNewFile(wxCommandEvent& WXUNUSED(event))
             projectPath = m_sourceControl.GetLocalPath();
         }
 
-        NewFileDialog dialog(this, m_sourceControl.GetIsInitialized());
+        NewFileDialog dialog(this, m_sourceControl.GetIsInitialized(), m_project->GetTemplates());
         dialog.SetPath(projectPath);
 
         if (dialog.ShowModal() == wxID_OK)
@@ -1354,39 +1354,39 @@ void MainFrame::OnProjectAddNewFile(wxCommandEvent& WXUNUSED(event))
             // Create a new empty file.
             if (fileName.Mkdir(0777, wxPATH_MKDIR_FULL) && file.Open(fileName.GetFullPath(), wxFile::write))
             {
-
-                file.Close();
-                Project::File* file = m_project->AddFile(fileName.GetFullPath());
+              file.Write(dialog.GetTemplate());
+              file.Close();
+              Project::File* file = m_project->AddFile(fileName.GetFullPath());
                 
-                if (file == nullptr)
+              if (file == nullptr)
+              {
+                wxMessageBox(_("Error creating file."), s_applicationName, wxOK | wxICON_ERROR, this);
+              }
+              else
+              {
+                if (file->localPath.IsEmpty())
                 {
-                  wxMessageBox(_("Error creating file."), s_applicationName, wxOK | wxICON_ERROR, this);
+                  UpdateForNewFile(file);
+
+                  if (m_sourceControl.GetIsInitialized() && dialog.GetAddToSourceContrl())
+                  {
+                    // Add the file to source control.
+                    m_sourceControl.AddFiles(std::string(fileName.GetFullPath()), NULL);
+                  }
+
+                  // Update the status for the new files.
+                  UpdateProjectFileStatus(file);
                 }
                 else
                 {
-                  if (file->localPath.IsEmpty())
-                  {
-                    UpdateForNewFile(file);
-
-                    if (m_sourceControl.GetIsInitialized() && dialog.GetAddToSourceContrl())
-                    {
-                      // Add the file to source control.
-                      m_sourceControl.AddFiles(std::string(fileName.GetFullPath()), NULL);
-                    }
-
-                    // Update the status for the new files.
-                    UpdateProjectFileStatus(file);
-                  }
-                  else
-                  {
-                    m_projectExplorer->SaveExpansion();
-                    m_projectExplorer->Rebuild();
-                    m_projectExplorer->LoadExpansion();
-                  }
-
-                  // Open the file in the editor.
-                  OpenProjectFile(file);
+                  m_projectExplorer->SaveExpansion();
+                  m_projectExplorer->Rebuild();
+                  m_projectExplorer->LoadExpansion();
                 }
+
+                // Open the file in the editor.
+                OpenProjectFile(file);
+              }
             }
             else
             {

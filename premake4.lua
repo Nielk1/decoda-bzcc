@@ -46,7 +46,7 @@ project "Frontend"
         defines { "DEBUG" }
         flags { "Symbols" }
         targetdir "bin/debug"
-		includedirs { "libs/wxWidgets/lib/vc_lib/mswd" }
+		includedirs { "libs/wxWidgets/lib/vc_lib/mswud" }
 		links {
 			"wxbase30ud",
 			"wxmsw30ud_core",
@@ -67,7 +67,7 @@ project "Frontend"
         defines { "NDEBUG" }
         flags { "Optimize", "Symbols" }
         targetdir "bin/release"
-		includedirs { "libs/wxWidgets/lib/vc_lib/msw" }
+		includedirs { "libs/wxWidgets/lib/vc_lib/mswu" }
 		links {
 			"wxbase30u",
 			"wxmsw30u_core",

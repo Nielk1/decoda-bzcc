@@ -31,8 +31,8 @@ BEGIN_EVENT_TABLE(NewFileDialog, wxDialog)
     EVT_BUTTON(         wxID_OK,                    NewFileDialog::OnOk)
 END_EVENT_TABLE()
 
-NewFileDialog::NewFileDialog( wxWindow* parent, bool enableSourceControl )
-    : wxDialog( parent, wxID_ANY, wxT("Add New File"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER )
+NewFileDialog::NewFileDialog(wxWindow* parent, bool enableSourceControl, std::vector<Project::Template> templates)
+    : wxDialog( parent, wxID_ANY, wxT("Add New File"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER ), m_templates(templates)
 {
 
   wxGridSizer* sizer = new wxGridSizer(1, 1, 0);
@@ -125,6 +125,14 @@ NewFileDialog::NewFileDialog( wxWindow* parent, bool enableSourceControl )
     m_listCtrl->SetImageList(m_imageList, wxIMAGE_LIST_NORMAL);
 
     m_listCtrl->InsertItem(1, "Lua file (.lua)", 0);
+
+    for (auto &temp : m_templates)
+    {
+      long id = m_listCtrl->InsertItem(1, temp.name + " (." + temp.extension + ")", 0);
+      m_listCtrl->SetItemPtrData(id, (wxUIntPtr)&temp);
+    }
+
+
     m_listCtrl->SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
 
     // Setup the file name control.
@@ -166,7 +174,21 @@ void NewFileDialog::OnFileNameTextEnter(wxCommandEvent& event)
 
 void NewFileDialog::OnOk(wxCommandEvent& event)
 {
-    VerifyFileNameAndEnd();
+  m_selectedId = -1;
+  m_selectedId = m_listCtrl->GetNextItem(m_selectedId, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+
+  VerifyFileNameAndEnd();
+}
+
+wxString NewFileDialog::GetTemplate()
+{
+  if (m_selectedId != -1 && m_selectedId != 0)
+  {
+    Project::Template *temp = (Project::Template *)m_listCtrl->GetItemData(m_selectedId);
+    return temp->content;
+  }
+
+  return "";
 }
 
 wxFileName NewFileDialog::GetFileName() const

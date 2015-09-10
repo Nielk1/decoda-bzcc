@@ -1125,6 +1125,22 @@ bool Project::LoadDirectoryNode(const wxString& baseDirectory, wxXmlNode* node)
 
 }
 
+bool Project::LoadTemplateNodes(const wxString& baseDirectory, wxXmlNode* node)
+{
+  wxXmlNode* child = node->GetChildren();
+  while (child != NULL)
+  {
+    wxString name = child->GetAttribute("name");
+    wxString ext  = child->GetAttribute("extension");
+    wxString temp;
+    ReadXmlNode(child, "template", temp);
+
+    m_templates.push_back(Template(name, ext, temp));
+    child = child->GetNext();
+  }
+  return true;
+}
+
 std::vector<Project::File*> Project::GetSortedFileList()
 {
 	struct SortByDisplayName
@@ -1146,15 +1162,15 @@ std::vector<Project::File*> Project::GetSortedFileList()
 bool Project::SaveGeneralSettings(const wxString& fileName)
 {
 
-    // Disable logging.
-    wxLogNull logNo;
+  // Disable logging.
+  wxLogNull logNo;
 
-    wxString baseDirectory = wxFileName(fileName).GetPath();
+  wxString baseDirectory = wxFileName(fileName).GetPath();
     
-    wxXmlDocument document;
+  wxXmlDocument document;
     
-    wxXmlNode* root = new wxXmlNode(wxXML_ELEMENT_NODE, "project");
-    document.SetRoot(root);
+  wxXmlNode* root = new wxXmlNode(wxXML_ELEMENT_NODE, "project");
+  document.SetRoot(root);
 
 	// Sort file names before saving, to lessen conflicts when synching to source control
 	std::vector<Project::File*> sortedFileList = GetSortedFileList();
@@ -1182,8 +1198,19 @@ bool Project::SaveGeneralSettings(const wxString& fileName)
       root->AddChild(node);
     }
 
-    return document.Save(fileName);
+    wxXmlNode *templates = WriteXmlNode("templates", "");
 
+    for (Template &t : m_templates)
+    {
+      wxXmlNode *temp = WriteXmlNode("template", t.content);
+      temp->AddAttribute("name", t.name);
+      temp->AddAttribute("extension", t.extension);
+      templates->AddChild(temp);
+    }
+
+    root->AddChild(templates);
+
+    return document.Save(fileName);
 }
 
 bool Project::SaveUserSettings(const wxString& fileName)
@@ -1342,7 +1369,8 @@ bool Project::LoadGeneralSettings(const wxString& fileName)
           LoadFileNode(m_baseDirectory, node);
         else if (node->GetName() == "directory")
           LoadDirectoryNode(m_baseDirectory, node);
-
+        else if (node->GetName() == "templates")
+          LoadTemplateNodes(m_baseDirectory, node);
         node = node->GetNext();
     }
 

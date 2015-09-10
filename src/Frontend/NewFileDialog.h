@@ -27,6 +27,8 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/statline.h>
 #include <wx/listctrl.h>
 #include <wx/filename.h>
+#include <vector>
+#include "Project.h"
 
 /**
  * Dialog for creating a new file.
@@ -39,7 +41,7 @@ public:
     /**
      * Constructor.
      */
-    NewFileDialog( wxWindow* parent, bool enableSourceControl);
+    NewFileDialog( wxWindow* parent, bool enableSourceControl, std::vector<Project::Template> templates);
 
     /**
      * Destructor.
@@ -76,6 +78,8 @@ public:
      */
     bool GetAddToSourceContrl() const;
 
+    wxString GetTemplate();
+
     DECLARE_EVENT_TABLE()
 
 private:
@@ -99,6 +103,8 @@ private:
         ID_FileName,
     };
 
+    long                        m_selectedId = -1;
+
     wxListCtrl*                 m_listCtrl;
     wxStaticText*               m_staticText1;
     wxTextCtrl*                 m_fileNameCtrl;
@@ -109,7 +115,7 @@ private:
     wxStdDialogButtonSizer*     m_sdbSizer1;
     wxImageList*                m_imageList;
     wxCheckBox*                 m_sourceControlCheck;
-
+    std::vector<Project::Template> m_templates;
 };
 
 #endif

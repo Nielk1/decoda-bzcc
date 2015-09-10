@@ -49,7 +49,7 @@ CodeEdit::CodeEdit()
     // The minimum number of characters that must be typed before autocomplete
     // is displayed for global symbols. We impose a minimum so that autocomplete
     // doesn't popup too much.
-    m_minAutoCompleteLength = 2;
+    m_minAutoCompleteLength = 3;
     m_autoCompleteManager   = NULL;
 
     m_tipWindow             = NULL;

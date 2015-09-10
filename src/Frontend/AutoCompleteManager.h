@@ -97,6 +97,10 @@ private:
     std::vector<Entry>    m_prefixModules;
     std::vector<Entry>    m_prefixNames;
     std::vector<Entry>    m_assignments;
+
+    std::vector<Entry>    m_languageEntries;
+    bool                  m_firstBuild = true;
+
     std::vector<Symbol *> m_symbols;
 };
 
