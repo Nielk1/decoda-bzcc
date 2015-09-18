@@ -222,6 +222,50 @@ bool GetNextToken(std::vector<Token> const &tokens, wxString &str, unsigned int 
   return false;
 }
 
+Symbol *DecodaDefFunction(std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module, std::vector<Token> const &tokens, unsigned int &current_token, wxString token)
+{
+  SymbolType type = SymbolType::Function;
+  if (token == "__variable")
+  {
+    type = SymbolType::Variable;
+    if (!GetNextToken(tokens, token, lineNumber, current_token)) return nullptr;
+  }
+
+  if (type == SymbolType::Function && token == "operator")
+  {
+    wxString oper;
+    if (!GetNextToken(tokens, oper, lineNumber, current_token)) return nullptr;
+
+    while (oper == "+" || oper == "-" || oper == "*" || oper == "/" ||
+      oper == "=" || oper == "<" || oper == ">" || oper == "!" ||
+      oper == "(" || oper == ")")
+    {
+      token += oper;
+      if (!GetNextToken(tokens, oper, lineNumber, current_token)) return nullptr;
+    }
+
+    current_token--;
+  }
+
+  wxString typeName;
+  if (!GetNextToken(tokens, typeName, lineNumber, current_token)) return nullptr;
+
+  Symbol *lastModule = new Symbol(module, token, lineNumber, type);
+
+  Symbol *typeSymbol = GetSymbol(typeName, symbols);
+  if (typeSymbol == nullptr)
+  {
+    typeSymbol = new Symbol(nullptr, typeName, lineNumber, SymbolType::Type);
+    symbols.push_back(typeSymbol);
+  }
+
+  lastModule->typeSymbol = typeSymbol;
+
+  symbols.push_back(lastModule);
+
+  return lastModule;
+}
+
 void DecodaDefRecursive(std::vector<Symbol*>& symbols, unsigned int &lineNumber, Symbol *module, std::vector<Token> const &tokens, unsigned int &current_token)
 {
   wxString token;
@@ -236,44 +280,9 @@ void DecodaDefRecursive(std::vector<Symbol*>& symbols, unsigned int &lineNumber,
     }
     else
     {
-      SymbolType type = SymbolType::Function;
-      if (token == "__variable")
-      {
-        type = SymbolType::Variable;
-        if (!GetNextToken(tokens, token, lineNumber, current_token)) return;
-      }
-      
-      if (type == SymbolType::Function && token == "operator")
-      {
-        wxString oper;
-        if (!GetNextToken(tokens, oper, lineNumber, current_token)) return;
-
-        while (oper == "+" || oper == "-" || oper == "*" || oper == "/" || 
-               oper == "=" || oper == "<" || oper == ">" || oper == "!" || 
-               oper == "(" || oper == ")")
-        {
-          token += oper;
-          if (!GetNextToken(tokens, oper, lineNumber, current_token)) return;
-        }
-
-        current_token--;
-      }
-
-      wxString typeName;
-      if (!GetNextToken(tokens, typeName, lineNumber, current_token)) return;
-
-      lastModule = new Symbol(module, token, lineNumber, type);
-
-      Symbol *typeSymbol = GetSymbol(typeName, symbols);
-      if (typeSymbol == nullptr)
-      {
-        typeSymbol = new Symbol(nullptr, typeName, lineNumber, SymbolType::Type);
-        symbols.push_back(typeSymbol);
-      }
-
-      lastModule->typeSymbol = typeSymbol;
-
-      symbols.push_back(lastModule);
+      lastModule = DecodaDefFunction(symbols, lineNumber, module, tokens, current_token, token);
+      if (lastModule == nullptr)
+        return;
     }
 
     if (!GetNextToken(tokens, token, lineNumber, current_token)) return;
@@ -404,17 +413,17 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
       {
         //A decodadef will be in the form:
         //decodadef name { Definitions }
+        //decodadef name ret
 
         unsigned int defLineNumber = lineNumber;
 
         wxString moduleName;
         if (!GetNextToken(tokens, moduleName, lineNumber, current_token)) break;
 
-        wxString t1;
-        if (!GetNextToken(tokens, t1, lineNumber, current_token)) break;
-
+        wxString t1 = PeekNextToken(tokens, current_token, lineNumber);
         if (t1 == "{")
         {
+          if (!GetNextToken(tokens, t1, lineNumber, current_token)) break;
           //outputWin->OutputMessage("Processing " + moduleName);
 
           Symbol *module = GetSymbol(moduleName, symbols);
@@ -425,6 +434,10 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
           }
 
           DecodaDefRecursive(symbols, lineNumber, module, tokens, current_token);
+        }
+        else
+        {
+          DecodaDefFunction(symbols, lineNumber, nullptr, tokens, current_token, moduleName);
         }
       }
       else if (token == "end")

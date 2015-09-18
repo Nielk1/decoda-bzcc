@@ -62,7 +62,7 @@ public:
      * only autocompletions that are members of some scope are included. The return items
      * string is in the format used by STCntilla to display autocompletions.
      */
-    void GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items) const;
+    void GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items, const wxString& fullToken) const;
 
     void ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes, bool parsing_assignment = false) const;
 

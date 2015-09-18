@@ -309,7 +309,140 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
 
     if (token.empty())
       break;
+    
 
+    tokens.push_back(token);
+  }
+
+  if (!parsing_assignment)
+  {
+
+    //Try to decode entire symbol if possible
+    wxString tempString;
+    for (int i = 0; i < tokens.size(); ++i)
+    {
+      if (i == tokens.size() - 1)
+      {
+        tempString += tokens[i];
+      }
+      else
+        tempString += tokens[i] + ".";
+    }
+
+    const Entry *closest_entry = nullptr;
+    unsigned closest_length = UINT_MAX;
+    for (Entry const &entry : m_assignments)
+    {
+      if (entry.file == file && entry.name == tempString)
+      {
+        int line_difference = current_line - (int)entry.symbol->line;
+        if (line_difference >= 1 && line_difference < closest_length)
+        {
+          closest_length = line_difference;
+          closest_entry = &entry;
+        }
+      }
+    }
+
+    if (closest_entry != nullptr)
+    {
+      wxString newToken = closest_entry->symbol->rhs;
+
+      int end1 = newToken.Find('.', true);
+      if (end1 == wxNOT_FOUND)
+        end1 = 0;
+      else
+        // Skip the '.' character.
+        ++end1;
+
+      int end2 = newToken.Find(':', true);
+      if (end2 == wxNOT_FOUND)
+        end2 = 0;
+      else
+        // Skip the ':' character.
+        ++end2;
+
+      if (!(newToken == prefix && closest_entry->symbol->line == current_line))
+      {
+        wxVector<wxString> new_prefixes;
+        ParsePrefix(newToken, file, closest_entry->symbol->line, new_prefixes, parsing_assignment);
+
+        newToken = new_prefixes[0];
+      }
+
+      prefixes.push_back(newToken);
+      prefixes.push_back(newToken);
+      return;
+    }
+
+    //No exact match, try to help with a substring
+    int end1 = tempString.Find('.', false);
+    if (end1 == wxNOT_FOUND)
+      end1 = 0;
+
+    int end2 = tempString.Find(':', false);
+    if (end2 == wxNOT_FOUND)
+      end2 = 0;
+
+    closest_entry = nullptr;
+    closest_length = UINT_MAX;
+    unsigned int closest_name_length = std::max(end1, end2);
+
+    for (Entry const &entry : m_assignments)
+    {
+      if (entry.file == file)
+      {
+        if (tempString.StartsWith(entry.name) && entry.name.length() >= closest_name_length)
+        {
+          int line_difference = current_line - (int)entry.symbol->line;
+          if (line_difference >= 1 && line_difference < closest_length)
+          {
+            closest_length = line_difference;
+            closest_entry = &entry;
+            closest_name_length = entry.name.length();
+          }
+        }
+      }
+    }
+
+    //We found a substring, replace it and re-tokenize
+    if (closest_entry)
+    {
+      wxString right = tempString.Right(tempString.length() - closest_name_length);
+      wxString newToken = closest_entry->symbol->rhs;
+
+      int end1 = newToken.Find('.', true);
+      if (end1 == wxNOT_FOUND)
+        end1 = 0;
+      else
+        // Skip the '.' character.
+        ++end1;
+
+      int end2 = newToken.Find(':', true);
+      if (end2 == wxNOT_FOUND)
+        end2 = 0;
+      else
+        // Skip the ':' character.
+        ++end2;
+
+      int end = std::max(end1, end2);
+
+      tempString = newToken.Right(newToken.Length() - end) + right;
+      str_pos = 0;
+      tokens.clear();
+      for (;;)
+      {
+        wxString token = GetNextToken(tempString, str_pos);
+        if (token.empty())
+          break;
+
+        tokens.push_back(token);
+      }
+    }
+  }
+
+  for (wxString &token : tokens)
+  {
     const Entry *closest_entry = nullptr;
     unsigned closest_length = UINT_MAX;
 
@@ -319,7 +452,7 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
       if (entry.file == file && entry.type == Type_Function)
       {
         int line_difference = current_line - (int)entry.symbol->line;
-        if (line_difference > 0 && line_difference < closest_length)
+        if (line_difference > 1 && line_difference < closest_length)
         {
           closest_length = line_difference;
           closest_entry = &entry;
@@ -379,134 +512,37 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
         }
       }
     }
-
-    tokens.push_back(token);
-  }
-
-  if (!parsing_assignment)
-  {
-
-    //Try to decode entire symbol if possible
-    wxString tempString;
-    for (int i = 0; i < tokens.size(); ++i)
-    {
-      if (i == tokens.size() - 1)
-      {
-        tempString += tokens[i];
-      }
-      else
-        tempString += tokens[i] + ".";
-    }
-
-    const Entry *closest_entry = nullptr;
-    unsigned closest_length = UINT_MAX;
-    for (Entry const &entry : m_assignments)
-    {
-      if (entry.file == file && entry.name == tempString)
-      {
-        int line_difference = current_line - (int)entry.symbol->line;
-        if (line_difference >= 0 && line_difference < closest_length)
-        {
-          closest_length = line_difference;
-          closest_entry = &entry;
-        }
-      }
-    }
-
-    if (closest_entry != nullptr)
-    {
-      wxString newToken = closest_entry->symbol->rhs;
-
-      int end1 = newToken.Find('.', true);
-      if (end1 == wxNOT_FOUND)
-        end1 = 0;
-      else
-        // Skip the '.' character.
-        ++end1;
-
-      int end2 = newToken.Find(':', true);
-      if (end2 == wxNOT_FOUND)
-        end2 = 0;
-      else
-        // Skip the ':' character.
-        ++end2;
-
-      int end = std::max(end1, end2);
-      prefixes.push_back(newToken.Right(newToken.Length() - end));
-      prefixes.push_back(newToken);
-      return;
-    }
-
-    //No exact match, try to help with a substring
-    int end1 = tempString.Find('.', false);
-    if (end1 == wxNOT_FOUND)
-      end1 = 0;
-
-    int end2 = tempString.Find(':', false);
-    if (end2 == wxNOT_FOUND)
-      end2 = 0;
-
-    closest_entry = nullptr;
-    closest_length = UINT_MAX;
-    unsigned int closest_name_length = std::max(end1, end2);
-
-    for (Entry const &entry : m_assignments)
-    {
-      if (entry.file == file)
-      {
-        if (tempString.StartsWith(entry.name) && entry.name.length() >= closest_name_length)
-        {
-          int line_difference = current_line - (int)entry.symbol->line;
-          if (line_difference >= 0 && line_difference < closest_length)
-          {
-            closest_length = line_difference;
-            closest_entry = &entry;
-            closest_name_length = entry.name.length();
-          }
-        }
-      }
-    }
-
-    //We found a substring, replace it and re-tokenize
-    if (closest_entry)
-    {
-      wxString right = tempString.Right(tempString.length() - closest_name_length);
-      wxString newToken = closest_entry->symbol->rhs;
-
-      int end1 = newToken.Find('.', true);
-      if (end1 == wxNOT_FOUND)
-        end1 = 0;
-      else
-        // Skip the '.' character.
-        ++end1;
-
-      int end2 = newToken.Find(':', true);
-      if (end2 == wxNOT_FOUND)
-        end2 = 0;
-      else
-        // Skip the ':' character.
-        ++end2;
-
-      int end = std::max(end1, end2);
-
-      tempString = newToken.Right(newToken.Length() - end) + right;
-      str_pos = 0;
-      tokens.clear();
-      for (;;)
-      {
-        wxString token = GetNextToken(tempString, str_pos);
-        if (token.empty())
-          break;
-
-        tokens.push_back(token);
-      }
-    }
   }
 
   //Try to decode token using types
   Symbol *currentToken = nullptr;
   if (tokens.size() >= 1)
   {
+    for (wxString &token : tokens)
+    {
+      //Strip function call
+      if (token[token.size() - 1] == ')')
+      {
+        int paren_loc = -1;
+        int paren_stack = 0;
+        for (int i = token.size() - 2; i >= 0; --i)
+        {
+          if (token[i] == '(' && paren_stack == 0)
+          {
+            paren_loc = i;
+            break;
+          }
+          if (token[i] == ')')
+            paren_stack--;
+          if (token[i] == '(')
+            paren_stack++;
+        }
+
+        if (paren_loc != -1)
+          token.RemoveLast(token.size() - paren_loc);
+      }
+    }
+
     for (const Entry &entry : m_entries)
     {
       if (entry.symbol->parent == nullptr && entry.name == tokens[0])
@@ -516,35 +552,18 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
       }
     }
 
+    if (tokens.size() == 1 && currentToken && currentToken->typeSymbol)
+    {
+      tokens[0] = currentToken->typeSymbol->name;
+    }
+
     //Go through the symbols to find the true type
+    Symbol *foundSymbol = nullptr;
     for (int i = 1; i < tokens.size(); ++i)
     {
       if (currentToken != nullptr)
       {
-        Symbol *foundSymbol = nullptr;
         wxString token = tokens[i];
-        
-        //Strip function call
-        if (token[token.size() - 1] == ')')
-        {
-          int paren_loc = -1;
-          int paren_stack = 0;
-          for (int i = token.size() - 2; i >= 0; --i)
-          {
-            if (token[i] == '(' && paren_stack == 0)
-            {
-              paren_loc = i;
-              break;
-            }
-            if (token[i] == ')')
-              paren_stack--;
-            if (token[i] == '(')
-              paren_stack++;
-          }
-
-          if (paren_loc != -1)
-            token.RemoveLast(token.size() - paren_loc);
-        }
 
         for (Symbol *symbol : currentToken->children)
         {
@@ -584,24 +603,27 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
   }
 }
 
-void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items) const
+void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items, const wxString& fullToken) const
 {
     // Autocompletion selection is case insensitive so transform everything
     // to lowercase.
     wxString test = token.Lower();
 
-    for (unsigned int i = 0; i < m_languageEntries.size(); ++i)
+    if (!member)
     {
-      if (m_languageEntries[i].name == test)
+      for (unsigned int i = 0; i < m_languageEntries.size(); ++i)
       {
-        items.Empty();
-        return;
-      }
+        if (m_languageEntries[i].name == test)
+        {
+          items.Empty();
+          return;
+        }
 
-      if (m_languageEntries[i].lowerCaseName.StartsWith(test))
-      {
-        items += m_languageEntries[i].name;
-        items += ' ';
+        if (m_languageEntries[i].lowerCaseName.StartsWith(test))
+        {
+          items += m_languageEntries[i].name;
+          items += ' ';
+        }
       }
     }
 
@@ -663,27 +685,7 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
 
     for (unsigned int i = 0; i < m_assignments.size(); ++i)
     {
-      bool inScope = false;
-
-      if (/**/true)
-      {
-        // We've got no way of knowing the type of the variable in Lua (since
-        // variables don't have types, only values have types), so we display
-        // all members if the prefix contains a member selection operator (. or :)
-        if (!m_assignments[i].scope.IsEmpty() && member)
-        {
-          for (wxString const &prefix : prefixes)
-          {
-            inScope = inScope || m_assignments[i].scope == prefix;
-          }
-        }
-        else
-        {
-          inScope = m_assignments[i].scope.IsEmpty() != member;
-        }
-      }
-
-      if (inScope && m_assignments[i].lowerCaseName.StartsWith(test))
+      if (m_assignments[i].name.StartsWith(fullToken))
       {
         wxString const &str = m_assignments[i].name;
         int end = str.Length() - 1;
@@ -702,7 +704,7 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
         {
           if (IsSymbol(str[i]))
           {
-            start = i;
+            start = i + 1;
             break;
           }
         }

@@ -645,13 +645,37 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
 
         int start = seek;
 
-        while (start > 0 && (GetIsIdentifierChar(text[start - 1]) || joiners.Find(text[start - 1]) != wxNOT_FOUND || text[start - 1] == ')'))
+        while (start > 0 && (GetIsIdentifierChar(text[start - 1]) || joiners.Find(text[start - 1]) != wxNOT_FOUND || text[start - 1] == ')' || text[start - 1] == ']'))
         {
-          if (text[start - 1] == ')')
+          if (text[start - 1] == ')' || text[start - 1] == ']')
           {
-            while (start > 0 && text[start - 1] != '(')
-              start--;
+            char open = ')';
+            if (text[start - 1] == ']')
+              open = ']';
 
+            char close = '(';
+            if (text[start - 1] == ']')
+              close = '[';
+
+            start--;
+            int paren_stack = 0;
+            while (start > 0)
+            {
+              if (text[start - 1] == close)
+              {
+                if (paren_stack == 0)
+                  break;
+                else
+                  paren_stack--;
+              }
+
+              if (text[start - 1] == open)
+                paren_stack++;
+
+              start--;
+            }
+
+            //Eat the last character
             start--;
           }
           else
@@ -662,16 +686,40 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
 
         unsigned int end = seek;
 
-        while (end + 1 < text.Length() && (GetIsIdentifierChar(text[end + 1]) || text[end + 1] == '('))
+        while (end + 1 < text.Length() && (GetIsIdentifierChar(text[end + 1]) || text[end + 1] == '(' || text[end + 1] == '['))
         {
-          if (text[end + 1] == '(')
+          if (text[end + 1] == '(' || text[end + 1] == '[')
           {
-            while (end + 1 < text.Length() && text[end + 1] != ')')
-              ++end;
+            char open = '(';
+            if (text[end + 1] == '[')
+              open = '[';
+
+            char close = ')';
+            if (text[end + 1] == '[')
+              close = ']';
 
             ++end;
-          }
+            int paren_stack = 0;
+            while (end + 1 < text.Length())
+            {
+              if (text[end + 1] == close)
+              {
+                if (paren_stack == 0)
+                  break;
+                else
+                  paren_stack--;
+              }
 
+              if (text[end + 1] == open)
+                paren_stack++;
+
+              ++end;
+            }
+
+            //Eat the last character
+            ++end;
+          }
+          else
             ++end;
         }
 
@@ -751,7 +799,7 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
     wxVector<wxString> prefixes;
 
     m_autoCompleteManager->ParsePrefix(prefix, file, GetCurrentLine(), prefixes);
-    m_autoCompleteManager->GetMatchingItems(newToken, prefixes, member, function, items);
+    m_autoCompleteManager->GetMatchingItems(newToken, prefixes, member, function, items, token);
 
     if (!AutoCompActive() || m_autoCompleteItems != items)
     {
