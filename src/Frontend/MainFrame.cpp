@@ -130,6 +130,11 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_UPDATE_UI(ID_EditComment,                   MainFrame::EnableWhenTextIsSelected)
     EVT_MENU(ID_EditUncomment,                      MainFrame::OnEditUncomment)
     EVT_UPDATE_UI(ID_EditUncomment,                 MainFrame::EnableWhenTextIsSelected)
+
+    EVT_MENU(ID_EditZoomIn,                         MainFrame::OnEditZoomIn)
+    EVT_UPDATE_UI(ID_EditZoomIn,                    MainFrame::EnableWhenFileIsOpen)
+    EVT_MENU(ID_EditZoomOut,                        MainFrame::OnEditZoomOut)
+    EVT_UPDATE_UI(ID_EditZoomOut,                   MainFrame::EnableWhenFileIsOpen)
     
     // Project menu events.
     EVT_MENU(ID_ProjectAddExistingFile,             MainFrame::OnProjectAddExistingFile)
@@ -631,6 +636,9 @@ void MainFrame::InitializeMenu()
     menuEdit->Append(ID_EditUntabify,                   _("Unta&bify Selection"), _("Removes all tabs from the selected text"));
     menuEdit->Append(ID_EditComment,                    _("Co&mment Selection"));
     menuEdit->Append(ID_EditUncomment,                  _("&Uncomment Selection"));
+    menuEdit->AppendSeparator();
+    menuEdit->Append(ID_EditZoomIn,                     _("&Zoom In"));
+    menuEdit->Append(ID_EditZoomOut,                    _("&Zoom Out"));
 
     // Project menu.
 
@@ -1304,6 +1312,26 @@ void MainFrame::OnEditUncomment(wxCommandEvent& event)
         m_openFiles[pageIndex]->edit->UncommentSelection();
     }
 
+}
+
+void MainFrame::OnEditZoomIn(wxCommandEvent& event)
+{
+  int pageIndex = GetSelectedPage();
+
+  if (pageIndex != -1)
+  {
+    m_openFiles[pageIndex]->edit->ZoomIn();
+  }
+}
+
+void MainFrame::OnEditZoomOut(wxCommandEvent& event)
+{
+  int pageIndex = GetSelectedPage();
+
+  if (pageIndex != -1)
+  {
+    m_openFiles[pageIndex]->edit->ZoomOut();
+  }
 }
 
 void MainFrame::OnProjectAddNewFile(wxCommandEvent& WXUNUSED(event))
@@ -5031,6 +5059,8 @@ void MainFrame::SetDefaultHotKeys()
     m_keyBinder.SetShortcut(ID_EditFindNext,                wxT("F3"));
     m_keyBinder.SetShortcut(ID_EditFindPrevious,            wxT("Shift+F3"));
     m_keyBinder.SetShortcut(ID_EditFindInFiles,             wxT("Ctrl+Shift+F"));
+    m_keyBinder.SetShortcut(ID_EditZoomIn,                  wxT("Ctrl+PLUS"));
+    m_keyBinder.SetShortcut(ID_EditZoomOut,                 wxT("Ctrl+MINUS"));
 
     m_keyBinder.SetShortcut(ID_ProjectAddExistingFile,      wxT("Shift+Alt+A"));
     m_keyBinder.SetShortcut(ID_ProjectAddNewFile,           wxT("Ctrl+Shift+A"));

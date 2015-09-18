@@ -61,7 +61,7 @@ public:
 
     //! Returns TRUE if this window is containing a valid key combination.
     bool IsValidKeyComb() const {
-        return !GetValue().IsEmpty() && GetValue().Last() != '+';
+        return !GetValue().IsEmpty();
     }
 
 private:

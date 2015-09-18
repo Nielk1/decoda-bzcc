@@ -293,6 +293,8 @@ int KeyBinder::StringToKeyCode(const wxString &keyName)
     }
 
     // a special key ?
+    if (keyName == wxT("PLUS")) return wxString("+").GetChar(0);
+    if (keyName == wxT("MINUS")) return wxString("-").GetChar(0);
     if (keyName == wxT("BACK")) return WXK_BACK;
     if (keyName == wxT("ENTER")) return WXK_RETURN;
     if (keyName == wxT("RETURN")) return WXK_RETURN;
@@ -385,11 +387,11 @@ wxString KeyBinder::GetKeyBindingAsText(const Key& key)
     case WXK_MULTIPLY:
         res << wxT("*"); break;
     case WXK_ADD:
-        res << wxT("+"); break;
+        res << wxT("PLUS"); break;
     case WXK_SEPARATOR:
         res << wxT("Separator"); break;
     case WXK_SUBTRACT:
-        res << wxT("-"); break;
+        res << wxT("MINUS"); break;
     case WXK_DECIMAL:
         res << wxT("."); break;
     case WXK_DIVIDE:
@@ -486,19 +488,23 @@ wxString KeyBinder::GetKeyBindingAsText(const Key& key)
     case WXK_NUMPAD_MULTIPLY:
         res << wxT("*"); break;
     case WXK_NUMPAD_ADD:
-        res << wxT("+"); break;
+        res << wxT("PLUS"); break;
     case WXK_NUMPAD_SEPARATOR:
         res << wxT("Separator"); break;
     case WXK_NUMPAD_SUBTRACT:
-        res << wxT("-"); break;
+        res << wxT("MINUS"); break;
     case WXK_NUMPAD_DECIMAL:
         res << wxT("."); break;
     case WXK_NUMPAD_DIVIDE:
         res << wxT("/"); break;
+    case '+':
+      res << wxT("PLUS"); break;
+    case '-':
+      res << wxT("MINUS"); break;
     default:
 
         // ASTCI chars...
-        if (wxIsalnum(key.code))
+      if (wxIsalnum(key.code) || wxIspunct(key.code))
         {
             res << (wxChar)key.code;
             break;

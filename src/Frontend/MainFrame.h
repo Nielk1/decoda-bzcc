@@ -240,6 +240,16 @@ public:
     void OnEditUncomment(wxCommandEvent& event);
 
     /**
+    * Called when the user selects Edit/Find in Files from the menu.
+    */
+    void OnEditZoomIn(wxCommandEvent& event);
+
+    /**
+    * Called when the user selects Edit/Find in Files from the menu.
+    */
+    void OnEditZoomOut(wxCommandEvent& event);
+
+    /**
      * Called when the user selects Project/Add Existing File from the menu.
      */
     void OnProjectAddExistingFile(wxCommandEvent& event);
@@ -1471,6 +1481,9 @@ private:
 
         ID_Search                           = 86,
         ID_WindowSearch                     = 87,
+
+        ID_EditZoomIn                       = 89,
+        ID_EditZoomOut                      = 90,
         
         ID_FirstExternalTool                = 1000,
         ID_FirstRecentFile                  = 2000,
