@@ -124,6 +124,12 @@ Editor::Editor() {
 	dwellDelay = SC_TIME_FOREVER;
 	ticksToDwell = SC_TIME_FOREVER;
 	dwelling = false;
+
+  ac_dwellDelay = SC_TIME_FOREVER;
+  ac_ticksToDwell = SC_TIME_FOREVER;
+  ac_dwelling = false;
+  ac_showing = false;
+
 	ptMouseLast.x = 0;
 	ptMouseLast.y = 0;
 	inDragDrop = ddNone;
@@ -4473,6 +4479,16 @@ void Editor::NotifyDwelling(Point pt, bool state) {
 	NotifyParent(scn);
 }
 
+void Editor::NotifyAutoCompleteDwelling(Point pt, bool state) {
+  SCNotification scn = { 0 };
+  scn.nmhdr.code = state ? SCN_AUTOCOMPDWELLSTART : SCN_AUTOCOMPDWELLEND;
+  scn.position = PositionFromLocation(pt, true);
+  scn.x = pt.x;
+  scn.y = pt.y;
+  scn.token = ac_selection;
+  NotifyParent(scn);
+}
+
 void Editor::NotifyZoom() {
 	SCNotification scn = {0};
 	scn.nmhdr.code = SCN_ZOOM;
@@ -6173,6 +6189,28 @@ void Editor::DwellEnd(bool mouseMoved) {
 	}
 }
 
+void Editor::AutoCompleteStart(Point p)
+{
+  ac_showing = true;
+  ac_ptLast = p;
+  AutoCompleteDwellEnd(p, 0);
+}
+
+void Editor::AutoCompleteEnd()
+{
+  ac_showing = false;
+  AutoCompleteDwellEnd(Point(), 0);
+}
+
+void Editor::AutoCompleteDwellEnd(Point p, int selection)
+{
+  ac_ticksToDwell = ac_dwellDelay;
+  ac_dwelling = false;
+  ac_ptLast = p;
+  ac_selection = selection;
+  NotifyAutoCompleteDwelling(p, ac_dwelling);
+}
+
 void Editor::MouseLeave() {
 	SetHotSpotRange(NULL);
 	if (!HaveMouseCapture()) {
@@ -6621,6 +6659,17 @@ void Editor::Tick() {
 			NotifyDwelling(ptMouseLast, dwelling);
 		}
 	}
+
+  if ((ac_dwellDelay < SC_TIME_FOREVER) &&
+    (ac_ticksToDwell > 0) &&
+    (!HaveMouseCapture()) &&
+    (ac_showing)) {
+    ac_ticksToDwell -= timer.tickSize;
+    if (ac_ticksToDwell <= 0) {
+      ac_dwelling = true;
+      NotifyAutoCompleteDwelling(ac_ptLast, ac_dwelling);
+    }
+  }
 }
 
 bool Editor::Idle() {
@@ -7851,6 +7900,8 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 	case SCI_SETMOUSEDWELLTIME:
 		dwellDelay = wParam;
 		ticksToDwell = dwellDelay;
+    ac_dwellDelay = wParam;
+    ac_ticksToDwell = dwellDelay;
 		break;
 
 	case SCI_GETMOUSEDWELLTIME:
@@ -8675,6 +8726,8 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 	case SCI_PAGEDOWNRECTEXTEND:
 	case SCI_SELECTIONDUPLICATE:
 		return KeyCommand(iMessage);
+
+    //Handle an event for autocomplete to send between scintilla and the editor to set ac_shown for dwelling.
 
 	case SCI_BRACEHIGHLIGHT:
 		SetBraceHighlight(static_cast<int>(wParam), lParam, STYLE_BRACELIGHT);

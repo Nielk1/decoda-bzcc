@@ -26,6 +26,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/wx.h>
 #include <wx/stc/stc.h>
 #include "Project.h"
+#include <wx/tipwin.h>
 
 //
 // Forward declarations.
@@ -158,6 +159,12 @@ public:
     void OnModified(wxStyledTextEvent& event);
 
     /**
+    *
+    */
+    void OnAutocompletionDwellStart(wxStyledTextEvent& event);
+    void OnAutocompletionDwellEnd(wxStyledTextEvent& event);
+
+    /**
     *  Called when a context menu needs to be created
     */
     void CreateContextMenu(wxStyledTextEvent& event);
@@ -235,6 +242,8 @@ private:
     const AutoCompleteManager*      m_autoCompleteManager;
 
     bool                            m_lineMappingDirty;
+    ToolTipWindow*                  m_acTipWindow = nullptr;
+    wxVector<wxString>              m_acTooltips;
 
 };
 

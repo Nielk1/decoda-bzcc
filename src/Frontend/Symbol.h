@@ -71,6 +71,7 @@ public:
   wxString GetParentsName();
   Symbol *GetCurrentModule();
   wxString GetScope(int level = 0);
+  wxString GetTooltip();
 
   Symbol*             parent = nullptr;
   Symbol*             typeSymbol = nullptr;

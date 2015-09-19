@@ -603,7 +603,7 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
   }
 }
 
-void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items, const wxString& fullToken) const
+void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items, const wxString& fullToken, wxVector<wxString> &tooltips) const
 {
     // Autocompletion selection is case insensitive so transform everything
     // to lowercase.
@@ -623,6 +623,8 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
         {
           items += m_languageEntries[i].name;
           items += ' ';
+
+          tooltips.push_back("");
         }
       }
     }
@@ -679,7 +681,10 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
         }
 
         if (canPush)
+        {
           matches.push_back(&m_entries[i]);
+          tooltips.push_back(m_entries[i].symbol->GetTooltip());
+        }
       }
     }
 
@@ -731,7 +736,10 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
         }
 
         if (canPush)
+        {
           assign_matches.push_back(newToken);
+          tooltips.push_back(m_assignments[i].symbol->GetTooltip());
+        }
       }
     }
 

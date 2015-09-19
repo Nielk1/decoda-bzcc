@@ -35,11 +35,13 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 BEGIN_EVENT_TABLE( CodeEdit, wxStyledTextCtrl )
 
-    EVT_LEAVE_WINDOW(               CodeEdit::OnMouseLeave)
-    EVT_KILL_FOCUS(                 CodeEdit::OnKillFocus)
-    EVT_STC_CHARADDED(  wxID_ANY,   CodeEdit::OnCharAdded)
-    EVT_STC_CHANGE(     wxID_ANY,   CodeEdit::OnChange)
-    EVT_STC_MODIFIED(   wxID_ANY,   CodeEdit::OnModified)
+    EVT_LEAVE_WINDOW(                    CodeEdit::OnMouseLeave)
+    EVT_KILL_FOCUS(                      CodeEdit::OnKillFocus)
+    EVT_STC_CHARADDED(         wxID_ANY, CodeEdit::OnCharAdded)
+    EVT_STC_CHANGE(            wxID_ANY, CodeEdit::OnChange)
+    EVT_STC_MODIFIED(          wxID_ANY, CodeEdit::OnModified)
+    EVT_STC_AUTOCOMP_DWELLSTART(wxID_ANY, CodeEdit::OnAutocompletionDwellStart)
+    EVT_STC_AUTOCOMP_DWELLEND(wxID_ANY, CodeEdit::OnAutocompletionDwellEnd)
 
 END_EVENT_TABLE()
 
@@ -503,6 +505,12 @@ void CodeEdit::HideToolTip()
         m_tipWindow->Destroy();
         m_tipWindow = NULL;
     }
+
+    if (m_acTipWindow)
+    {
+      m_acTipWindow->Destroy();
+      m_acTipWindow = nullptr;
+    }
 }
 
 void CodeEdit::OnMouseLeave(wxMouseEvent& event)
@@ -797,9 +805,10 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
     }
 
     wxVector<wxString> prefixes;
+    m_acTooltips.clear();
 
     m_autoCompleteManager->ParsePrefix(prefix, file, GetCurrentLine(), prefixes);
-    m_autoCompleteManager->GetMatchingItems(newToken, prefixes, member, function, items, token);
+    m_autoCompleteManager->GetMatchingItems(newToken, prefixes, member, function, items, token, m_acTooltips);
 
     if (!AutoCompActive() || m_autoCompleteItems != items)
     {
@@ -821,6 +830,19 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
 
     }
 
+}
+
+void CodeEdit::OnAutocompletionDwellStart(wxStyledTextEvent& event)
+{
+  m_acTipWindow = new ToolTipWindow((wxWindow *)event.GetEventObject(), m_acTooltips[event.GetInt()], wxPoint(event.GetX(), event.GetY()));
+}
+
+void CodeEdit::OnAutocompletionDwellEnd(wxStyledTextEvent& event)
+{
+  if (m_acTipWindow)
+    m_acTipWindow->Destroy();
+
+  m_acTipWindow = nullptr;
 }
 
 bool CodeEdit::GetIsLineMappingDirty() const

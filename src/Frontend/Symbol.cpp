@@ -99,3 +99,14 @@ Symbol *Symbol::GetCurrentModule()
 
   return nullptr;
 }
+
+wxString Symbol::GetTooltip()
+{
+  wxString ret;
+  if (typeSymbol)
+    ret += typeSymbol->name + " ";
+
+  ret += name + " ";
+
+  return ret;
+}

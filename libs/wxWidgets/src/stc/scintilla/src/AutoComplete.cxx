@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <algorithm>
 
 #include <string>
 
@@ -17,6 +18,9 @@
 #include "CharacterSet.h"
 #include "AutoComplete.h"
 #include "Scintilla.h"
+#include <wx/Window.h>
+#include <wx/listctrl.h>
+#include <wx/popupwin.h>
 
 #ifdef SCI_NAMESPACE
 using namespace Scintilla;
@@ -63,6 +67,9 @@ void AutoComplete::Start(Window &parent, int ctrlID,
 	active = true;
 	startLen = startLen_;
 	posStart = position;
+  this->location = location;
+  this->lineHeight = lineHeight;
+  this->parent = &parent;
 }
 
 void AutoComplete::SetStopChars(const char *stopChars_) {
@@ -189,5 +196,31 @@ void AutoComplete::Select(const char *word) {
 		Cancel();
 	else
 		lb->Select(location);
+}
+
+class wxSTCListBoxWin : public wxPopupWindow
+{
+public:
+  wxListView*         lv;
+  CallBackAction      doubleClickAction;
+  void*               doubleClickActionData;
+  wxListView* GetLB() { return lv; }
+
+};
+
+Point AutoComplete::GetTooltipPosition()
+{
+  wxWindow *win = (wxWindow *)lb->GetID();
+  wxRect r = win->GetScreenRect();
+  wxListView *list = ((wxSTCListBoxWin*)lb->GetID())->GetLB();
+
+  wxRect rect;
+  list->GetItemRect(GetSelection(), rect);
+
+  Point ret;
+  ret.x = r.GetRight();
+  ret.y = r.GetTop() + rect.GetTop();
+
+  return ret;
 }
 

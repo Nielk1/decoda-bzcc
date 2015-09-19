@@ -23,7 +23,9 @@ class AutoComplete {
 	enum { maxItemLen=1000 };
 
 public:
-
+  Window *parent;
+  Point location;
+  int lineHeight;
 	bool ignoreCase;
 	bool chooseSingle;
 	ListBox *lb;
@@ -78,6 +80,8 @@ public:
 
 	/// Select a list element that starts with word as the current element
 	void Select(const char *word);
+
+  Point GetTooltipPosition();
 };
 
 #ifdef SCI_NAMESPACE

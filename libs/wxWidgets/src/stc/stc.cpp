@@ -129,6 +129,8 @@ wxDEFINE_EVENT( wxEVT_STC_HOTSPOT_CLICK, wxStyledTextEvent );
 wxDEFINE_EVENT( wxEVT_STC_HOTSPOT_DCLICK, wxStyledTextEvent );
 wxDEFINE_EVENT( wxEVT_STC_CALLTIP_CLICK, wxStyledTextEvent );
 wxDEFINE_EVENT( wxEVT_STC_AUTOCOMP_SELECTION, wxStyledTextEvent );
+wxDEFINE_EVENT( wxEVT_STC_AUTOCOMP_DWELLSTART, wxStyledTextEvent);
+wxDEFINE_EVENT( wxEVT_STC_AUTOCOMP_DWELLEND, wxStyledTextEvent);
 wxDEFINE_EVENT( wxEVT_STC_INDICATOR_CLICK, wxStyledTextEvent );
 wxDEFINE_EVENT( wxEVT_STC_INDICATOR_RELEASE, wxStyledTextEvent );
 wxDEFINE_EVENT(wxEVT_STC_DO_CONTEXT_COMMAND, wxStyledTextEvent);
@@ -4952,6 +4954,18 @@ void wxStyledTextCtrl::NotifyParent(SCNotification* _scn) {
         evt.SetX(scn.x);
         evt.SetY(scn.y);
         break;
+
+    case SCN_AUTOCOMPDWELLSTART:
+      evt.SetEventType(wxEVT_STC_AUTOCOMP_DWELLSTART);
+      evt.SetX(scn.x);
+      evt.SetY(scn.y);
+      evt.SetInt(scn.token);
+      break;
+
+    case SCN_AUTOCOMPDWELLEND:
+      evt.SetEventType(wxEVT_STC_AUTOCOMP_DWELLEND);
+      evt.SetInt(scn.token);
+      break;
 
     case SCN_ZOOM:
         evt.SetEventType(wxEVT_STC_ZOOM);

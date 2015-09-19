@@ -196,6 +196,14 @@ protected:	// ScintillaBase subclass needs access to much of Editor
 	int dwellDelay;
 	int ticksToDwell;
 	bool dwelling;
+
+  int ac_dwellDelay;
+  int ac_ticksToDwell;
+  bool ac_dwelling;
+  bool ac_showing;
+  Point ac_ptLast;
+  int   ac_selection = -1;
+
 	enum { selChar, selWord, selSubLine, selWholeLine } selectionType;
 	Point ptMouseLast;
 	enum { ddNone, ddInitial, ddDragging } inDragDrop;
@@ -440,6 +448,7 @@ protected:	// ScintillaBase subclass needs access to much of Editor
 	bool NotifyMarginClick(Point pt, bool shift, bool ctrl, bool alt);
 	void NotifyNeedShown(int pos, int len);
 	void NotifyDwelling(Point pt, bool state);
+  void NotifyAutoCompleteDwelling(Point pt, bool state);
 	void NotifyZoom();
 
 	void NotifyModifyAttempt(Document *document, void *userData);
@@ -451,6 +460,10 @@ protected:	// ScintillaBase subclass needs access to much of Editor
 	void NotifyLexerChanged(Document *doc, void *userData);
 	void NotifyErrorOccurred(Document *doc, void *userData, int status);
 	void NotifyMacroRecord(unsigned int iMessage, uptr_t wParam, sptr_t lParam);
+
+  void AutoCompleteStart(Point p);
+  void AutoCompleteEnd();
+  void AutoCompleteDwellEnd(Point p, int selection);
 
 	void ContainerNeedsUpdate(int flags);
 	void PageMove(int direction, Selection::selTypes sel=Selection::noSel, bool stuttered = false);

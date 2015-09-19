@@ -46,6 +46,7 @@
 #include "PositionCache.h"
 #include "Editor.h"
 #include "ScintillaBase.h"
+#include <wx/Window.h>
 
 #ifdef SCI_NAMESPACE
 using namespace Scintilla;
@@ -133,21 +134,27 @@ int ScintillaBase::KeyCommand(unsigned int iMessage) {
 			// Except for these
 		case SCI_LINEDOWN:
 			AutoCompleteMove(1);
+      Editor::AutoCompleteDwellEnd(ac.GetTooltipPosition(), ac.GetSelection());
 			return 0;
 		case SCI_LINEUP:
 			AutoCompleteMove(-1);
+      Editor::AutoCompleteDwellEnd(ac.GetTooltipPosition(), ac.GetSelection());
 			return 0;
 		case SCI_PAGEDOWN:
 			AutoCompleteMove(ac.lb->GetVisibleRows());
+      Editor::AutoCompleteDwellEnd(ac.GetTooltipPosition(), ac.GetSelection());
 			return 0;
 		case SCI_PAGEUP:
 			AutoCompleteMove(-ac.lb->GetVisibleRows());
+      Editor::AutoCompleteDwellEnd(ac.GetTooltipPosition(), ac.GetSelection());
 			return 0;
 		case SCI_VCHOME:
 			AutoCompleteMove(-5000);
+      Editor::AutoCompleteDwellEnd(ac.GetTooltipPosition(), ac.GetSelection());
 			return 0;
 		case SCI_LINEEND:
 			AutoCompleteMove(5000);
+      Editor::AutoCompleteDwellEnd(ac.GetTooltipPosition(), ac.GetSelection());
 			return 0;
 		case SCI_DELETEBACK:
 			DelCharBack(true);
@@ -218,6 +225,7 @@ void ScintillaBase::AutoCompleteStart(int lenEntered, const char *list) {
 				SetEmptySelection(sel.MainCaret() + lenInsert - lenEntered);
 			}
 			ac.Cancel();
+      Editor::AutoCompleteEnd();
 			return;
 		}
 	}
@@ -280,6 +288,8 @@ void ScintillaBase::AutoCompleteStart(int lenEntered, const char *list) {
 	if (lenEntered != 0) {
 		AutoCompleteMoveToCurrentWord();
 	}
+
+  Editor::AutoCompleteStart(ac.GetTooltipPosition());
 }
 
 void ScintillaBase::AutoCompleteCancel() {
@@ -291,6 +301,7 @@ void ScintillaBase::AutoCompleteCancel() {
 		NotifyParent(scn);
 	}
 	ac.Cancel();
+  Editor::AutoCompleteEnd();
 }
 
 void ScintillaBase::AutoCompleteMove(int delta) {
@@ -351,6 +362,7 @@ void ScintillaBase::AutoCompleteCompleted() {
 	if (!ac.Active())
 		return;
 	ac.Cancel();
+  Editor::AutoCompleteEnd();
 
 	if (listType > 0)
 		return;
@@ -395,6 +407,8 @@ int ScintillaBase::AutoCompleteGetCurrentText(char *buffer) {
 
 void ScintillaBase::CallTipShow(Point pt, const char *defn) {
 	ac.Cancel();
+  Editor::AutoCompleteEnd();
+
 	// If container knows about STYLE_CALLTIP then use it in place of the
 	// STYLE_DEFAULT for the face name, size and character set. Also use it
 	// for the foreground and background colour.
@@ -666,6 +680,7 @@ sptr_t ScintillaBase::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lPara
 
 	case SCI_AUTOCCANCEL:
 		ac.Cancel();
+    Editor::AutoCompleteEnd();
 		break;
 
 	case SCI_AUTOCACTIVE:
