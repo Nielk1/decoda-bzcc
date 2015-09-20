@@ -26,6 +26,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/wx.h>
 #include <wx/stc/stc.h>
 #include "Project.h"
+#include "MainFrame.h"
 #include <wx/tipwin.h>
 
 //
@@ -179,6 +180,17 @@ public:
      */
     void SetIsLineMappingDirty(bool lineMappingDirty);
 
+    MainFrame::OpenFile *GetOpenFile()
+    {
+      return m_openFile;
+    }
+
+    void SetOpenFile(MainFrame::OpenFile *openFile)
+    {
+      m_openFile = openFile;
+      assert(m_openFile->edit == this);
+    }
+
     Project::File *file = NULL;
 
 private:
@@ -227,7 +239,6 @@ private:
      */ 
     wxColor GetInverse(const wxColor& color);
 
-
 private:
 
     int                             m_indentationSize;
@@ -244,6 +255,7 @@ private:
     bool                            m_lineMappingDirty;
     ToolTipWindow*                  m_acTipWindow = nullptr;
     wxVector<wxString>              m_acTooltips;
+    MainFrame::OpenFile*            m_openFile;
 
 };
 

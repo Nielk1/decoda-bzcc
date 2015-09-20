@@ -249,7 +249,6 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_AUINOTEBOOK_TAB_MIDDLE_UP(ID_Notebook,      MainFrame::OnNotebookTabMiddleUp)
     EVT_AUINOTEBOOK_TAB_RIGHT_UP(ID_Notebook,       MainFrame::OnNotebookTabRightUp)
     EVT_AUINOTEBOOK_TAB_RIGHT_DOWN(ID_Notebook,     MainFrame::OnNotebookTabRightDown)
-    EVT_AUINOTEBOOK_BEGIN_DRAG(ID_Notebook, MainFrame::OnNotebookTabDragDone)
 
 
     EVT_LIST_ITEM_ACTIVATED(ID_CallStack,           MainFrame::OnCallStackDoubleClick)
@@ -888,11 +887,11 @@ void MainFrame::OnFileOpen(wxCommandEvent& event)
 void MainFrame::OnFileSave(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        SaveFile(m_openFiles[pageIndex], false);
+      SaveFile(pageIndex->GetOpenFile(), false);
     }
 
 }
@@ -900,21 +899,21 @@ void MainFrame::OnFileSave(wxCommandEvent& event)
 void MainFrame::OnFileSaveAs(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        SaveFile(m_openFiles[pageIndex], true);
+        SaveFile(pageIndex->GetOpenFile(), true);
     }
 
 }
 
 void MainFrame::OnFileShow (wxCommandEvent& event) {
-  int pageIndex = GetSelectedPage();
+  CodeEdit *pageIndex = GetSelectedPage();
 
-  if (pageIndex != -1)
+  if (pageIndex != nullptr)
   {
-    wxFileName fileName = m_openFiles[pageIndex]->file->fileName;
+    wxFileName fileName = pageIndex->GetOpenFile()->file->fileName;
     ShowFileInFolder(fileName);
   }
 }
@@ -922,11 +921,11 @@ void MainFrame::OnFileShow (wxCommandEvent& event) {
 void MainFrame::OnEditUndo(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->Undo();
+        pageIndex->GetOpenFile()->edit->Undo();
     }
 
 }
@@ -934,11 +933,11 @@ void MainFrame::OnEditUndo(wxCommandEvent& event)
 void MainFrame::OnEditRedo(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->Redo();
+        pageIndex->GetOpenFile()->edit->Redo();
     }
 
 }
@@ -946,11 +945,11 @@ void MainFrame::OnEditRedo(wxCommandEvent& event)
 void MainFrame::OnEditCut(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->Cut();
+        pageIndex->GetOpenFile()->edit->Cut();
     }
 
 }
@@ -958,11 +957,11 @@ void MainFrame::OnEditCut(wxCommandEvent& event)
 void MainFrame::OnEditCopy(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->Copy();
+        pageIndex->GetOpenFile()->edit->Copy();
     }
 
 }
@@ -970,11 +969,11 @@ void MainFrame::OnEditCopy(wxCommandEvent& event)
 void MainFrame::OnEditPaste(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->Paste();
+        pageIndex->GetOpenFile()->edit->Paste();
     }
 
 }
@@ -982,11 +981,11 @@ void MainFrame::OnEditPaste(wxCommandEvent& event)
 void MainFrame::OnEditDelete(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->DeleteBack();
+        pageIndex->GetOpenFile()->edit->DeleteBack();
     }
 
 }
@@ -994,11 +993,11 @@ void MainFrame::OnEditDelete(wxCommandEvent& event)
 void MainFrame::OnEditSelectAll(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->SelectAll();
+        pageIndex->GetOpenFile()->edit->SelectAll();
     }
 
 }
@@ -1010,11 +1009,11 @@ void MainFrame::OnEditFind(wxCommandEvent& event)
 
     wxString findText;
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        findText = m_openFiles[pageIndex]->edit->GetSelectedText();
+        findText = pageIndex->GetOpenFile()->edit->GetSelectedText();
     }
 
     if (!findText.IsEmpty() && findText != m_findData.GetFindString())
@@ -1044,11 +1043,11 @@ void MainFrame::OnEditReplace(wxCommandEvent& event)
 
     wxString findText;
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        findText = m_openFiles[pageIndex]->edit->GetSelectedText();
+        findText = pageIndex->GetOpenFile()->edit->GetSelectedText();
     }
 
     if (!findText.IsEmpty() && findText != m_findData.GetFindString())
@@ -1116,11 +1115,11 @@ void MainFrame::OnEditFindInFiles(wxCommandEvent& event)
 
     // If we have something selected, populate the find dialog with it.
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        dialog.SetText(m_openFiles[pageIndex]->edit->GetSelectedText());
+        dialog.SetText(pageIndex->GetOpenFile()->edit->GetSelectedText());
     }
 
     if (dialog.ShowModal() == wxID_OK)
@@ -1254,12 +1253,12 @@ void MainFrame::OnEditFindInFiles(wxCommandEvent& event)
 void MainFrame::OnEditGotoLine(wxCommandEvent& event)
 {
     
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
         
-        CodeEdit* edit = m_openFiles[pageIndex]->edit;
+        CodeEdit* edit = pageIndex->GetOpenFile()->edit;
 
         long currentLine = edit->GetCurrentLine() + 1;
         long numLines    = edit->GetLineCount();
@@ -1281,11 +1280,11 @@ void MainFrame::OnEditGotoLine(wxCommandEvent& event)
 void MainFrame::OnEditUntabify(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->UntabifySelection();
+        pageIndex->GetOpenFile()->edit->UntabifySelection();
     }
 
 }
@@ -1293,11 +1292,11 @@ void MainFrame::OnEditUntabify(wxCommandEvent& event)
 void MainFrame::OnEditComment(wxCommandEvent& event)
 {
     
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->CommentSelection();
+        pageIndex->GetOpenFile()->edit->CommentSelection();
     }
 
 }
@@ -1305,32 +1304,32 @@ void MainFrame::OnEditComment(wxCommandEvent& event)
 void MainFrame::OnEditUncomment(wxCommandEvent& event)
 {
     
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        m_openFiles[pageIndex]->edit->UncommentSelection();
+        pageIndex->GetOpenFile()->edit->UncommentSelection();
     }
 
 }
 
 void MainFrame::OnEditZoomIn(wxCommandEvent& event)
 {
-  int pageIndex = GetSelectedPage();
+  CodeEdit *pageIndex = GetSelectedPage();
 
-  if (pageIndex != -1)
+  if (pageIndex != nullptr)
   {
-    m_openFiles[pageIndex]->edit->ZoomIn();
+    pageIndex->GetOpenFile()->edit->ZoomIn();
   }
 }
 
 void MainFrame::OnEditZoomOut(wxCommandEvent& event)
 {
-  int pageIndex = GetSelectedPage();
+  CodeEdit *pageIndex = GetSelectedPage();
 
-  if (pageIndex != -1)
+  if (pageIndex != nullptr)
   {
-    m_openFiles[pageIndex]->edit->ZoomOut();
+    pageIndex->GetOpenFile()->edit->ZoomOut();
   }
 }
 
@@ -1618,11 +1617,11 @@ void MainFrame::OnDebugQuickWatch(wxCommandEvent& WXUNUSED(event))
 
         wxString expression;
 
-        int pageIndex = GetSelectedPage();
+        CodeEdit *pageIndex = GetSelectedPage();
 
-        if (pageIndex != -1)
+        if (pageIndex != nullptr)
         {
-            expression = m_openFiles[pageIndex]->edit->GetSelectedText();
+            expression = pageIndex->GetOpenFile()->edit->GetSelectedText();
         }
 
         QuickWatchDialog dialog(this);
@@ -1672,12 +1671,12 @@ void MainFrame::OnDebugProcess(wxCommandEvent& event)
 void MainFrame::OnDebugToggleBreakpoint(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
 
-        OpenFile* openFile = m_openFiles[pageIndex];
+        OpenFile* openFile = pageIndex->GetOpenFile();
         unsigned int newLine = openFile->edit->GetCurrentLine();
         
         ToggleBreakpoint(openFile->file, newLine);
@@ -1788,7 +1787,7 @@ void MainFrame::OnWindowClose(wxCommandEvent& WXUNUSED(event))
     if (m_notebook->GetPageCount() > 0)
     {
 
-        int pageIndex = GetSelectedPage();
+        int pageIndex = m_notebook->GetSelection();
 
         if (pageIndex != -1)
         {
@@ -2244,28 +2243,23 @@ void MainFrame::OnNotebookPageChanged(wxAuiNotebookEvent& event)
 
     UpdateDocumentReadOnlyStatus();
     
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
         m_fileChangeWatcher.SetFile(file->file->fileName);
         
-        SetMostRecentlyUsedPage(pageIndex);
+        SetMostRecentlyUsedPage(m_notebook->GetSelection());
 
-        if (m_openFiles[pageIndex]->edit != NULL)
+        if (pageIndex->GetOpenFile()->edit != NULL)
         {
-            m_openFiles[pageIndex]->edit->SetFocus();
+            pageIndex->GetOpenFile()->edit->SetFocus();
         }
     }    
     
     UpdateStatusBarLineAndColumn();
 
-}
-
-void MainFrame::OnNotebookTabDragDone(wxAuiNotebookEvent& event)
-{
-  wxMessageBox(_("test1"));
 }
 
 void MainFrame::OnNotebookTabMiddleUp(wxAuiNotebookEvent& event)
@@ -2347,12 +2341,12 @@ void MainFrame::OnNotebookTabShowHistory(wxCommandEvent& event)
 void MainFrame::OnUpdateNotebookTabCheckOut(wxUpdateUIEvent& event)
 {
 
-    int page = GetSelectedPage();
+  CodeEdit *page = GetSelectedPage();
     bool allowed = false;
 
-    if (page != -1)
+    if (page != nullptr)
     {
-        allowed = (m_openFiles[page]->file->status == Project::Status_CheckedIn);
+      allowed = (page->GetOpenFile()->file->status == Project::Status_CheckedIn);
     }
 
     event.Enable(allowed);
@@ -2362,12 +2356,12 @@ void MainFrame::OnUpdateNotebookTabCheckOut(wxUpdateUIEvent& event)
 void MainFrame::OnUpdateNotebookTabCheckIn(wxUpdateUIEvent& event)
 {
 
-    int page = GetSelectedPage();
+  CodeEdit *page = GetSelectedPage();
     bool allowed = false;
 
-    if (page != -1)
+    if (page != nullptr)
     {
-        allowed = (m_openFiles[page]->file->status == Project::Status_CheckedOut);
+      allowed = (page->GetOpenFile()->file->status == Project::Status_CheckedOut);
     }
 
     event.Enable(allowed);
@@ -2377,12 +2371,12 @@ void MainFrame::OnUpdateNotebookTabCheckIn(wxUpdateUIEvent& event)
 void MainFrame::OnUpdateNotebookTabShowHistory(wxUpdateUIEvent& event)
 {
 
-    int page = GetSelectedPage();
+    CodeEdit *page = GetSelectedPage();
     bool allowed = false;
 
-    if (page != -1)
+    if (page != nullptr)
     {
-        allowed = (m_openFiles[page]->file->status != Project::Status_None);
+      allowed = (page->GetOpenFile()->file->status != Project::Status_None);
     }
 
     event.Enable(allowed);
@@ -2516,15 +2510,15 @@ void MainFrame::OnCodeEditMarginClick(wxStyledTextEvent& event)
 
     // Toggle a break point.
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
 
         unsigned int pos  = event.GetPosition();
-        unsigned int newLine = m_openFiles[pageIndex]->edit->LineFromPosition(pos);
+        unsigned int newLine = pageIndex->GetOpenFile()->edit->LineFromPosition(pos);
 
-        OpenFile* openFile = m_openFiles[pageIndex];
+        OpenFile* openFile = pageIndex->GetOpenFile();
         ToggleBreakpoint(openFile->file, newLine);
 
     }
@@ -2597,12 +2591,12 @@ void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event)
 
     // Show a message indicating the file is ready only.
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
 
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
 
         // If thi is an "unavailable" file, don't let the user edit it at all.
         if (file->file->state != CodeState_Normal)
@@ -2669,29 +2663,29 @@ void MainFrame::OnCodeEditModified(wxStyledTextEvent& event)
         return;
     }
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
     // If for some reason the event didn't come from the edit we have open,
     // search for the correct one.
-    if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetId() != event.GetId())
+    if (pageIndex != nullptr && pageIndex->GetOpenFile()->edit->GetId() != event.GetId())
     {
-        pageIndex = -1;
+        pageIndex = nullptr;
         for (unsigned int i = 0; i < m_openFiles.size(); ++i)
         {
             if (m_openFiles[i]->edit->GetId() == event.GetId())
             {
-                pageIndex = i;
+              pageIndex = m_openFiles[i]->edit;
             }
         }
     }
 
-    if (pageIndex == -1)
+    if (pageIndex == nullptr)
     {
         // No matching file.
         return;
     }
 
-    CodeEdit* edit = m_openFiles[pageIndex]->edit;
+    CodeEdit* edit = pageIndex->GetOpenFile()->edit;
 
     unsigned int position = event.GetPosition();
     
@@ -2700,7 +2694,7 @@ void MainFrame::OnCodeEditModified(wxStyledTextEvent& event)
 
     // Shift the breakpoints (note STCntilla automatically moves the markers).
 
-    Project::File* file = m_openFiles[pageIndex]->file;
+    Project::File* file = pageIndex->GetOpenFile()->file;
 
     if (linesAdded > 0)
     {
@@ -2880,29 +2874,29 @@ wxVector<wxString> FindVariableNames(CodeEdit *page, int position)
 
 void MainFrame::OnCodeContextCommand(wxStyledTextEvent& event)
 {
-  int pageIndex = GetSelectedPage();
+  CodeEdit *pageIndex = GetSelectedPage();
 
   // If for some reason the event didn't come from the edit we have open,
   // search for the correct one.
-  if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetId() != event.GetId())
+  if (pageIndex != nullptr && pageIndex->GetOpenFile()->edit->GetId() != event.GetId())
   {
-    pageIndex = -1;
+    pageIndex = nullptr;
     for (unsigned int i = 0; i < m_openFiles.size(); ++i)
     {
       if (m_openFiles[i]->edit->GetId() == event.GetId())
       {
-        pageIndex = i;
+        pageIndex = m_openFiles[i]->edit;
       }
     }
   }
 
-  if (pageIndex == -1)
+  if (pageIndex == nullptr)
   {
     // No matching file.
     return;
   }
 
-  CodeEdit* edit = m_openFiles[pageIndex]->edit;
+  CodeEdit* edit = pageIndex->GetOpenFile()->edit;
   if (event.GetInt() == idcmdGotoDefinition)
   {
     int startPos = m_contextSelection;
@@ -3634,12 +3628,12 @@ void MainFrame::OnOutputKeyDown(wxKeyEvent& event)
 void MainFrame::OnSourceControlCheckIn(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
         
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
 
         std::vector<std::string> fileNames;
         fileNames.push_back(std::string(file->file->fileName.GetFullPath()));
@@ -3656,11 +3650,11 @@ void MainFrame::OnUpdateSourceControlCheckIn(wxUpdateUIEvent& event)
 
     bool allow = false;
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
         allow = file->file->status == Project::Status_CheckedOut;
     }
 
@@ -3671,12 +3665,12 @@ void MainFrame::OnUpdateSourceControlCheckIn(wxUpdateUIEvent& event)
 void MainFrame::OnSourceControlCheckOut(wxCommandEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
         
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
 
         std::vector<std::string> fileNames;
         fileNames.push_back(std::string(file->file->fileName.GetFullPath()));
@@ -3693,11 +3687,11 @@ void MainFrame::OnUpdateSourceControlCheckOut(wxUpdateUIEvent& event)
 
     bool allow = false;
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
         allow = file->file->status == Project::Status_CheckedIn;
     }
 
@@ -3708,12 +3702,12 @@ void MainFrame::OnUpdateSourceControlCheckOut(wxUpdateUIEvent& event)
 void MainFrame::OnSourceControlUndoCheckOut(wxCommandEvent& event)
 {
     
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
         
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
 
         std::vector<std::string> fileNames;
         fileNames.push_back(std::string(file->file->fileName.GetFullPath()));
@@ -3730,11 +3724,11 @@ void MainFrame::OnUpdateSourceControlUndoCheckOut(wxUpdateUIEvent& event)
 
     bool allow = false;
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
         allow = file->file->status == Project::Status_CheckedOut;
     }
 
@@ -3766,12 +3760,12 @@ void MainFrame::OnFindFind(wxFindDialogEvent& event)
 void MainFrame::OnFindReplace(wxFindDialogEvent& event)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
 
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
 
         // Check to see if the currently selected text matches our search string.
 
@@ -3809,12 +3803,12 @@ void MainFrame::OnFindReplace(wxFindDialogEvent& event)
 void MainFrame::OnFindReplaceAll(wxFindDialogEvent& event)
 {
     
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
         
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
 
         file->edit->BeginUndoAction();
 
@@ -4047,11 +4041,11 @@ void MainFrame::SubstituteVariableArguments(wxString& text) const
     
     wxFileName itemFileName;
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        itemFileName = m_openFiles[pageIndex]->file->fileName;
+        itemFileName = pageIndex->GetOpenFile()->file->fileName;
     }
 
     text.Replace("$(ItemPath)",     itemFileName.GetFullPath());
@@ -4626,6 +4620,7 @@ MainFrame::OpenFile* MainFrame::OpenProjectFile(Project::File* file)
     openFile->edit->Create(m_notebook);
     openFile->edit->SetDropTarget( new CodeEditDropTarget(openFile->edit, this) );
     openFile->edit->file = file;
+    openFile->edit->SetOpenFile(openFile);
     
     wxString fileName = openFile->file->fileName.GetFullPath();
 
@@ -4984,8 +4979,7 @@ MainFrame::OpenFile* MainFrame::OpenDocument(const wxString& fileName)
 
 void MainFrame::CloseDocument(int page, bool promptForSave)
 {
-
-    CodeEdit* edit = m_openFiles[page]->edit;
+    CodeEdit *edit = (CodeEdit *)m_notebook->GetPage(page);
 
     if (PreNotebookPageClose(page))
     {
@@ -5087,11 +5081,11 @@ void MainFrame::SetDefaultHotKeys()
 void MainFrame::FindNext(const wxString& text, int flags)
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
         FindText(file, text, flags);
     }
 
@@ -5102,12 +5096,12 @@ void MainFrame::UpdateStatusBarLineAndColumn()
 
     // Update the line and column number in the status bar.
   /*
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
 
-        CodeEdit* edit = m_openFiles[pageIndex]->edit;
+        CodeEdit* edit = pageIndex->GetOpenFile()->edit;
 
         int pos  = edit->GetCurrentPos();
         int line = edit->LineFromPosition(pos) + 1;
@@ -5606,11 +5600,11 @@ void MainFrame::GetProjectSelectedFileNames(std::vector<std::string>& fileNames)
 void MainFrame::GetNotebookTabSelectedFileNames(std::vector<std::string>& fileNames) const
 {
 
-    int page = GetSelectedPage();
+    CodeEdit *page = GetSelectedPage();
 
-    if (page != -1)
+    if (page != nullptr)
     {
-        fileNames.push_back(std::string(m_openFiles[page]->file->fileName.GetFullPath()));
+        fileNames.push_back(std::string(page->GetOpenFile()->file->fileName.GetFullPath()));
     }
 
 }
@@ -5956,16 +5950,16 @@ void MainFrame::EnableWhenInactive(wxUpdateUIEvent& event)
 
 void MainFrame::EnableWhenFileIsOpen(wxUpdateUIEvent& event)
 {
-    int pageIndex = GetSelectedPage();
-    event.Enable(pageIndex != -1);
+    CodeEdit *pageIndex = GetSelectedPage();
+    event.Enable(pageIndex != nullptr);
 }
 
 void MainFrame::EnableWhenFileHasFocus(wxUpdateUIEvent& event)
 {
     
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetSTCFocus())
+    if (pageIndex != nullptr && pageIndex->GetOpenFile()->edit->GetSTCFocus())
     {
         event.Enable(true);
     }
@@ -5981,11 +5975,11 @@ void MainFrame::EnableWhenTextIsSelected(wxUpdateUIEvent& event)
     
     bool selected = false;
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1 && m_openFiles[pageIndex]->edit->GetSTCFocus())
+    if (pageIndex != nullptr && pageIndex->GetOpenFile()->edit->GetSTCFocus())
     {
-        int length = m_openFiles[pageIndex]->edit->GetSelectionEnd() - m_openFiles[pageIndex]->edit->GetSelectionStart();
+        int length = pageIndex->GetOpenFile()->edit->GetSelectionEnd() - pageIndex->GetOpenFile()->edit->GetSelectionStart();
         selected = length > 0;
     }
 
@@ -5993,9 +5987,8 @@ void MainFrame::EnableWhenTextIsSelected(wxUpdateUIEvent& event)
 
 }
 
-int MainFrame::GetSelectedPage() const
+CodeEdit *MainFrame::GetSelectedPage() const
 {
-
     if (m_notebook->GetPageCount() > 0)
     {
         const wxWindow* selection = m_notebook->GetPage(m_notebook->GetSelection());
@@ -6004,12 +5997,12 @@ int MainFrame::GetSelectedPage() const
         {
             if (m_openFiles[i]->edit == selection)
             {
-                return i;
+              return m_openFiles[i]->edit;
             }
         }
     }
 
-    return -1;
+    return nullptr;
 
 }
 
@@ -6267,12 +6260,12 @@ bool MainFrame::ShowProjectSettingsDialog()
 void MainFrame::UpdateDocumentReadOnlyStatus()
 {
 
-    int pageIndex = GetSelectedPage();
+    CodeEdit *pageIndex = GetSelectedPage();
 
-    if (pageIndex != -1)
+    if (pageIndex != nullptr)
     {
 
-        OpenFile* file = m_openFiles[pageIndex];
+        OpenFile* file = pageIndex->GetOpenFile();
         bool writeable = true;
 
         if (!file->file->state == CodeState_Normal)
@@ -6342,8 +6335,8 @@ void MainFrame::UpdateSyntaxColoring(OpenFile* openFile)
 
 bool MainFrame::PreNotebookPageClose(int page, bool promptForSave)
 {
-
-    OpenFile* openFile = m_openFiles[page];
+  CodeEdit *edit = (CodeEdit *)m_notebook->GetPage(page);
+  OpenFile* openFile = edit->GetOpenFile(); // m_openFiles[page];
 
     // Check if we need to save the document.
 
@@ -6389,7 +6382,8 @@ bool MainFrame::PreNotebookPageClose(int page, bool promptForSave)
     }
 
     // Remove the file associate with the page.
-    m_openFiles.erase(m_openFiles.begin() + page);
+    auto iter = std::find(m_openFiles.begin(), m_openFiles.end(), openFile);
+    m_openFiles.erase(iter);
     delete openFile;
 
     if (page == m_notebook->GetSelection())

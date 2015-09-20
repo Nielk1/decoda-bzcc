@@ -54,6 +54,7 @@ wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_MIDDLE_UP, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_MIDDLE_DOWN, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_RIGHT_UP, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_RIGHT_DOWN, wxAuiNotebookEvent);
+wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_MOVED, wxAuiNotebookEvent);
 
 IMPLEMENT_CLASS(wxAuiNotebook, wxControl)
 IMPLEMENT_CLASS(wxAuiTabCtrl, wxControl)
@@ -2568,6 +2569,13 @@ void wxAuiNotebook::OnTabDragMotion(wxAuiNotebookEvent& evt)
             dest_tabs->Refresh();
             m_lastDragX = pt.x;
 
+
+            // notify owner that the tab has been moved
+            wxAuiNotebookEvent e(wxEVT_AUINOTEBOOK_TAB_MOVED, m_windowId);
+            e.SetEventObject(this);
+            e.src_idx = src_idx;
+            e.dest_idx = dest_idx;
+            GetEventHandler()->ProcessEvent(e);
         }
 
         return;

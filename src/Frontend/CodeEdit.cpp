@@ -567,14 +567,16 @@ void CodeEdit::OnCharAdded(wxStyledTextEvent& event)
     {
 
         // Handle auto completion.
-
+      int style = GetStyleAt(GetCurrentPos());
+      if (style != wxSTC_LUA_COMMENT && style != wxSTC_LUA_STRING && style != wxSTC_LUA_COMMENTLINE && style != wxSTC_LUA_COMMENTDOC)
+      {
         wxString token;
-        
+
         if (GetTokenFromPosition(GetCurrentPos() - 1, ".:", token))
         {
-            StartAutoCompletion(token);
+          StartAutoCompletion(token);
         }
-
+      }
     }
 
     event.Skip();
@@ -742,7 +744,6 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
 
 void CodeEdit::StartAutoCompletion(const wxString& token)
 {
-
     wxASSERT(m_autoCompleteManager != NULL);
 
     wxString items;
@@ -834,7 +835,10 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
 
 void CodeEdit::OnAutocompletionDwellStart(wxStyledTextEvent& event)
 {
-  m_acTipWindow = new ToolTipWindow((wxWindow *)event.GetEventObject(), m_acTooltips[event.GetInt()], wxPoint(event.GetX(), event.GetY()));
+  wxPoint p(event.GetX(), event.GetY());
+
+  if (p.x != 0 && p.y != 0)
+    m_acTipWindow = new ToolTipWindow((wxWindow *)event.GetEventObject(), m_acTooltips[event.GetInt()], p);
 }
 
 void CodeEdit::OnAutocompletionDwellEnd(wxStyledTextEvent& event)

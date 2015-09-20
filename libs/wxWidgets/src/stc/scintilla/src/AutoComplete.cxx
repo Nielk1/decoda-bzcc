@@ -210,16 +210,26 @@ public:
 
 Point AutoComplete::GetTooltipPosition()
 {
-  wxWindow *win = (wxWindow *)lb->GetID();
-  wxRect r = win->GetScreenRect();
-  wxListView *list = ((wxSTCListBoxWin*)lb->GetID())->GetLB();
-
-  wxRect rect;
-  list->GetItemRect(GetSelection(), rect);
-
   Point ret;
-  ret.x = r.GetRight();
-  ret.y = r.GetTop() + rect.GetTop();
+  wxWindow *win = (wxWindow *)lb->GetID();
+  if (win)
+  {
+    wxRect r = win->GetScreenRect();
+    wxSTCListBoxWin *box = (wxSTCListBoxWin*)lb->GetID();
+    if (box)
+    {
+      wxListView *list = box->GetLB();
+
+      if (list)
+      {
+        wxRect rect;
+        list->GetItemRect(GetSelection(), rect);
+
+        ret.x = r.GetRight();
+        ret.y = r.GetTop() + rect.GetTop();
+      }
+    }
+  }
 
   return ret;
 }

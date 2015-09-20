@@ -33,8 +33,8 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/docview.h>
 #include <wx/help.h>
 #include <wx/cshelp.h>
+#include <wx/stc/stc.h>
 
-#include "CodeEdit.h"
 #include "Project.h"
 #include "KeyBinder.h"
 #include "FontColorSettings.h"
@@ -54,7 +54,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 //
 // Forward declarations.
 //
-
+class CodeEdit;
 class ExternalTool;
 class WatchWindow;
 class OutputWindow;
@@ -1249,7 +1249,7 @@ private:
      * Returns the index of the currently selected page (or open file index) or -1
      * if no document is open.
      */
-    int GetSelectedPage() const;
+    CodeEdit *GetSelectedPage() const;
 
     /**
      * Removes all of the breakpoints from the specified file. This will also remove
