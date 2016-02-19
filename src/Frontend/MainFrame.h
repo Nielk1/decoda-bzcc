@@ -40,7 +40,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "FontColorSettings.h"
 #include "EditorSettings.h"
 #include "SystemSettings.h"
-#include "SourceControl.h"
+//#include "SourceControl.h"
 #include "FileChangeWatcher.h"
 #include "Updater.h"
 #include "StringHistory.h"
@@ -483,48 +483,48 @@ public:
      * Called when the user selects the Check Out option from the notebook tab
      * context menu.
      */
-    void OnNotebookTabCheckOut(wxCommandEvent& event);
+    //void OnNotebookTabCheckOut(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Check In option from the notebook tab
      * context menu.
      */
-    void OnNotebookTabCheckIn(wxCommandEvent& event);
+    //void OnNotebookTabCheckIn(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Undo Check Out option from the notebook
      * tab context menu.
      */
-    void OnNotebookTabUndoCheckOut(wxCommandEvent& event);
+    //void OnNotebookTabUndoCheckOut(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Diff option from the notebook tab
      * context menu.
      */
-    void OnNotebookTabDiff(wxCommandEvent& event);
+    //void OnNotebookTabDiff(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Show History option from the notebook
      * tab context menu.
      */
-    void OnNotebookTabShowHistory(wxCommandEvent& event);
+    //void OnNotebookTabShowHistory(wxCommandEvent& event);
 
     /**
      * Called to update the Check Out and Show Changes options on the notebook
      * tab context menu.
      */
-    void OnUpdateNotebookTabCheckOut(wxUpdateUIEvent& event);
+    //void OnUpdateNotebookTabCheckOut(wxUpdateUIEvent& event);
 
     /**
      * Called to update the Check In and Undo Check Out options on the notebook
      * tab menu.
      */
-    void OnUpdateNotebookTabCheckIn(wxUpdateUIEvent& event);
+    //void OnUpdateNotebookTabCheckIn(wxUpdateUIEvent& event);
 
     /**
      * Called to update the Show History option on the notebook tab context menu.
      */
-    void OnUpdateNotebookTabShowHistory(wxUpdateUIEvent& event);
+    //void OnUpdateNotebookTabShowHistory(wxUpdateUIEvent& event);
 
     /**
      * Called when the user double clicks in the call stack window.
@@ -643,42 +643,42 @@ public:
     /**
      * Called when the user selects Source Control/Check In from the menu.
      */
-    void OnSourceControlCheckIn(wxCommandEvent& event);
+    //void OnSourceControlCheckIn(wxCommandEvent& event);
 
     /**
      * Called to update the Source Control/Check In menu item.
      */
-    void OnUpdateSourceControlCheckIn(wxUpdateUIEvent& event);
+    //void OnUpdateSourceControlCheckIn(wxUpdateUIEvent& event);
 
     /**
      * Called when the user selects Source Control/Check Out from the menu.
      */
-    void OnSourceControlCheckOut(wxCommandEvent& event);
+    //void OnSourceControlCheckOut(wxCommandEvent& event);
 
     /**
      * Called to update the Source Control/Check Out menu item.
      */
-    void OnUpdateSourceControlCheckOut(wxUpdateUIEvent& event);
+    //void OnUpdateSourceControlCheckOut(wxUpdateUIEvent& event);
 
     /**
      * Called when the user selects Source Control/Undo Check Out from the menu.
      */
-    void OnSourceControlUndoCheckOut(wxCommandEvent& event);
+    //void OnSourceControlUndoCheckOut(wxCommandEvent& event);
 
     /**
      * Called to update the Source Control/Undo Check Out menu item.
      */
-    void OnUpdateSourceControlUndoCheckOut(wxUpdateUIEvent& event);
+    //void OnUpdateSourceControlUndoCheckOut(wxUpdateUIEvent& event);
 
     /**
      * Called when the user selects Source Control/Refresh File Status from the menu.
      */
-    void OnSourceControlRefresh(wxCommandEvent& event);
+    //void OnSourceControlRefresh(wxCommandEvent& event);
 
     /**
      * Called to update the Source Control/Refresh File Status menu.
      */
-    void OnUpdateSourceControlRefresh(wxUpdateUIEvent& event);
+    //void OnUpdateSourceControlRefresh(wxUpdateUIEvent& event);
 
     /**
      * Called when the user closes the find dialog.
@@ -726,52 +726,52 @@ public:
      * Called when the user selects the Check Out option from the project
      * explorer context menu.
      */
-    void OnContextCheckOut(wxCommandEvent& event);
+    //void OnContextCheckOut(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Check In option from the project
      * explorer context menu.
      */
-    void OnContextCheckIn(wxCommandEvent& event);
+    //void OnContextCheckIn(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Undo Check Out option from the project
      * explorer context menu.
      */
-    void OnContextUndoCheckOut(wxCommandEvent& event);
+    //void OnContextUndoCheckOut(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Diff option from the project
      * explorer context menu.
      */
-    void OnContextDiff(wxCommandEvent& event);
+    //void OnContextDiff(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Show History option from the project
      * explorer context menu.
      */
-    void OnContextShowHistory(wxCommandEvent& event);
+    //void OnContextShowHistory(wxCommandEvent& event);
 
     /**
      * Called when the user selects the Remove option from the project
      * explorer context menu.
      */
-    void OnContextRemove(wxCommandEvent& event);
+    //void OnContextRemove(wxCommandEvent& event);
 
     /**
      * Called to update the Check Out and Show Changes options on the context menu.
      */
-    void OnUpdateContextCheckOut(wxUpdateUIEvent& event);
+    //void OnUpdateContextCheckOut(wxUpdateUIEvent& event);
 
     /**
       * Called to update the Check In and Undo Check Out options on the context menu.
      */
-    void OnUpdateContextCheckIn(wxUpdateUIEvent& event);
+    //void OnUpdateContextCheckIn(wxUpdateUIEvent& event);
 
     /**
      * Called to update the Show History option on the context menu.
      */
-    void OnUpdateContextShowHistory(wxUpdateUIEvent& event);
+    //void OnUpdateContextShowHistory(wxUpdateUIEvent& event);
 
     /**
      * Called when one of the worker threads exits.
@@ -1262,17 +1262,17 @@ private:
      * Initialize source control for the current project, if this project is
      * setup to use source control. Otherwise it has no effect.
      */
-    bool InitializeSourceControl();
+    //bool InitializeSourceControl();
 
     /**
      * Updates the source control status of all the files in the project.
      */
-    void UpdateProjectFileStatus();
+    //void UpdateProjectFileStatus();
 
     /**
      * Updates the soruce control status of a single file in the project.
      */
-    void UpdateProjectFileStatus(Project::File* file);
+    //void UpdateProjectFileStatus(Project::File* file);
 
     /**
      * Gets the names of all the files selected in the project explorer widow.
@@ -1359,7 +1359,7 @@ private:
     /**
      * Sets the status for a file based on the specified source control status.
      */
-    void SetFileStatus(Project::File* file, SourceControl::Status status);
+    //void SetFileStatus(Project::File* file, SourceControl::Status status);
 
     /**
      * Updates the line mapping for script file source based on the a diff with a disk file.
@@ -1553,13 +1553,13 @@ private:
     wxFileHistory                   m_findDirectoryHistory;
     StringHistory                   m_findTextHistory;
 
-    SourceControl                   m_sourceControl;
+    //SourceControl                   m_sourceControl;
 
     wxMenu*                         m_contextMenu;
     wxMenu*                         m_directoryContextMenu;
     wxMenu*                         m_notebookTabMenu;
 
-    FileStatusThread*               m_fileStatusThread[2];            
+    //FileStatusThread*               m_fileStatusThread[2];            
     
     FileChangeWatcher               m_fileChangeWatcher;
 

@@ -774,7 +774,7 @@ void ProjectExplorerWindow::RemoveFileSymbols(wxTreeItemId node, const stdext::h
 
 void ProjectExplorerWindow::SetFileContextMenu(wxMenu* contextMenu)
 {
-    m_contextMenu = contextMenu;
+    //m_contextMenu = contextMenu;
 }
 
 void ProjectExplorerWindow::SetDirectoryContextMenu(wxMenu* contextMenu)

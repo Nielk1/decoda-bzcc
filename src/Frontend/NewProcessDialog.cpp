@@ -117,7 +117,7 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 	
 	fgSizer17->Add( sbSizer1, 1, wxALL|wxEXPAND, 10 );
 	
-	wxStaticBoxSizer* sbSizer3;
+	/*wxStaticBoxSizer* sbSizer3;
 	sbSizer3 = new wxStaticBoxSizer( new wxStaticBox( this, -1, wxT("Source Control") ), wxVERTICAL );
 	
 	wxFlexGridSizer* fgSizer4;
@@ -152,7 +152,7 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 	
 	sbSizer3->Add( fgSizer4, 1, wxEXPAND, 5 );
 	
-	fgSizer17->Add( sbSizer3, 1, wxALL|wxEXPAND, 10 );
+	fgSizer17->Add( sbSizer3, 1, wxALL|wxEXPAND, 10 );*/
 	
 	m_sdbSizer1 = new wxStdDialogButtonSizer();
 	m_sdbSizer1->AddButton( new wxButton( this, wxID_OK ) );
@@ -161,13 +161,13 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 	fgSizer17->Add( m_sdbSizer1, 0, wxALIGN_RIGHT|wxALL, 10 );
 	    
     // Add the source control providers to the dropdown list.
-    for (unsigned int i = 0; i < SourceControl::GetNumProviders(); ++i)
+    /*for (unsigned int i = 0; i < SourceControl::GetNumProviders(); ++i)
     {
         m_sccProviderChoice->Append(SourceControl::GetProviderName(i));
     }
 
     m_sccProviderChoice->SetSelection(0);
-    UpdateSccControls();
+    UpdateSccControls();*/
 
 	SetSizer( fgSizer17 );
 

@@ -49,7 +49,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "EditorSettingsPanel.h"
 #include "SystemSettingsPanel.h"
 #include "AboutDialog.h"
-#include "FileStatusThread.h"
+//#include "FileStatusThread.h"
 #include "ThreadEvent.h"
 #include "DebugEvent.h"
 #include "FileEvent.h"
@@ -149,14 +149,14 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_UPDATE_UI(ID_FileOpenProject,               MainFrame::EnableWhenInactive)
 
     // SCC menu events.
-    EVT_MENU(ID_SourceControlCheckIn,               MainFrame::OnSourceControlCheckIn)
+    /*EVT_MENU(ID_SourceControlCheckIn,               MainFrame::OnSourceControlCheckIn)
     EVT_UPDATE_UI(ID_SourceControlCheckIn,          MainFrame::OnUpdateSourceControlCheckIn)
     EVT_MENU(ID_SourceControlCheckOut,              MainFrame::OnSourceControlCheckOut)
     EVT_UPDATE_UI(ID_SourceControlCheckOut,         MainFrame::OnUpdateSourceControlCheckOut)
     EVT_MENU(ID_SourceControlUndoCheckOut,          MainFrame::OnSourceControlUndoCheckOut)
     EVT_UPDATE_UI(ID_SourceControlUndoCheckOut,     MainFrame::OnUpdateSourceControlUndoCheckOut)
     EVT_MENU(ID_SourceControlRefresh,               MainFrame::OnSourceControlRefresh)
-    EVT_UPDATE_UI(ID_SourceControlRefresh,          MainFrame::OnUpdateSourceControlRefresh)
+    EVT_UPDATE_UI(ID_SourceControlRefresh,          MainFrame::OnUpdateSourceControlRefresh)*/
 
     // Debug menu events.
     EVT_MENU(ID_DebugStart,                         MainFrame::OnDebugStart)
@@ -207,7 +207,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(ID_HelpContents,                       MainFrame::OnHelpContents)
 
     // Notebook tab context menu events.
-    EVT_MENU(ID_NotebookTabCheckOut,                MainFrame::OnNotebookTabCheckOut)
+   /* EVT_MENU(ID_NotebookTabCheckOut,                MainFrame::OnNotebookTabCheckOut)
     EVT_UPDATE_UI(ID_NotebookTabCheckOut,           MainFrame::OnUpdateNotebookTabCheckOut)
     EVT_MENU(ID_NotebookTabCheckIn,                 MainFrame::OnNotebookTabCheckIn)
     EVT_UPDATE_UI(ID_NotebookTabCheckIn,            MainFrame::OnUpdateNotebookTabCheckIn)
@@ -216,7 +216,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(ID_NotebookTabUndoCheckOut,            MainFrame::OnNotebookTabUndoCheckOut)
     EVT_UPDATE_UI(ID_NotebookTabUndoCheckOut,       MainFrame::OnUpdateNotebookTabCheckIn)
     EVT_MENU(ID_NotebookTabShowHistory,             MainFrame::OnNotebookTabShowHistory)
-    EVT_UPDATE_UI(ID_NotebookTabShowHistory,        MainFrame::OnUpdateNotebookTabShowHistory)
+    EVT_UPDATE_UI(ID_NotebookTabShowHistory,        MainFrame::OnUpdateNotebookTabShowHistory)*/
     EVT_MENU(ID_NotebookTabSave,                    MainFrame::OnFileSave)
     EVT_MENU(ID_NotebookTabClose,                   MainFrame::OnWindowClose)
     EVT_MENU(ID_NotebookTabShowFile,                MainFrame::OnFileShow)
@@ -226,7 +226,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_TREE_ITEM_ACTIVATED(ID_ProjectExplorer,     MainFrame::OnProjectExplorerItemActivated)
     EVT_TREE_KEY_DOWN(ID_ProjectExplorer,           MainFrame::OnProjectExplorerKeyDown)
     
-    EVT_MENU(ID_ContextCheckOut,                    MainFrame::OnContextCheckOut)
+    /*EVT_MENU(ID_ContextCheckOut,                    MainFrame::OnContextCheckOut)
     EVT_MENU(ID_ContextCheckIn,                     MainFrame::OnContextCheckIn)
     EVT_MENU(ID_ContextUndoCheckOut,                MainFrame::OnContextUndoCheckOut)
     EVT_MENU(ID_ContextDiff,                        MainFrame::OnContextDiff)
@@ -236,7 +236,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_UPDATE_UI(ID_ContextCheckIn,                MainFrame::OnUpdateContextCheckIn)
     EVT_UPDATE_UI(ID_ContextUndoCheckOut,           MainFrame::OnUpdateContextCheckIn)
     EVT_UPDATE_UI(ID_ContextShowHistory,            MainFrame::OnUpdateContextShowHistory)
-    EVT_UPDATE_UI(ID_ContextDiff,                   MainFrame::OnUpdateContextCheckIn)
+    EVT_UPDATE_UI(ID_ContextDiff,                   MainFrame::OnUpdateContextCheckIn)*/
     
     EVT_MENU(wxID_ANY,                              MainFrame::OnMenu)
 
@@ -458,13 +458,13 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
 
     // Create the context menu for files in the project explorer.
     m_contextMenu = new wxMenu;
-    m_contextMenu->Append(ID_ContextCheckOut,       _("Check &Out"));
+    /*m_contextMenu->Append(ID_ContextCheckOut,       _("Check &Out"));
     m_contextMenu->Append(ID_ContextCheckIn,        _("Check &In"));
     m_contextMenu->Append(ID_ContextUndoCheckOut,   _("&Undo Check Out"));
     m_contextMenu->AppendSeparator();
     m_contextMenu->Append(ID_ContextDiff,           _("&Show Changes..."));
     m_contextMenu->Append(ID_ContextShowHistory,    _("Show &History..."));
-    m_contextMenu->AppendSeparator();
+    m_contextMenu->AppendSeparator();*/
     m_contextMenu->Append(ID_ContextRemove,         _("&Remove"));
 
     m_projectExplorer->SetFileContextMenu(m_contextMenu);
@@ -479,16 +479,16 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     m_notebookTabMenu->Append(ID_NotebookTabSave,           _("&Save"));
     m_notebookTabMenu->Append(ID_NotebookTabClose,          _("&Close"));
     m_notebookTabMenu->Append(ID_NotebookTabShowFile,       _("Show in &Folder"));
-    m_notebookTabMenu->AppendSeparator();
+    /*m_notebookTabMenu->AppendSeparator();
     m_notebookTabMenu->Append(ID_NotebookTabCheckOut,       _("Check &Out"));
     m_notebookTabMenu->Append(ID_NotebookTabCheckIn,        _("Check &In"));
     m_notebookTabMenu->Append(ID_NotebookTabUndoCheckOut,   _("&Undo Check Out"));
     m_notebookTabMenu->AppendSeparator();
     m_notebookTabMenu->Append(ID_NotebookTabDiff,           _("Sho&w Changes..."));
-    m_notebookTabMenu->Append(ID_NotebookTabShowHistory,    _("Show &History..."));
+    m_notebookTabMenu->Append(ID_NotebookTabShowHistory,    _("Show &History..."));*/
 
-    m_fileStatusThread[0] = NULL;
-    m_fileStatusThread[1] = NULL;
+    //m_fileStatusThread[0] = NULL;
+    //m_fileStatusThread[1] = NULL;
 
     // Make down the default option for find operaitons, since that's a lot
     // more common than up.
@@ -528,13 +528,13 @@ MainFrame::~MainFrame()
 
     m_fileChangeWatcher.Shutdown();
 
-    if (m_fileStatusThread[0] != NULL)
+    /*if (m_fileStatusThread[0] != NULL)
     {
         m_fileStatusThread[0]->Wait();
     }
 
     delete m_fileStatusThread[0];
-    delete m_fileStatusThread[1];
+    delete m_fileStatusThread[1];*/
 
     delete m_contextMenu;
     m_contextMenu = NULL;
@@ -661,12 +661,13 @@ void MainFrame::InitializeMenu()
 
     // Source control menu.
 
-    wxMenu* menuSourceControl = new wxMenu;
+    /*wxMenu* menuSourceControl = new wxMenu;
     menuSourceControl->Append(ID_SourceControlCheckIn,      _("Check &In"),             _("Checks in the currently active document"));
     menuSourceControl->Append(ID_SourceControlCheckOut,     _("Check &Out"),            _("Checks out the currently active document"));
     menuSourceControl->Append(ID_SourceControlUndoCheckOut, _("&Undo Check Out"),       _("Undoes the check out of the currently active document"));
     menuSourceControl->AppendSeparator();
     menuSourceControl->Append(ID_SourceControlRefresh,      _("&Refresh All Files"),    _("Refreshes the checked out status of the files in the project"));
+    */
 
     // Debug menu.
 
@@ -727,7 +728,7 @@ void MainFrame::InitializeMenu()
     menuBar->Append( menuEdit,                          _("&Edit"));
     menuBar->Append( menuProject,                       _("&Project"));
     menuBar->Append( menuDebug,                         _("&Debug"));
-    menuBar->Append( menuSourceControl,                 _("&SCC"));
+    //menuBar->Append( menuSourceControl,                 _("&SCC"));
     menuBar->Append( m_menuTools,                       _("&Tools"));
     menuBar->Append( menuWindow,                        _("&Window"));
     menuBar->Append( menuHelp,                          _("&Help"));
@@ -836,7 +837,7 @@ void MainFrame::SetProject(Project* project)
 
     m_autoCompleteManager.BuildFromProject(project);
 
-    InitializeSourceControl();
+    //InitializeSourceControl();
 
 }
 
@@ -1348,12 +1349,12 @@ void MainFrame::OnProjectAddNewFile(wxCommandEvent& WXUNUSED(event))
 
         // If the project hasn't been saved yet and we're using source control,
         // use the path in source control.
-        if (projectPath.IsEmpty() && m_sourceControl.GetIsInitialized())
+        /*if (projectPath.IsEmpty() && m_sourceControl.GetIsInitialized())
         {
             projectPath = m_sourceControl.GetLocalPath();
-        }
+        }*/
 
-        NewFileDialog dialog(this, m_sourceControl.GetIsInitialized(), m_project->GetTemplates());
+        NewFileDialog dialog(this, false /*m_sourceControl.GetIsInitialized()*/, m_project->GetTemplates());
         dialog.SetPath(projectPath);
 
         if (dialog.ShowModal() == wxID_OK)
@@ -1395,14 +1396,14 @@ void MainFrame::OnProjectAddNewFile(wxCommandEvent& WXUNUSED(event))
                 {
                   UpdateForNewFile(file);
 
-                  if (m_sourceControl.GetIsInitialized() && dialog.GetAddToSourceContrl())
+                  /*if (m_sourceControl.GetIsInitialized() && dialog.GetAddToSourceContrl())
                   {
                     // Add the file to source control.
                     m_sourceControl.AddFiles(std::string(fileName.GetFullPath()), NULL);
                   }
 
                   // Update the status for the new files.
-                  UpdateProjectFileStatus(file);
+                  UpdateProjectFileStatus(file);*/
                 }
                 else
                 {
@@ -1448,7 +1449,7 @@ void MainFrame::OnProjectAddExistingFile(wxCommandEvent& WXUNUSED(event))
                 UpdateForNewFile(file);
                 
                 // Update the status for the new files.
-                UpdateProjectFileStatus(file);            
+                //UpdateProjectFileStatus(file);            
 
             }
         }
@@ -1473,7 +1474,7 @@ void MainFrame::OnProjectAddDirectory(wxCommandEvent& event)
       m_autoCompleteManager.BuildFromProject(m_project);
 
       // Update the status for the new files.
-      UpdateProjectFileStatus(file);
+      //UpdateProjectFileStatus(file);
     }
   }
 
@@ -2282,7 +2283,7 @@ void MainFrame::OnNotebookTabRightUp(wxAuiNotebookEvent& event)
     m_notebook->PopupMenu(m_notebookTabMenu);
 }
 
-void MainFrame::OnNotebookTabCheckOut(wxCommandEvent& event)
+/*void MainFrame::OnNotebookTabCheckOut(wxCommandEvent& event)
 {
 
     std::vector<std::string> fileNames;
@@ -2381,7 +2382,7 @@ void MainFrame::OnUpdateNotebookTabShowHistory(wxUpdateUIEvent& event)
 
     event.Enable(allowed);
 
-}
+}*/
 
 void MainFrame::OnCallStackDoubleClick(wxListEvent& event)
 {
@@ -2607,7 +2608,7 @@ void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event)
         bool checkOutOption = false;
 
         // Check to see if the file is under source control.
-        if (m_sourceControl.GetIsInitialized())
+        /*if (m_sourceControl.GetIsInitialized())
         {
         
             SourceControl::Status status;
@@ -2618,7 +2619,7 @@ void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event)
                 checkOutOption = true;
             }
 
-        }
+        }*/
 
         wxString fileName = file->file->fileName.GetFullPath();
         ReadOnlyDialog dialog(this, file->file->fileName.GetFullName(), checkOutOption);
@@ -2628,12 +2629,12 @@ void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event)
         if (result == ReadOnlyDialog::ID_CheckOut)
         {
             
-            std::vector<std::string> fileNames;
+            /*std::vector<std::string> fileNames;
             fileNames.push_back(std::string(fileName));
             
             m_sourceControl.CheckOut(fileNames, NULL);
             UpdateDocumentReadOnlyStatus();
-            UpdateProjectFileStatus(file->file);
+            UpdateProjectFileStatus(file->file);*/
 
         }
         else if (result == ReadOnlyDialog::ID_MakeWriteable)
@@ -2788,8 +2789,8 @@ wxVector<wxString> FindVariableNames(CodeEdit *page, int position)
   int pos = startPos;
   while (pos > 0)
   {
-    bool alpha = IsCharAlphaNumeric(text[pos]);
-    bool delim = IsDelimiter(text[pos]);
+    bool alpha = (bool)IsCharAlphaNumeric(text[pos]);
+    bool delim = (bool)IsDelimiter(text[pos]);
 
     if (alpha == false && delim == false)
     {
@@ -3625,7 +3626,7 @@ void MainFrame::OnOutputKeyDown(wxKeyEvent& event)
 
 }
 
-void MainFrame::OnSourceControlCheckIn(wxCommandEvent& event)
+/*void MainFrame::OnSourceControlCheckIn(wxCommandEvent& event)
 {
 
     CodeEdit *pageIndex = GetSelectedPage();
@@ -3745,7 +3746,7 @@ void MainFrame::OnUpdateSourceControlRefresh(wxUpdateUIEvent& event)
 {
     event.Enable(m_sourceControl.GetIsInitialized());
 }
-
+*/
 void MainFrame::OnFindClose(wxFindDialogEvent& event)
 {
     m_findDialog->Destroy();
@@ -5365,7 +5366,7 @@ bool MainFrame::OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& fileNames
 
 }
 
-void MainFrame::OnContextCheckOut(wxCommandEvent& event)
+/*void MainFrame::OnContextCheckOut(wxCommandEvent& event)
 {
 
     std::vector<std::string> fileNames;
@@ -5498,7 +5499,7 @@ void MainFrame::OnUpdateContextCheckIn(wxUpdateUIEvent& event)
 
     event.Enable(allowed);
 
-}
+}*/
 
 void MainFrame::OnThreadExit(ThreadEvent& event)
 {
@@ -5506,7 +5507,7 @@ void MainFrame::OnThreadExit(ThreadEvent& event)
     // Copy all of the file statuses into a hash table so that we can sync them up with
     // the project files in linear time.
 
-    FileStatusThread* thread = m_fileStatusThread[0];
+    /*FileStatusThread* thread = m_fileStatusThread[0];
     stdext::hash_map<std::string, SourceControl::Status> statusMap;
 
     for (unsigned int i = 0; i < thread->GetNumFiles(); ++i)
@@ -5563,7 +5564,7 @@ void MainFrame::OnThreadExit(ThreadEvent& event)
         m_fileStatusThread[0]->Create();
         m_fileStatusThread[0]->Run();
     }
-
+    */
 }
 
 void MainFrame::OnShowHelp(wxCommandEvent& event)
@@ -6024,7 +6025,7 @@ void MainFrame::RemoveAllLocalBreakpoints(Project::File* file)
 
 }
 
-bool MainFrame::InitializeSourceControl()
+/*bool MainFrame::InitializeSourceControl()
 {
 
     m_sourceControl.Shutdown();
@@ -6113,7 +6114,7 @@ void MainFrame::UpdateProjectFileStatus(Project::File* file)
     
     }
 
-}
+}*/
 
 void MainFrame::DebugExe(const wxString& fileName)
 {
@@ -6228,11 +6229,11 @@ bool MainFrame::ShowProjectSettingsDialog()
     dialog.SetWorkingDirectory(m_project->GetWorkingDirectory());
     dialog.SetSymbolsDirectory(m_project->GetSymbolsDirectory());
 
-    dialog.SetSccProvider(m_project->GetSccProvider());
-    dialog.SetSccUser(m_project->GetSccUser());
-    dialog.SetSccProjectName(m_project->GetSccProjectName());
-    dialog.SetSccLocalPath(m_project->GetSccLocalPath());
-    dialog.SetSccAuxProjectPath(m_project->GetSccAuxProjectPath());
+    //dialog.SetSccProvider(m_project->GetSccProvider());
+    //dialog.SetSccUser(m_project->GetSccUser());
+    //dialog.SetSccProjectName(m_project->GetSccProjectName());
+    //dialog.SetSccLocalPath(m_project->GetSccLocalPath());
+    //dialog.SetSccAuxProjectPath(m_project->GetSccAuxProjectPath());
 
     if (dialog.ShowModal() == wxID_OK)
     {
@@ -6248,7 +6249,7 @@ bool MainFrame::ShowProjectSettingsDialog()
         m_project->SetSccLocalPath(dialog.GetSccLocalPath());
         m_project->SetSccAuxProjectPath(dialog.GetSccAuxProjectPath());
 
-        InitializeSourceControl();
+        //InitializeSourceControl();
         return true;
     
     }
@@ -6583,7 +6584,7 @@ void MainFrame::UpdateForNewFile(Project::File* file)
     m_autoCompleteManager.BuildFromProject(m_project);
 }
 
-void MainFrame::SetFileStatus(Project::File* file, SourceControl::Status status)
+/*void MainFrame::SetFileStatus(Project::File* file, SourceControl::Status status)
 {
     if (status == SourceControl::Status_CheckedOutByUser)
     {
@@ -6598,7 +6599,7 @@ void MainFrame::SetFileStatus(Project::File* file, SourceControl::Status status)
     {
         file->status = Project::Status_None;
     }
-}
+}*/
 
 const wxString& MainFrame::GetApplicationName()
 {
