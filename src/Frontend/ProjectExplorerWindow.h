@@ -40,7 +40,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 class SearchTextCtrl;
 class Symbol;
 class ProjectFileInfoCtrl;
-class ProjectFilterPopup;
+//class ProjectFilterPopup;
 
 /**
  * Tree view that displays the files in a project.
@@ -128,7 +128,7 @@ public:
     /**
      * Called when the user clicks on the filter button.
      */
-    void OnFilterButton(wxCommandEvent& event);
+    //void OnFilterButton(wxCommandEvent& event);
 
     /**
      * Rebuilds the entire tree for the project.
@@ -215,13 +215,13 @@ public:
      * Sets the flags that determine what types of files are displayed in the project
      * explorer window. These should be a combination of the FilterFlag enum values.
      */
-    void SetFilterFlags(unsigned int filterFlags);
+    //void SetFilterFlags(unsigned int filterFlags);
 
     /**
      * Returns the flags that determine what types of files are displayed in the project
      * explorer window. These are a combination of the FilterFlag enum values.
      */
-    unsigned int GetFilterFlags() const;
+    //unsigned int GetFilterFlags() const;
 
     /**
     * Traverses the tree and calls the function on each item.
@@ -313,7 +313,7 @@ private:
      * Updates the image draw on the filter button based on the currently
      * selected filter flags.
      */
-    void UpdateFilterButtonImage();
+    //void UpdateFilterButtonImage();
 
     /**
     * Recursively sorts all levels of the tree
@@ -352,10 +352,10 @@ private:
     wxTreeItemId                 m_root;
     class wxProjectTree*         m_tree;
                                  
-    wxImageList*                 m_filterImageList;
-    wxBitmapButton*              m_filterButton;
-    ProjectFilterPopup*          m_filterPopup;
-    unsigned int                 m_filterFlags;
+    //wxImageList*                 m_filterImageList;
+    //wxBitmapButton*              m_filterButton;
+    //ProjectFilterPopup*          m_filterPopup;
+    //unsigned int                 m_filterFlags;
                                  
     ProjectFileInfoCtrl*         m_infoBox;
                                  

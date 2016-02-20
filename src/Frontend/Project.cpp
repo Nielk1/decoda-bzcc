@@ -85,6 +85,7 @@ Project::~Project()
 
         ClearVector(file->symbols);
       }
+      delete directory;
     }
 
     ClearVector(m_files);
@@ -225,61 +226,6 @@ const wxString& Project::GetSymbolsDirectory() const
 void Project::SetSymbolsDirectory(const wxString& symbolsDirectory)
 {
     m_symbolsDirectory = symbolsDirectory;
-    m_needsUserSave = true;
-}
-
-const wxString& Project::GetSccProvider() const
-{
-    return m_sccProvider;
-}
-
-void Project::SetSccProvider(const wxString& sccProvider)
-{
-    m_sccProvider = sccProvider;
-    m_needsUserSave = true;
-}
-
-const wxString& Project::GetSccUser() const
-{
-    return m_sccUser;
-}
-
-void Project::SetSccUser(const wxString& sccUser)
-{
-    m_sccUser = sccUser;
-    m_needsUserSave = true;
-}
-
-const wxString& Project::GetSccProjectName() const
-{
-    return m_sccProjName;
-}
-
-void Project::SetSccProjectName(const wxString& sccProjName)
-{
-    m_sccProjName = sccProjName;
-    m_needsUserSave = true;
-}
-
-const wxString& Project::GetSccLocalPath() const
-{
-    return m_sccLocalPath;
-}
-
-void Project::SetSccLocalPath(const wxString& sccLocalPath)
-{
-    m_sccLocalPath = sccLocalPath;
-    m_needsUserSave = true;
-}
-
-const wxString& Project::GetSccAuxProjectPath() const
-{
-    return m_sccAuxProjPath;
-}
-
-void Project::SetSccAuxProjectPath(const wxString& sccAuxProjPath)
-{
-    m_sccAuxProjPath = sccAuxProjPath;
     m_needsUserSave = true;
 }
 
@@ -1231,18 +1177,6 @@ bool Project::SaveUserSettings(const wxString& fileName)
 #endif
     root->AddChild(WriteXmlNode("command_arguments",    m_commandArguments));
 
-    // Add the source control settings.
-    
-    wxXmlNode* node = new wxXmlNode(wxXML_ELEMENT_NODE, "scc");
-
-    node->AddChild(WriteXmlNode("provider", m_sccProvider));
-    node->AddChild(WriteXmlNode("user", m_sccUser));
-    node->AddChild(WriteXmlNode("project_name", m_sccProjName));
-    node->AddChild(WriteXmlNode("local_path", m_sccLocalPath));
-    node->AddChild(WriteXmlNode("aux_project_path", m_sccAuxProjPath));
-
-    root->AddChild(node);
-
     wxString baseDirectory = wxFileName(fileName).GetPath();
 
     wxXmlNode* filesNode = NULL;
@@ -1327,7 +1261,6 @@ bool Project::LoadUserSettings(const wxString& fileName)
         || ReadXmlNode(node, "working_directory",   m_workingDirectory)
         || ReadXmlNode(node, "symbols_directory",   m_symbolsDirectory)
 #endif
-        || LoadSccNode(node)
         || LoadUserFilesNode(baseDirectory, node)
         || LoadOpenFilesNode(node);
         
@@ -1382,32 +1315,6 @@ wxString Project::CreateTempName()
 {
     ++m_tempIndex;
     return wxString::Format("Untitled%d", m_tempIndex);
-}
-
-bool Project::LoadSccNode(wxXmlNode* root)
-{
-
-    if (root->GetName() != "scc")
-    {
-        return false;
-    }
-
-    wxXmlNode* node = root->GetChildren();
-    
-    while (node != NULL)
-    {
-           ReadXmlNode(node, "provider",          m_sccProvider)
-        || ReadXmlNode(node, "user",              m_sccUser)
-        || ReadXmlNode(node, "project_name",      m_sccProjName)
-        || ReadXmlNode(node, "local_path",        m_sccLocalPath)
-        || ReadXmlNode(node, "aux_project_path",  m_sccAuxProjPath);
-        
-        node = node->GetNext();
-
-    }
-
-    return true;
-
 }
 
 wxString Project::GetBaseDirectory() const

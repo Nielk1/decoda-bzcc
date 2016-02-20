@@ -23,8 +23,6 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "MainApp.h"
 #include "MainFrame.h"
 #include "SingleInstance.h"
-#include "CrashHandler.h"
-#include "Report.h"
 #include "Config.h"
 
 #include <sstream>
@@ -33,10 +31,8 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 IMPLEMENT_APP(MainApp)
 
-// Like a version number, but used to track updates. This should be incremented
-// whenever a new build is released.
-const unsigned int  MainApp::s_buildNumber = 1034;
-const char*         MainApp::s_versionDesc = "Version 1.17 (Build 1035) Beta 1";
+
+const char*         MainApp::s_versionDesc = "Version 1.18 (Custom Edition)";
 
 std::string UrlEncode(const std::string& string)
 {
@@ -62,36 +58,13 @@ std::string UrlEncode(const std::string& string)
 
 }
 
-/**
- * Called when the application crashes.
- */
-void CrashCallback(void* address)
-{
-
-    extern const unsigned int g_buildNumber;
-
-    Report report;
-    report.AttachMiniDump();
-
-    if (report.Preview())
-    {
-
-        std::stringstream stream;
-        stream << "Decoda (Build " << MainApp::s_buildNumber << ")";
-
-        std::string buffer = UrlEncode(stream.str());
-        
-        char serverAddress[1024];
-        sprintf(serverAddress, "http://www.unknownworlds.com/game_scripts/report/crash.php?application=%s&address=0x%08X", buffer.c_str(), reinterpret_cast<unsigned int>(address));
-        report.Submit(serverAddress, NULL);
-    
-    }
-
+MainApp::MainApp()
+{  
+    //_CrtSetBreakAlloc(253566);
 }
 
-MainApp::MainApp()
+MainApp::~MainApp()
 {
-    CrashHandler::SetCallback( CrashCallback );
 }
 
 bool MainApp::OnInit()
@@ -158,15 +131,12 @@ bool MainApp::OnInit()
     m_loadProjectName.Clear();
     m_loadFileNames.Clear();
 
-    frame->CheckForUpdate();
-
     if (!m_debugExe.IsEmpty())
     {
         frame->DebugExe(m_debugExe);
     }
 
     return true;
-
 }
 
 void MainApp::OnInitCmdLine(wxCmdLineParser& parser)

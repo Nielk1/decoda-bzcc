@@ -104,6 +104,7 @@ FindInFilesDialog::FindInFilesDialog( wxWindow* parent, int id )
     SetMaxSize(wxSize(-1, GetSize().y));
 
     Layout();
+    //Center();
 
 }
 

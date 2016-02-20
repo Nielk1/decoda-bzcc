@@ -31,7 +31,7 @@ BEGIN_EVENT_TABLE(NewFileDialog, wxDialog)
     EVT_BUTTON(         wxID_OK,                    NewFileDialog::OnOk)
 END_EVENT_TABLE()
 
-NewFileDialog::NewFileDialog(wxWindow* parent, bool enableSourceControl, std::vector<Project::Template> templates)
+NewFileDialog::NewFileDialog(wxWindow* parent, std::vector<Project::Template> templates)
     : wxDialog( parent, wxID_ANY, wxT("Add New File"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER ), m_templates(templates)
 {
 
@@ -83,10 +83,6 @@ NewFileDialog::NewFileDialog(wxWindow* parent, bool enableSourceControl, std::ve
 	fgSizer4->AddGrowableCol( 0 );
 	fgSizer4->SetFlexibleDirection( wxHORIZONTAL );
     
-    m_sourceControlCheck = new wxCheckBox( this, wxID_ANY, wxT("Add to Source Control"), wxDefaultPosition, wxDefaultSize, 0 );
-    fgSizer4->Add(m_sourceControlCheck, 0, wxEXPAND, 5);
-    
-
     m_sdbSizer1 = new wxStdDialogButtonSizer();
     
     m_sdbSizer1->AddButton( new wxButton( this, wxID_OK ) );
@@ -107,13 +103,7 @@ NewFileDialog::NewFileDialog(wxWindow* parent, bool enableSourceControl, std::ve
     SetMinSize(GetSize());    
     
     Layout();
-
-    m_sourceControlCheck->Enable(enableSourceControl);
-
-    if (enableSourceControl)
-    {
-        m_sourceControlCheck->SetValue(true);
-    }
+    Center();
 
     // Setup the list control.
 
@@ -137,10 +127,7 @@ NewFileDialog::NewFileDialog(wxWindow* parent, bool enableSourceControl, std::ve
 
     // Setup the file name control.
 
-    m_fileNameCtrl->SetFocus();
-    m_fileNameCtrl->SetValue("<Enter name>"); 
-    m_fileNameCtrl->SelectAll();
-
+    m_fileNameCtrl->SetFocus();    
 }
 
 NewFileDialog::~NewFileDialog()
@@ -269,9 +256,4 @@ void NewFileDialog::VerifyFileNameAndEnd()
         wxMessageBox("You must enter a valid name", "Decoda", wxOK | wxICON_ERROR, this);
     }
 
-}
-
-bool NewFileDialog::GetAddToSourceContrl() const
-{
-    return m_sourceControlCheck->GetValue();
 }

@@ -26,7 +26,6 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/msw/registry.h>
 
 BEGIN_EVENT_TABLE(SystemSettingsPanel, wxPanel)
-    EVT_CHECKBOX(       SystemSettingsPanel::ID_CheckForUpdates,    SystemSettingsPanel::OnCheckForUpdates)
 END_EVENT_TABLE()
 
 SystemSettingsPanel::SystemSettingsPanel( wxWindow* parent, int id, wxPoint pos, wxSize size, int style ) : wxPanel( parent, id, pos, size, style )
@@ -58,14 +57,7 @@ SystemSettingsPanel::SystemSettingsPanel( wxWindow* parent, int id, wxPoint pos,
 	sbSizer3->Add( fgSizer7, 1, wxEXPAND | wxALL, 5 );
 
 	fgSizer4->Add( sbSizer3, 0, wxEXPAND | wxALL, 5 );
-
-	wxStaticBoxSizer* sbSizer4;
-	sbSizer4 = new wxStaticBoxSizer( new wxStaticBox( this, -1, wxT("Updates") ), wxVERTICAL );
-
-	m_checkForUpdates = new wxCheckBox( this, ID_CheckForUpdates, wxT("Automatically check for updates to Decoda"), wxDefaultPosition, wxDefaultSize, 0 );
-	sbSizer4->Add( m_checkForUpdates, 0, wxALL, 5 );
-    fgSizer4->Add (sbSizer4, 0, wxEXPAND | wxALL, 5);
-	
+		
 	this->SetSizer( fgSizer4 );
 	this->Layout();
 
@@ -86,9 +78,6 @@ void SystemSettingsPanel::Initialize()
         bool registered = GetIsRegistered(m_fileTypes[i].ext, openCommand);
         m_fileTypesBox->Check(i, registered);
     }
-
-    m_checkForUpdates->SetValue(m_settings.GetCheckForUpdates());
-
 }
 
 void SystemSettingsPanel::AddFileType(const wxString& ext, int icon)
@@ -169,21 +158,6 @@ void SystemSettingsPanel::ApplyFileAssociations()
         }
     }
 
-}
-
-void SystemSettingsPanel::SetSettings(const SystemSettings& settings)
-{
-    m_settings = settings;
-}
-
-const SystemSettings& SystemSettingsPanel::GetSettings() const
-{
-    return m_settings;
-}
-
-void SystemSettingsPanel::OnCheckForUpdates(wxCommandEvent& event)
-{
-    m_settings.SetCheckForUpdates(m_checkForUpdates->GetValue());
 }
 
 bool SystemSettingsPanel::GetIsRegistered(const wxString& ext, const wxString& openCommand) const

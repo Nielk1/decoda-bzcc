@@ -125,5 +125,5 @@ AboutDialog::AboutDialog( wxWindow* parent ) :
     SetMaxSize(GetSize());
     
     Layout();
-
+    Center();
 }

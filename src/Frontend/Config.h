@@ -54,3 +54,13 @@ wxString GetDedicatedProductCommandArguments(const wxString& arguments);
 #endif
 
 #endif
+
+#ifdef WIN32
+#pragma warning(disable: 4996)
+
+#ifdef _DEBUG
+#include <crtdbg.h>
+#define _CRTDBG_MAP_ALLOC
+#endif
+
+#endif

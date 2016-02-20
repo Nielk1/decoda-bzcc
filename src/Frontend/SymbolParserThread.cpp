@@ -593,8 +593,9 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
         //First handle +=, -=, *=, /=
         wxString next = PeekNextToken(tokens, current_token, lineNumber);
+        int next_size = next.size();
         bool valid = true;
-        for (int i = 0; i < next.size(); ++i)
+        for (int i = 0; i < next_size; ++i)
         {
           if (IsSymbol(next[i]) || IsSpace(next[i]))
           {

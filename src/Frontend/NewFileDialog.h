@@ -41,7 +41,7 @@ public:
     /**
      * Constructor.
      */
-    NewFileDialog( wxWindow* parent, bool enableSourceControl, std::vector<Project::Template> templates);
+    NewFileDialog( wxWindow* parent, std::vector<Project::Template> templates);
 
     /**
      * Destructor.
@@ -72,11 +72,6 @@ public:
      * Returns the file name that the user entered.
      */
     wxFileName GetFileName() const;
-
-    /**
-     * Returns true if the user selected "Add to Source Control"
-     */
-    bool GetAddToSourceContrl() const;
 
     wxString GetTemplate();
 
@@ -114,7 +109,7 @@ private:
     wxStaticLine*               m_staticline3;
     wxStdDialogButtonSizer*     m_sdbSizer1;
     wxImageList*                m_imageList;
-    wxCheckBox*                 m_sourceControlCheck;
+
     std::vector<Project::Template> m_templates;
 };
 

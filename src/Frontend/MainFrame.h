@@ -39,10 +39,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "KeyBinder.h"
 #include "FontColorSettings.h"
 #include "EditorSettings.h"
-#include "SystemSettings.h"
-//#include "SourceControl.h"
 #include "FileChangeWatcher.h"
-#include "Updater.h"
 #include "StringHistory.h"
 #include "AutoCompleteManager.h"
 #include "DebugFrontend.h"
@@ -420,18 +417,13 @@ public:
     /**
      * Called when the user selects Help/Support from the menu.
      */
-    void OnHelpSupport(wxCommandEvent& event);
+    //void OnHelpSupport(wxCommandEvent& event);
 
     /**
      * Called when the user selects Help/Contents from the menu.
      */
-    void OnHelpContents(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects Help/Check For Update from the menu.
-     */
-    void OnHelpCheckForUpdate(wxCommandEvent& event);
-
+    //void OnHelpContents(wxCommandEvent& event);
+    
     /**
      * Called when the user selects a menu item that isn't handled elswewhere. This is used
      * to catch the items that don't have fixed ids like the external tools.
@@ -641,46 +633,6 @@ public:
     void OnOutputKeyDown(wxKeyEvent& event);
 
     /**
-     * Called when the user selects Source Control/Check In from the menu.
-     */
-    //void OnSourceControlCheckIn(wxCommandEvent& event);
-
-    /**
-     * Called to update the Source Control/Check In menu item.
-     */
-    //void OnUpdateSourceControlCheckIn(wxUpdateUIEvent& event);
-
-    /**
-     * Called when the user selects Source Control/Check Out from the menu.
-     */
-    //void OnSourceControlCheckOut(wxCommandEvent& event);
-
-    /**
-     * Called to update the Source Control/Check Out menu item.
-     */
-    //void OnUpdateSourceControlCheckOut(wxUpdateUIEvent& event);
-
-    /**
-     * Called when the user selects Source Control/Undo Check Out from the menu.
-     */
-    //void OnSourceControlUndoCheckOut(wxCommandEvent& event);
-
-    /**
-     * Called to update the Source Control/Undo Check Out menu item.
-     */
-    //void OnUpdateSourceControlUndoCheckOut(wxUpdateUIEvent& event);
-
-    /**
-     * Called when the user selects Source Control/Refresh File Status from the menu.
-     */
-    //void OnSourceControlRefresh(wxCommandEvent& event);
-
-    /**
-     * Called to update the Source Control/Refresh File Status menu.
-     */
-    //void OnUpdateSourceControlRefresh(wxUpdateUIEvent& event);
-
-    /**
      * Called when the user closes the find dialog.
      */
     void OnFindClose(wxFindDialogEvent& event);
@@ -776,17 +728,17 @@ public:
     /**
      * Called when one of the worker threads exits.
      */
-    void OnThreadExit(ThreadEvent& event);
+    //void OnThreadExit(ThreadEvent& event);
 
     /**
      * Called when the application should display help in response to a user action.
      */
-    void OnShowHelp(wxCommandEvent& event);
+    //void OnShowHelp(wxCommandEvent& event);
 
     /**
      * Called when information about updates has been retrieved from the server.
      */
-    void OnUpdateInfo(wxCommandEvent& event);
+    //void OnUpdateInfo(wxCommandEvent& event);
 
     /** 
      * Called when the symbols for a file are finished being parsed.
@@ -886,13 +838,7 @@ public:
      * From wxWindow.
      */
     virtual bool MSWProcessMessage(WXMSG* pMsg);
-
-    /**
-     * Talks to the mothership to see if there's an updated version of the
-     * application available. This is done asynchronously.
-     */
-    void CheckForUpdate();
-
+    
     /**
      * Moves the window and shows it based on the saved window placement.
      */
@@ -1309,13 +1255,13 @@ private:
      * Callback used to notify the application when information about updates
      * available is ready.
      */
-    static void UpdateCallback(Updater* updater, void* param);
+    //static void UpdateCallback(Updater* updater, void* param);
     
     /**
      * Handles applying an update if one is available. If no update is available
      * the method does nothing.
      */
-    void HandleUpdate();
+    //void HandleUpdate();
 
     /**
      * Updates the syntax coloring for the file based on the file name extension.
@@ -1435,22 +1381,20 @@ private:
         ID_FileSaveProjectAs                = 48,
         ID_FileNew                          = 49,
         
-        ID_ContextCheckOut                  = 50,
+        /*ID_ContextCheckOut                  = 50,
         ID_ContextCheckIn                   = 51,
         ID_ContextUndoCheckOut              = 52,
         ID_ContextDiff                      = 53,
-        ID_ContextShowHistory               = 54,
+        ID_ContextShowHistory               = 54,*/
         ID_ContextRemove                    = 55,
+        ID_ContextOpen                      = 56,
+        ID_ContextExcludeFromProject        = 57,
         
-        ID_SourceControlRefresh             = 56,
-        ID_SourceControlCheckOut            = 57,
-        ID_SourceControlCheckIn             = 58,
-        ID_SourceControlUndoCheckOut        = 59,
         ID_EditReplace                      = 60,
         ID_EditComment                      = 61,
         ID_EditUncomment                    = 62,
-        ID_HelpContents                     = 63,
-        ID_HelpCheckForUpdate               = 64,
+        //ID_HelpContents                     = 63,
+
         ID_DebugStartWithoutDebugging       = 65,
         ID_DebugProcess                     = 66,
         // 67 was help/register
@@ -1473,7 +1417,7 @@ private:
         ID_Breakpoints                      = 81,
         ID_WindowBreakpoints                = 82,
 
-        ID_HelpSupport                      = 83,
+        //ID_HelpSupport                      = 83,
         
         ID_DebugDeleteAllBreakpoints        = 84,
 
@@ -1493,12 +1437,10 @@ private:
     static const wxString           s_scriptExtensions;
     static const wxString           s_applicationName;
     static const wxString           s_modeName[Mode_NumModes];
-    static const char*              s_updateUrl;
+    //static const char*              s_updateUrl;
  
     int                             m_openFilesMessage;
-
-    Updater                         m_updater;
-
+    
     Project*                        m_project;       
     std::vector<OpenFile*>          m_openFiles;
     SymbolParser*                   m_symbolParser;
@@ -1542,7 +1484,6 @@ private:
     KeyBinder                       m_keyBinder;
     FontColorSettings               m_fontColorSettings;
     EditorSettings                  m_editorSettings;
-    SystemSettings                  m_systemSettings;
 
     bool                            m_attachToHost;
 
@@ -1553,17 +1494,11 @@ private:
     wxFileHistory                   m_findDirectoryHistory;
     StringHistory                   m_findTextHistory;
 
-    //SourceControl                   m_sourceControl;
-
     wxMenu*                         m_contextMenu;
     wxMenu*                         m_directoryContextMenu;
     wxMenu*                         m_notebookTabMenu;
 
-    //FileStatusThread*               m_fileStatusThread[2];            
-    
     FileChangeWatcher               m_fileChangeWatcher;
-
-    wxCHMHelpController             m_helpController;
 
     wxRect                          m_startUpRect;
     bool                            m_startUpMaximized;

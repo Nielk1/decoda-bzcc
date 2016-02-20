@@ -43,6 +43,8 @@ class AutoCompleteManager
 {
 
 public:
+    AutoCompleteManager();
+    ~AutoCompleteManager();
 
     enum Type
     {
@@ -71,9 +73,8 @@ private:
     struct Entry
     {
 
-        Entry();
         Entry(const wxString& name, Type type, const Project::File *file, Symbol *symbol);
-
+        ~Entry();
         bool operator<(const Entry& entry) const;
 
         wxString    name;

@@ -28,58 +28,10 @@ void ShowFileInFolder (wxFileName& inPath) {
   if (!inPath.IsOk())
     return;
 
-  typedef HRESULT (WINAPI* SHOpenFolderAndSelectItemsPtr)(
-    LPCITEMIDLIST pidlFolder, 
-    UINT cidl, 
-    LPCITEMIDLIST* apidl, 
-    DWORD dwFlags);
-
   wxString& fullPath = inPath.GetFullPath();  
   wxString& path = inPath.GetPath();
 
-  static SHOpenFolderAndSelectItemsPtr openFolderFunction = NULL;
-  static bool intializedFunction = true;
-
-  if (intializedFunction) {
-    intializedFunction = false;
-    HMODULE shell32 = GetModuleHandleA("shell32.dll");
-    if (shell32 == NULL)
-      return;
-
-    openFolderFunction = reinterpret_cast<SHOpenFolderAndSelectItemsPtr>(GetProcAddress(shell32, "SHOpenFolderAndSelectItems"));
-    if (!openFolderFunction) {
-      ShellExecute(NULL, _T("open"), fullPath.c_str(), NULL, NULL, SW_SHOW);
-      return;
-    }
-  }
-
-  IShellFolder* desktopFolder;
-  HRESULT result = SHGetDesktopFolder(&desktopFolder);
-  if(FAILED(result))
-    return;
-
-  LPITEMIDLIST folderPath;
-  LPITEMIDLIST filePath;
-
-  result = desktopFolder->ParseDisplayName(NULL, NULL, (LPOLESTR)(const wchar_t *)path.wc_str(wxConvUTF8), NULL, &folderPath, NULL);
-  if (SUCCEEDED(result)) {  
-    result = desktopFolder->ParseDisplayName(NULL, NULL, (LPOLESTR)(const wchar_t *)fullPath.wc_str(wxConvUTF8), NULL, &filePath, NULL);
-    if (SUCCEEDED(result)) {
-
-      const ITEMIDLIST* highlight[] = {
-        {filePath},
-      };
-
-      (*openFolderFunction)(folderPath, ARRAYSIZE(highlight), highlight, NULL);      
-    }
-  }
-
-  if (folderPath)
-    CoTaskMemFree(folderPath);
-
-  if (filePath)
-    CoTaskMemFree(filePath);
-
-  desktopFolder->Release();
-  
+  wxString args("/n,/select,");
+  args.append(fullPath);
+  ShellExecute(0, L"open", L"explorer.exe", args.wc_str(wxConvUTF8), 0, SW_NORMAL);
 }

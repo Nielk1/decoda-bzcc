@@ -188,56 +188,6 @@ public:
      */
     void SetSymbolsDirectory(const wxString& symbolsDirectory);
 
-    /**
-     * Returns the name of the source control provider.
-     */
-    const wxString& GetSccProvider() const;
-
-    /**
-     * Sets the name of the source control provider.
-     */
-    void SetSccProvider(const wxString& sccProvider);
-
-    /**
-     * Gets the source control user name.
-     */
-    const wxString& GetSccUser() const;
-
-    /**
-     * Sets the source control user name.
-     */
-    void SetSccUser(const wxString& sccUser);
-
-    /**
-     * Gets the source control project name.
-     */
-    const wxString& GetSccProjectName() const;
-
-    /**
-     * Sets the source control project name.
-     */
-    void SetSccProjectName(const wxString& sccProjName);
-
-    /**
-     * Gets the source control local path.
-     */
-    const wxString& GetSccLocalPath() const;
-
-    /**
-     * Sets the source control local path.
-     */
-    void SetSccLocalPath(const wxString& sccProjName);
-
-    /**
-     * Gets the source control auxiliary project path.
-     */
-    const wxString& GetSccAuxProjectPath() const;
-
-    /**
-     * Sets the source control auxiliary project path.
-     */
-    void SetSccAuxProjectPath(const wxString& sccAuxProjPath);
-
     /** 
      * Gets the open file that matches the script specified by the scriptIndex.
      * If there is no open file matching the scriptIndex the method returns NULL.
@@ -451,12 +401,6 @@ private:
      */
     wxString CreateTempName();
 
-    /**
-     * Attempts to read the source control settings from the specified node. If the
-     * node is not a scc node, the method returns false.
-     */
-    bool LoadSccNode(wxXmlNode* node);
-
 private:
 
 	// Returns vector for temporary internal use
@@ -481,11 +425,11 @@ private:
                              
     unsigned int             m_tempIndex;
                              
-    wxString                 m_sccProvider;
+    /*wxString                 m_sccProvider;
     wxString                 m_sccUser;
     wxString                 m_sccProjName;
     wxString                 m_sccLocalPath;
-    wxString                 m_sccAuxProjPath;
+    wxString                 m_sccAuxProjPath;*/
     wxString                 m_baseDirectory;
 };
 

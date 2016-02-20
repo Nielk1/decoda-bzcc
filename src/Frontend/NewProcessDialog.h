@@ -57,12 +57,12 @@ public:
     /**
      * Called when the user clicks the Browse button for browsing the source control project.
      */
-    void OnBrowseSccProject(wxCommandEvent& event);
+    //void OnBrowseSccProject(wxCommandEvent& event);
 
     /**
      * Called when the user selects an option in the source control dropdown.
      */
-    void OnSelectScc(wxCommandEvent& event);
+    //void OnSelectScc(wxCommandEvent& event);
 
     /**
      * Sets the command line that is displayed in the dialog.
@@ -107,52 +107,52 @@ public:
     /**
      * Returns the name of the source control provider.
      */
-    wxString GetSccProvider() const;
+    //wxString GetSccProvider() const;
 
     /**
      * Sets the name of the source control provider.
      */
-    void SetSccProvider(const wxString& sccProvider);
+    //void SetSccProvider(const wxString& sccProvider);
 
     /**
      * Gets the source control user name.
      */
-    wxString GetSccUser() const;
+    //wxString GetSccUser() const;
 
     /**
      * Sets the source control user name.
      */
-    void SetSccUser(const wxString& sccUser);
+    //void SetSccUser(const wxString& sccUser);
 
     /**
      * Gets the source control project name.
      */
-    wxString GetSccProjectName() const;
+    //wxString GetSccProjectName() const;
 
     /**
      * Sets the source control project name.
      */
-    void SetSccProjectName(const wxString& sccProjName);
+    //void SetSccProjectName(const wxString& sccProjName);
 
     /**
      * Gets the source control local path.
      */
-    wxString GetSccLocalPath() const;
+    //wxString GetSccLocalPath() const;
 
     /**
      * Sets the source control local path.
      */
-    void SetSccLocalPath(const wxString& sccProjName);
+    //void SetSccLocalPath(const wxString& sccProjName);
 
     /**
      * Gets the source control auxiliary project path.
      */
-    wxString GetSccAuxProjectPath() const;
+    //wxString GetSccAuxProjectPath() const;
 
     /**
      * Sets the source control auxiliary project path.
      */
-    void SetSccAuxProjectPath(const wxString& sccAuxProjPath);
+    //void SetSccAuxProjectPath(const wxString& sccAuxProjPath);
 
     DECLARE_EVENT_TABLE()
 
@@ -162,7 +162,7 @@ private:
      * Updates the source control related controls on the dialog based
      * on the current settings.
      */
-    void UpdateSccControls();
+    //void UpdateSccControls();
 
 private:
 
@@ -171,26 +171,26 @@ private:
         ID_BrowseCommandLine        = 1,
         ID_BrowseWorkingDirectory,
         ID_BrowseSymbolsDirectory,
-        ID_SelectScc,
-        ID_BrowseSccProject,
+        //ID_SelectScc,
+        //ID_BrowseSccProject,
     };	
 
     wxTextCtrl*                 m_commandLineBox;
     wxTextCtrl*                 m_commandArgumentsBox;
 	wxTextCtrl*                 m_workingDirectoryBox;
     wxTextCtrl*                 m_symbolsDirectoryBox;
-    wxChoice*                   m_sccProviderChoice;
-    wxTextCtrl*                 m_sccProjectBox;
+    //wxChoice*                   m_sccProviderChoice;
+    //wxTextCtrl*                 m_sccProjectBox;
 
 	wxButton*                   m_button1;
 	wxButton*                   m_button21;
-	wxButton*                   m_sccProjectBrowseButton;
+	//wxButton*                   m_sccProjectBrowseButton;
 	wxStdDialogButtonSizer*     m_sdbSizer1;
 
-    wxString                    m_sccUser;
+    /*wxString                    m_sccUser;
     wxString                    m_sccProjName;
     wxString                    m_sccLocalPath;
-    wxString                    m_sccAuxProjPath;
+    wxString                    m_sccAuxProjPath;*/
 
 };
 

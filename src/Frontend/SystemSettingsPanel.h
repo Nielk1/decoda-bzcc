@@ -26,8 +26,6 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/wx.h>
 #include <vector>
 
-#include "SystemSettings.h"
-
 /**
  * This class handles the UI for the systems panel in the settings dialog.
  */
@@ -57,22 +55,7 @@ public:
      * Updates the file associations in the registry based on the users selections.
      */
     void ApplyFileAssociations();
-
-    /**
-     * Adds a new item to be displayed.
-     */
-    void SetSettings(const SystemSettings& settings);
-
-    /**
-     * Returns the settings set by the user.
-     */
-    const SystemSettings& GetSettings() const;
-
-    /**
-     * Called when the user changes the check for updates check box.
-     */
-    void OnCheckForUpdates(wxCommandEvent& event);
-    
+        
     DECLARE_EVENT_TABLE()
 
 private:
@@ -91,7 +74,6 @@ private:
 
     enum ID
     {
-        ID_CheckForUpdates = 1,
     };
 
     struct FileType
@@ -101,12 +83,7 @@ private:
     };
 
 	wxCheckListBox*         m_fileTypesBox;
-    std::vector<FileType>   m_fileTypes;
-
-    wxCheckBox*             m_checkForUpdates;
-
-    SystemSettings          m_settings;
-
+    std::vector<FileType>   m_fileTypes;    
 };
 
 #endif

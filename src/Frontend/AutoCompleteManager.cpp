@@ -27,10 +27,6 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/tokenzr.h>
 #include "Tokenizer.h"
 
-AutoCompleteManager::Entry::Entry()
-{
-}
-
 AutoCompleteManager::Entry::Entry(const wxString& _name, Type _type, const Project::File *file, Symbol *symbol)
   : name(_name), type(_type), file(file), symbol(symbol)
 {
@@ -40,10 +36,26 @@ AutoCompleteManager::Entry::Entry(const wxString& _name, Type _type, const Proje
      scope = symbol->GetScope();
 }
 
+AutoCompleteManager::Entry::~Entry()
+{
+    //delete symbol;
+}
+
 bool AutoCompleteManager::Entry::operator<(const Entry& entry) const
 {
     return name.Cmp(entry.name) < 0;
 }
+
+AutoCompleteManager::AutoCompleteManager()
+{
+}
+ 
+AutoCompleteManager::~AutoCompleteManager()
+{
+    std::vector<Symbol *>::iterator it = m_symbols.begin(), it_end = m_symbols.end();
+    for(;it!=it_end;++it) {delete (*it);};
+}
+
 
 void AutoCompleteManager::BuildFromProject(const Project* project)
 {
@@ -116,6 +128,8 @@ void AutoCompleteManager::BuildFromProject(const Project* project)
     ClearFromEntries(m_prefixModules, file);
     ClearFromEntries(m_prefixNames, file);
     ClearFromEntries(m_assignments, file);
+    ClearFromEntries(m_languageEntries, file);    
+
   }
 
   //Remove symbols from the deleted entries
@@ -695,21 +709,21 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
         wxString const &str = m_assignments[i].name;
         int end = str.Length() - 1;
 
-        for (int i = test.Length() - 1; i < str.Length(); ++i)
+        for (int k = test.Length() - 1; k < str.Length(); ++k)
         {
-          if (IsSymbol(str[i]))
+          if (IsSymbol(str[k]))
           {
-            end = i - 1;
+            end = k - 1;
             break;
           }
         }
 
         int start = 0;
-        for (int i = end; i > 0; --i)
+        for (int k = end; k > 0; --k)
         {
-          if (IsSymbol(str[i]))
+          if (IsSymbol(str[k]))
           {
-            start = i + 1;
+            start = k + 1;
             break;
           }
         }

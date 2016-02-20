@@ -22,7 +22,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Config.h"
 #include "NewProcessDialog.h"
-#include "SourceControl.h"
+//#include "SourceControl.h"
 #include "MainFrame.h"
 
 #include "wx/filedlg.h"
@@ -32,8 +32,8 @@ BEGIN_EVENT_TABLE(NewProcessDialog, wxDialog)
     EVT_BUTTON(NewProcessDialog::ID_BrowseCommandLine,      NewProcessDialog::OnBrowseCommandLine)
     EVT_BUTTON(NewProcessDialog::ID_BrowseWorkingDirectory, NewProcessDialog::OnBrowseWorkingDirectory)
     EVT_BUTTON(NewProcessDialog::ID_BrowseSymbolsDirectory, NewProcessDialog::OnBrowseSymbolsDirectory)
-    EVT_BUTTON(NewProcessDialog::ID_BrowseSccProject,       NewProcessDialog::OnBrowseSccProject)
-    EVT_CHOICE(NewProcessDialog::ID_SelectScc,              NewProcessDialog::OnSelectScc)
+    //EVT_BUTTON(NewProcessDialog::ID_BrowseSccProject,       NewProcessDialog::OnBrowseSccProject)
+    //EVT_CHOICE(NewProcessDialog::ID_SelectScc,              NewProcessDialog::OnSelectScc)
 END_EVENT_TABLE()
 
 NewProcessDialog::NewProcessDialog( wxWindow* parent )
@@ -286,7 +286,7 @@ wxString NewProcessDialog::GetSymbolsDirectory() const
     return wxEmptyString;
 }
 
-wxString NewProcessDialog::GetSccProvider() const
+/*wxString NewProcessDialog::GetSccProvider() const
 {
     
     int selection = m_sccProviderChoice->GetSelection();
@@ -407,4 +407,4 @@ void NewProcessDialog::UpdateSccControls()
     m_sccProjectBox->Enable(enable);
     m_sccProjectBrowseButton->Enable(enable);
 
-}
+}*/

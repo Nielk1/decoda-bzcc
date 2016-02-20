@@ -23,7 +23,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "ProjectExplorerWindow.h"
 #include "SearchTextCtrl.h"
 #include "ProjectFileInfoCtrl.h"
-#include "ProjectFilterPopup.h"
+//#include "ProjectFilterPopup.h"
 #include "Tokenizer.h"
 #include "StlUtility.h"
 #include "Symbol.h"
@@ -54,7 +54,7 @@ BEGIN_EVENT_TABLE(ProjectExplorerWindow, wxPanel)
 
     EVT_TEXT( ID_Filter,                OnFilterTextChanged )
 
-    EVT_BUTTON( ID_FilterButton,        OnFilterButton )
+    //EVT_BUTTON( ID_FilterButton,        OnFilterButton )
 
     EVT_TREE_ITEM_EXPANDING(wxID_ANY,   OnTreeItemExpanding )
     EVT_TREE_ITEM_COLLAPSING(wxID_ANY,  OnTreeItemCollapsing )
@@ -74,14 +74,14 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
     m_stopExpansion = 0;
 
     // Initially everything will be displayed.
-    m_filterFlags = FilterFlag_Temporary | FilterFlag_Unversioned | FilterFlag_CheckedIn | FilterFlag_CheckedOut;
+    //m_filterFlags = FilterFlag_Temporary | FilterFlag_Unversioned | FilterFlag_CheckedIn | FilterFlag_CheckedOut;
 
     // Load the bitmaps for the filter button.
 
-    wxBitmap filterBitmap(filter_bitmap, wxBITMAP_TYPE_XPM);
+    /*wxBitmap filterBitmap(filter_bitmap, wxBITMAP_TYPE_XPM);
 
     m_filterImageList = new wxImageList(18, 17);
-    m_filterImageList->Add(filterBitmap, wxColour(0xFF, 0x9B, 0x77));
+    m_filterImageList->Add(filterBitmap, wxColour(0xFF, 0x9B, 0x77));*/
 
     // Load the bitmaps for the tree view.
 
@@ -108,11 +108,11 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
 
     m_searchBox = new SearchTextCtrl(this, ID_Filter, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_RICH);
     
-    m_filterButton = new wxBitmapButton( this, ID_FilterButton, wxNullBitmap, wxDefaultPosition, wxSize(18, 17), 0 );
-    m_filterPopup  = NULL;
+    //m_filterButton = new wxBitmapButton( this, ID_FilterButton, wxNullBitmap, wxDefaultPosition, wxSize(18, 17), 0 );
+    //m_filterPopup  = NULL;
 
     gSizer2->Add( m_searchBox, 1, wxALL | wxEXPAND, 4);
-    gSizer2->Add( m_filterButton, 1, wxALL | wxEXPAND, 4);
+    //gSizer2->Add( m_filterButton, 1, wxALL | wxEXPAND, 4);
 
     gSizer1->Add( gSizer2, 1, wxEXPAND, 5  );
 
@@ -141,12 +141,12 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
     m_filterMatchAnywhere = false;
     m_hasFilter = false;
 
-    UpdateFilterButtonImage();
+    //UpdateFilterButtonImage();
 }
 
 ProjectExplorerWindow::~ProjectExplorerWindow()
 {
-    delete m_filterImageList;
+    //delete m_filterImageList;
 }
 
 
@@ -309,9 +309,9 @@ void ProjectExplorerWindow::RebuildForFile(wxTreeItemId node, Project::File* fil
 
     // Check if the file passes our filter flags.
 
-    bool matchesFlags = false;
+    bool matchesFlags = true;
 
-    if ((m_filterFlags & FilterFlag_Unversioned) && file->status == Project::Status_None)
+    /*if ((m_filterFlags & FilterFlag_Unversioned) && file->status == Project::Status_None)
     {
         matchesFlags = !file->temporary;
     }
@@ -329,7 +329,7 @@ void ProjectExplorerWindow::RebuildForFile(wxTreeItemId node, Project::File* fil
     if ((m_filterFlags & FilterFlag_Temporary) && file->temporary)
     {
         matchesFlags = true;
-    }
+    }*/
 
     if (matchesFlags)
     {
@@ -692,9 +692,7 @@ void ProjectExplorerWindow::InsertFile(Project::File* file)
 
 void ProjectExplorerWindow::RemoveFile(Project::File* file)
 {
-
     RemoveFileSymbols(m_tree->GetRootItem(), file);
-
     if (m_infoBox->GetFile() == file)
     {
         m_infoBox->SetFile(NULL);
@@ -774,7 +772,7 @@ void ProjectExplorerWindow::RemoveFileSymbols(wxTreeItemId node, const stdext::h
 
 void ProjectExplorerWindow::SetFileContextMenu(wxMenu* contextMenu)
 {
-    //m_contextMenu = contextMenu;
+    m_contextMenu = contextMenu;
 }
 
 void ProjectExplorerWindow::SetDirectoryContextMenu(wxMenu* contextMenu)
@@ -851,7 +849,7 @@ void ProjectExplorerWindow::OnMenu(wxTreeEvent& event)
     m_tree->PopupMenu(m_directoryContextMenu, event.GetPoint());
 }
 
-void ProjectExplorerWindow::OnFilterButton(wxCommandEvent& event)
+/*void ProjectExplorerWindow::OnFilterButton(wxCommandEvent& event)
 {
     
     wxPoint point = m_filterButton->GetScreenPosition();
@@ -868,7 +866,7 @@ void ProjectExplorerWindow::OnFilterButton(wxCommandEvent& event)
     m_filterPopup->Position(point, wxDefaultSize);
     m_filterPopup->Popup(NULL);
 
-}
+}*/
 
 void ProjectExplorerWindow::UpdateFile(Project::File* file)
 {
@@ -924,7 +922,7 @@ void ProjectExplorerWindow::UpdateFile(Project::File* file)
     m_tree->Thaw();
 }
 
-void ProjectExplorerWindow::SetFilterFlags(unsigned int filterFlags)
+/*void ProjectExplorerWindow::SetFilterFlags(unsigned int filterFlags)
 {
     if (m_filterFlags != filterFlags)
     {
@@ -992,7 +990,7 @@ void ProjectExplorerWindow::UpdateFilterButtonImage()
 
     m_filterButton->SetBitmapLabel(bitmap);
     
-}
+}*/
 
 void ProjectExplorerWindow::SortTree(wxTreeItemId node)
 {

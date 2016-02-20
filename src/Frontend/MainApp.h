@@ -32,13 +32,13 @@ class MainApp: public wxApp
 
 public:
 
-    static const unsigned int  s_buildNumber;
     static const char*         s_versionDesc;
 
     /**
      * Constructor.
      */
     MainApp();
+    ~MainApp();
 
     /**
      * From wxApp.
