@@ -622,11 +622,21 @@ public:
      */
     void OnProjectExplorerItemActivated(wxTreeEvent& event);
 
+    // Implmentation of Remove/Exclude
+    void onRemoveAllSelectedInProjectExplorer(bool exclude_only);
     /**
      * Called when the user presses a key in the project explorer window.
      */
     void OnProjectExplorerKeyDown(wxTreeEvent& event);
     
+
+    // Called when click Remove in project context menu.
+    void OnContextOpen(wxCommandEvent& event);
+    void OnContextRemove(wxCommandEvent& event);
+    void OnContextExclude(wxCommandEvent& event);
+    void OnContextShowFile(wxCommandEvent& event);
+
+
     /**
      * Called when the user presses a key in the output window.
      */
@@ -673,57 +683,6 @@ public:
      * the window.
      */
     bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames);
-
-    /**
-     * Called when the user selects the Check Out option from the project
-     * explorer context menu.
-     */
-    //void OnContextCheckOut(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Check In option from the project
-     * explorer context menu.
-     */
-    //void OnContextCheckIn(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Undo Check Out option from the project
-     * explorer context menu.
-     */
-    //void OnContextUndoCheckOut(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Diff option from the project
-     * explorer context menu.
-     */
-    //void OnContextDiff(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Show History option from the project
-     * explorer context menu.
-     */
-    //void OnContextShowHistory(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Remove option from the project
-     * explorer context menu.
-     */
-    //void OnContextRemove(wxCommandEvent& event);
-
-    /**
-     * Called to update the Check Out and Show Changes options on the context menu.
-     */
-    //void OnUpdateContextCheckOut(wxUpdateUIEvent& event);
-
-    /**
-      * Called to update the Check In and Undo Check Out options on the context menu.
-     */
-    //void OnUpdateContextCheckIn(wxUpdateUIEvent& event);
-
-    /**
-     * Called to update the Show History option on the context menu.
-     */
-    //void OnUpdateContextShowHistory(wxUpdateUIEvent& event);
 
     /**
      * Called when one of the worker threads exits.
@@ -1055,12 +1014,12 @@ private:
     /**
      * Removes a file from the project (does not delete the file on disk).
      */
-    void DeleteProjectFile(Project::File* file);
+    void DeleteProjectFile(Project::File* file, bool exclude_only);
 
     /**
     * Removes a directory from the project (does not delete the directory on disk).
     */
-    void DeleteProjectDirectory(Project::Directory* directory);
+    void DeleteProjectDirectory(Project::Directory* directory, bool exclude_only);
 
     /**
      * Updates the break point marker in an open file. If set is enabled the
@@ -1380,15 +1339,11 @@ private:
         ID_EditGotoLine                     = 47,
         ID_FileSaveProjectAs                = 48,
         ID_FileNew                          = 49,
-        
-        /*ID_ContextCheckOut                  = 50,
-        ID_ContextCheckIn                   = 51,
-        ID_ContextUndoCheckOut              = 52,
-        ID_ContextDiff                      = 53,
-        ID_ContextShowHistory               = 54,*/
+
         ID_ContextRemove                    = 55,
         ID_ContextOpen                      = 56,
         ID_ContextExcludeFromProject        = 57,
+        ID_ContextShowFile                  = 58,
         
         ID_EditReplace                      = 60,
         ID_EditComment                      = 61,

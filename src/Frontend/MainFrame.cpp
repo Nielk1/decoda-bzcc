@@ -194,6 +194,12 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(ID_MiscOpenInFilter,                   MainFrame::OnMiscOpenInFilter)
     EVT_TREE_ITEM_ACTIVATED(ID_ProjectExplorer,     MainFrame::OnProjectExplorerItemActivated)
     EVT_TREE_KEY_DOWN(ID_ProjectExplorer,           MainFrame::OnProjectExplorerKeyDown)
+
+    // Project explorer context menu events.
+    EVT_MENU(ID_ContextRemove, MainFrame::OnContextRemove)
+    EVT_MENU(ID_ContextExcludeFromProject, MainFrame::OnContextExclude)
+    EVT_MENU(ID_ContextShowFile, MainFrame::OnContextShowFile)
+    EVT_MENU(ID_ContextOpen, MainFrame::OnContextOpen)
         
     EVT_MENU(wxID_ANY,                              MainFrame::OnMenu)
 
@@ -411,10 +417,10 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     // Create the context menu for files in the project explorer.
     m_contextMenu = new wxMenu;   
     m_contextMenu->Append(ID_ContextOpen,         _("&Open"));
+    m_contextMenu->Append(ID_ContextShowFile,     _("Show in &Folder"));
     m_contextMenu->AppendSeparator();
-    m_contextMenu->Append(ID_ContextExcludeFromProject, _("&Exclude from project"));  //todo
-    m_contextMenu->Append(ID_ContextRemove,         _("&Remove"));
-
+    m_contextMenu->Append(ID_ContextExcludeFromProject, _("&Exclude from project\tDel"));
+    m_contextMenu->Append(ID_ContextRemove,         _("&Remove\tShift+Del"));
     m_projectExplorer->SetFileContextMenu(m_contextMenu);
 
     m_directoryContextMenu = new wxMenu;
@@ -423,7 +429,6 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     m_projectExplorer->SetDirectoryContextMenu(m_directoryContextMenu);
 
     m_notebookTabMenu = new wxMenu;
-    
     m_notebookTabMenu->Append(ID_NotebookTabSave,           _("&Save"));
     m_notebookTabMenu->Append(ID_NotebookTabClose,          _("&Close"));
     m_notebookTabMenu->Append(ID_NotebookTabShowFile,       _("Show in &Folder"));
@@ -520,9 +525,9 @@ void MainFrame::InitializeMenu()
 
     // File menu.
 
-    wxMenu* menuRecentFiles = new wxMenu;
-    m_fileHistory.UseMenu(menuRecentFiles);
-    m_fileHistory.SetBaseId(ID_FirstRecentFile);
+    //wxMenu* menuRecentFiles = new wxMenu;
+    //m_fileHistory.UseMenu(menuRecentFiles);
+    //m_fileHistory.SetBaseId(ID_FirstRecentFile);
 
     wxMenu* menuRecentProjects = new wxMenu;
     m_projectFileHistory.UseMenu(menuRecentProjects);
@@ -546,7 +551,7 @@ void MainFrame::InitializeMenu()
     menuFile->Append(ID_FileSaveAs,                     _("Save &As..."), _("Save the current file with a new name"));
     menuFile->AppendSeparator();
         
-    menuFile->AppendSubMenu(menuRecentFiles,            _("&Recent Files..."));
+    //menuFile->AppendSubMenu(menuRecentFiles,            _("&Recent Files..."));
     menuFile->AppendSubMenu(menuRecentProjects,         _("&Recent Projects..."));
     
     menuFile->AppendSeparator();
@@ -738,13 +743,12 @@ void MainFrame::NewProject()
 
 void MainFrame::SetProject(Project* project)
 {
-
     CloseAllFiles();
 
     m_output->Clear();
     m_searchWindow->Clear();
 
-    m_lastProjectLoaded.Empty();
+    //m_lastProjectLoaded.Empty();
 
     delete m_project;
     m_project = project;
@@ -3472,40 +3476,79 @@ void MainFrame::OnProjectExplorerItemActivated(wxTreeEvent& event)
 
 }
 
+void MainFrame::onRemoveAllSelectedInProjectExplorer(bool exclude_only)
+{
+    if (!exclude_only)
+    {
+        wxMessageDialog *dial = new wxMessageDialog(NULL, wxT("Are you sure you want to delete all selected files from the disk?"), wxT("Question"),
+        wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+        if (dial->ShowModal() != wxID_YES)
+        {
+            return;
+        }   
+    }
+
+    std::vector<Project::File*> files;
+    m_projectExplorer->GetSelectedFiles(files);
+
+    bool alltemp = true;
+    for (unsigned int i = 0; i < files.size(); ++i)
+    {
+        if (!files[i]->temporary)
+        {
+            DeleteProjectFile(files[i], exclude_only);
+            alltemp = false;
+        }
+    }
+
+    std::vector<Project::Directory*> directories;
+    m_projectExplorer->GetSelectedDirectories(directories);
+    for (unsigned int i = 0; i < directories.size(); ++i)
+    {
+        //DeleteProjectDirectory(directories[i], exclude_only);
+        alltemp = false;
+    }
+
+    if (alltemp)
+    {
+        // Tell the user why we didn't delete any of the files the selected.
+        wxMessageBox("Temporary files cannot be removed from the Project Explorer. They are\nautomatically removed when the debugging session ends or the file is closed."); 
+    }
+}
+
 void MainFrame::OnProjectExplorerKeyDown(wxTreeEvent& event)
 {
     if (event.GetKeyEvent().GetKeyCode() == WXK_DELETE)
     {
-
-        std::vector<Project::File*> files;
-        m_projectExplorer->GetSelectedFiles(files);
-
-        bool alltemp = true;
-
-        for (unsigned int i = 0; i < files.size(); ++i)
-        {
-            if (!files[i]->temporary)
-            {
-                DeleteProjectFile(files[i]);
-                alltemp = false;
-            }
-        }
-
-        std::vector<Project::Directory*> directories;
-        m_projectExplorer->GetSelectedDirectories(directories);
-        for (unsigned int i = 0; i < directories.size(); ++i)
-        {
-          DeleteProjectDirectory(directories[i]);
-          alltemp = false;
-        }
-
-        if (alltemp)
-        {
-            // Tell the user why we didn't delete any of the files the selected.
-            wxMessageBox("Temporary files cannot be removed from the Project Explorer. They are\nautomatically removed when the debugging session ends or the file is closed."); 
-        }
-
+       bool shift_down = event.GetKeyEvent().ShiftDown();
+       onRemoveAllSelectedInProjectExplorer(!shift_down);
     }
+}
+
+void MainFrame::OnContextRemove(wxCommandEvent& event)
+{
+    onRemoveAllSelectedInProjectExplorer(false);
+}
+
+void MainFrame::OnContextExclude(wxCommandEvent& event)
+{
+    onRemoveAllSelectedInProjectExplorer(true);
+}
+
+void MainFrame::OnContextOpen(wxCommandEvent& event)
+{
+    std::vector<Project::File*> files;
+    m_projectExplorer->GetSelectedFiles(files);
+    for (Project::File* f : files)
+       OpenDocument(f->fileName.GetFullPath());   
+}
+
+void MainFrame::OnContextShowFile(wxCommandEvent& event)
+{
+    std::vector<Project::File*> files;
+    m_projectExplorer->GetSelectedFiles(files);
+    for (Project::File* f : files)
+        ShowFileInFolder(f->fileName);
 }
 
 void MainFrame::OnOutputKeyDown(wxKeyEvent& event)
@@ -3948,8 +3991,8 @@ void MainFrame::LoadOptions()
                 }
                 else if (node->GetName() == "recent_files")
                 {
-                    XmlConfig config(node);
-                    m_fileHistory.Load(config);
+                    //XmlConfig config(node);
+                    //m_fileHistory.Load(config);
                 }
                 else if (node->GetName() == "find_directories")
                 {
@@ -4116,14 +4159,12 @@ void MainFrame::SaveOptions()
 
     // Save the recent files.
 
-    wxXmlNode* recentFilesNode = new wxXmlNode(wxXML_ELEMENT_NODE, "recent_files");
-    root->AddChild(recentFilesNode);
-
-    XmlConfig recentFilesConfig(recentFilesNode);
-    m_fileHistory.Save(recentFilesConfig);
+    //wxXmlNode* recentFilesNode = new wxXmlNode(wxXML_ELEMENT_NODE, "recent_files");
+    //root->AddChild(recentFilesNode);
+    //XmlConfig recentFilesConfig(recentFilesNode);
+    //m_fileHistory.Save(recentFilesConfig);
 
     // Save the recent project files.
-
     wxXmlNode* recentProjectsNode = new wxXmlNode(wxXML_ELEMENT_NODE, "recent_projects");
     root->AddChild(recentProjectsNode);
 
@@ -4180,33 +4221,26 @@ bool MainFrame::SaveProject(bool promptForName)
         fileName = wxFileSelector("Save Project", "", "", "", "Decoda Project files (*.deproj)|*.deproj|All files (*.*)|*.*", wxFD_SAVE, this);
     }
 
-    if (!fileName.empty())
+    if (fileName.empty())
+        return false;
+
+    if (!m_project->Save(fileName, false))
     {
-        if (!m_project->Save(fileName))
-        {
-            wxMessageBox("Error saving project", s_applicationName, wxOK | wxICON_ERROR, this);
-            return false;
-        }
-        else
-        {
-            m_projectFileHistory.AddFileToHistory(fileName);
-            UpdateCaption();
-            m_lastProjectLoaded = fileName;
-            return true;
-        }
+        wxMessageBox("Error saving project", s_applicationName, wxOK | wxICON_ERROR, this);
+        return false;
     }
 
-    return false;
+    m_projectFileHistory.AddFileToHistory(fileName);
+    UpdateCaption();
+    m_lastProjectLoaded = fileName;
+    return true;
 }
 
 bool MainFrame::SaveProjectIfNeeded()
 {
-
-    if (m_project->GetNeedsSave())
+    if (m_project->GetNeedsSaveProject())
     {
-        
         wxString message;
-
         if (!m_project->GetFileName().IsEmpty())
         {
             message = "File \'" + m_project->GetFileName() + "\' is modified. Save changes?";
@@ -4215,23 +4249,17 @@ bool MainFrame::SaveProjectIfNeeded()
         {
             message = "The project has been modified. Save changes?";
         }
-        
-        int result = wxMessageBox(message, s_applicationName, wxYES | wxNO | wxCANCEL | wxICON_WARNING, this);
-
-        if (result == wxCANCEL)
+        int result = wxMessageBox(message, s_applicationName, wxYES | wxNO | wxICON_WARNING, this);
+        if (result == wxYES)                
         {
-            return false;
-
+            SaveProject();
+            return true;
         }
-        else if (result == wxYES && !SaveProject())
-        {
-            return false;
-        }
-
+        return false;
     }
-
+    wxString filename = m_project->GetFileName();
+    m_project->Save(filename, true);
     return true;
-
 }
 
 bool MainFrame::CloseAllFiles()
@@ -4480,20 +4508,8 @@ MainFrame::OpenFile* MainFrame::OpenProjectFile(Project::File* file)
 
 }
 
-void MainFrame::DeleteProjectFile(Project::File* file)
+void MainFrame::DeleteProjectFile(Project::File* file, bool exclude_only)
 {
-    if (file->localPath.IsEmpty() == false)
-    {
-      wxMessageDialog *dial = new wxMessageDialog(NULL, wxT("Are you sure you want to delete this file?"), wxT("Question"),
-        wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
-
-      if (dial->ShowModal() != wxID_YES)
-      {
-        return;
-      }
-    }
-    
-
     for (unsigned int i = 0; i < m_openFiles.size(); ++i)
     {
         if (m_openFiles[i]->file == file)
@@ -4506,12 +4522,12 @@ void MainFrame::DeleteProjectFile(Project::File* file)
     }
 
     m_projectExplorer->RemoveFile(file);
-    //m_project->RemoveFile(file);
+    m_project->RemoveFile(file, exclude_only);
     m_breakpointsWindow->RemoveFile(file);
 
 }
 
-void MainFrame::DeleteProjectDirectory(Project::Directory* directory)
+void MainFrame::DeleteProjectDirectory(Project::Directory* directory, bool exclude_only)
 {
   for (Project::File *file : directory->files)
   {
@@ -4529,7 +4545,7 @@ void MainFrame::DeleteProjectDirectory(Project::Directory* directory)
   }
 
   m_projectExplorer->RemoveDirectory(directory);
-  m_project->RemoveDirectory(directory);
+  m_project->RemoveDirectory(directory, exclude_only);
 }
 
 void MainFrame::AddVmToList(unsigned int vm)
@@ -5386,7 +5402,7 @@ void MainFrame::CleanUpTemporaryFiles()
 
     for (unsigned int i = 0; i < files.size(); ++i)
     {
-        m_project->RemoveFile(files[i]);
+        m_project->RemoveFile(files[i], false);
     }
 
     m_breakpointsWindow->UpdateBreakpoints();
@@ -5958,7 +5974,7 @@ bool MainFrame::PreNotebookPageClose(int page, bool promptForSave)
     if (file->temporary && file->scriptIndex == -1)
     {
         m_projectExplorer->RemoveFile(file);
-        m_project->RemoveFile(file);
+        m_project->RemoveFile(file, false);
         m_breakpointsWindow->RemoveFile(file);
     }
 
@@ -6079,7 +6095,6 @@ Project::File* MainFrame::GetFileMatchingSource(const wxFileName& fileName, cons
 
 void MainFrame::AutoOpenLastProject()
 {
-
     if (m_editorSettings.GetLoadLastProjectOnStartup() && !m_lastProjectLoaded.IsEmpty())
     {
         if (!OpenProject(m_lastProjectLoaded, false))

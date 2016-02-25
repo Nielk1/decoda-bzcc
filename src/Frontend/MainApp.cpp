@@ -160,10 +160,8 @@ void MainApp::OnInitCmdLine(wxCmdLineParser& parser)
 
 bool MainApp::OnCmdLineParsed(wxCmdLineParser& parser)
 {
- 
     for (unsigned int i = 0; i < parser.GetParamCount(); ++i)
     {
-
         wxFileName fileName = parser.GetParam(i);
 
         // File names sometimes come in in the short form from Windows, so convert
@@ -188,7 +186,6 @@ bool MainApp::OnCmdLineParsed(wxCmdLineParser& parser)
 #endif
  
     return true;
-
 }
 
 const char* MainApp::GetExeFileName() const

@@ -118,15 +118,10 @@ public:
     wxString GetName() const;
 
     /**
-     * Saves the project settings to the last used file name.
-     */
-    bool Save() const;
-
-    /**
      * Saves the project settings to the specified file. This updates the internally
      * stored file name so that the next time Save is called it will use that file.
      */
-    bool Save(const wxString& fileName);
+    bool Save(const wxString& fileName, bool dontsave_project);
 
     /**
      * Loads the project setting from the specified file.
@@ -139,10 +134,11 @@ public:
     const wxString& GetFileName() const;
 
     /**
-     * Returns true if the project settings have been modified since they were
+     * Returns true if the project settings/user settings have been modified since they were
      * last saved/loaded.
      */
-    bool GetNeedsSave() const;
+    bool GetNeedsSaveProject() const;
+    bool GetNeedsSaveUser() const;
 
     /**
      * Returns the command line to launch the application associated with the
@@ -224,12 +220,12 @@ public:
     /**
      * Removes a file from the project.
      */
-    void RemoveFile(File* file);
+    void RemoveFile(File* file, bool exclude_only);
 
     /**
     * Removes a directory from the project.
     */
-    void RemoveDirectory(Directory* directory);
+    void RemoveDirectory(Directory* directory, bool exclude_only);
 
     /**
      * Gets the specified file.
@@ -424,12 +420,7 @@ private:
     std::vector<Template>    m_templates;
                              
     unsigned int             m_tempIndex;
-                             
-    /*wxString                 m_sccProvider;
-    wxString                 m_sccUser;
-    wxString                 m_sccProjName;
-    wxString                 m_sccLocalPath;
-    wxString                 m_sccAuxProjPath;*/
+               
     wxString                 m_baseDirectory;
 };
 

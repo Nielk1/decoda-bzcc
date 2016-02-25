@@ -108,7 +108,7 @@ void AutoCompleteManager::BuildFromProject(const Project* project)
   wxVector<Symbol *> removedSymbols;
 
   auto ClearFromEntries = [&removedSymbols](std::vector<Entry> &entries, const Project::File *file){
-    for (int i = 0; i < entries.size();)
+    for (size_t i = 0; i < entries.size();)
     {
       if (entries[i].file == file)
       {
@@ -122,6 +122,7 @@ void AutoCompleteManager::BuildFromProject(const Project* project)
   };
 
   //Clear entries
+  m_assignments.clear();
   for (const Project::File *file : updatedFiles)
   {
     ClearFromEntries(m_entries, file);
@@ -129,11 +130,10 @@ void AutoCompleteManager::BuildFromProject(const Project* project)
     ClearFromEntries(m_prefixNames, file);
     ClearFromEntries(m_assignments, file);
     ClearFromEntries(m_languageEntries, file);    
-
   }
 
   //Remove symbols from the deleted entries
-  for (int i = 0; i < m_symbols.size();)
+  for (size_t i = 0; i < m_symbols.size();)
   {
     bool deleted = false;
     for (Symbol *s : removedSymbols)
@@ -333,7 +333,7 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
 
     //Try to decode entire symbol if possible
     wxString tempString;
-    for (int i = 0; i < tokens.size(); ++i)
+    for (size_t i = 0; i < tokens.size(); ++i)
     {
       if (i == tokens.size() - 1)
       {
@@ -573,7 +573,7 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
 
     //Go through the symbols to find the true type
     Symbol *foundSymbol = nullptr;
-    for (int i = 1; i < tokens.size(); ++i)
+    for (size_t i = 1; i < tokens.size(); ++i)
     {
       if (currentToken != nullptr)
       {
@@ -604,7 +604,7 @@ void AutoCompleteManager::ParsePrefix(wxString& prefix, const Project::File *fil
 
 
   wxString totalString;
-  for (int i = 0; i < tokens.size(); ++i)
+  for (size_t i = 0; i < tokens.size(); ++i)
   {
     if (i == tokens.size() - 1)
     {
@@ -707,9 +707,9 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
       if (m_assignments[i].name.StartsWith(fullToken))
       {
         wxString const &str = m_assignments[i].name;
-        int end = str.Length() - 1;
+        size_t end = str.Length() - 1;
 
-        for (int k = test.Length() - 1; k < str.Length(); ++k)
+        for (size_t k = test.Length() - 1; k < str.Length(); ++k)
         {
           if (IsSymbol(str[k]))
           {
@@ -718,8 +718,8 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
           }
         }
 
-        int start = 0;
-        for (int k = end; k > 0; --k)
+        size_t start = 0;
+        for (size_t k = end; k > 0; --k)
         {
           if (IsSymbol(str[k]))
           {

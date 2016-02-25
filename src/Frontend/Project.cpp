@@ -106,24 +106,20 @@ wxString Project::GetName() const
     {
         return name;
     }
-
 }
 
-bool Project::Save(const wxString& fileName)
-{
-
-    wxFileName userFileName(fileName);
-    userFileName.SetExt("deuser");
-    
+bool Project::Save(const wxString& fileName, bool dontsave_project)
+{  
+    if (fileName.empty())
+        return false;
     if (fileName != m_fileName)
     {
         m_needsSave = true;
         m_needsUserSave = true;
+        dontsave_project = false;
     }
-
     bool success = true;
-
-    if (m_needsSave)
+    if (!dontsave_project && m_needsSave)
     {
         if (SaveGeneralSettings(fileName))
         {
@@ -134,9 +130,11 @@ bool Project::Save(const wxString& fileName)
             success = false;
         }
     }
-
+ 
     if (success && m_needsUserSave)
     {
+        wxFileName userFileName(fileName);
+        userFileName.SetExt("deuser");
         if (SaveUserSettings(userFileName.GetFullPath()))
         {
             m_needsUserSave = false;
@@ -149,7 +147,16 @@ bool Project::Save(const wxString& fileName)
     }
 
     return success;
+}
 
+bool Project::GetNeedsSaveProject() const
+{
+    return m_needsSave;
+}
+
+bool Project::GetNeedsSaveUser() const
+{
+    return m_needsUserSave;
 }
 
 bool Project::Load(const wxString& fileName)
@@ -178,11 +185,6 @@ bool Project::Load(const wxString& fileName)
 const wxString& Project::GetFileName() const
 {
     return m_fileName;
-}
-
-bool Project::GetNeedsSave() const
-{
-    return m_needsSave || m_needsUserSave;
 }
 
 const wxString& Project::GetCommandLine() const
@@ -464,7 +466,7 @@ Project::File* Project::AddTemporaryFile(const wxString& fileName)
 
 }
 
-void Project::RemoveFile(File* file)
+void Project::RemoveFile(File* file, bool exclude_only)
 {
 
     std::vector<File*>::iterator iterator = m_files.begin();
@@ -501,7 +503,8 @@ void Project::RemoveFile(File* file)
           (*dirIterator)->files.erase(iterator);
           if (!file->temporary)
           {
-            wxRemoveFile(file->fileName.GetFullPath());
+            if (!exclude_only)
+                wxRemoveFile(file->fileName.GetFullPath());
 
             m_needsSave = true;
             m_needsUserSave = true;
@@ -526,7 +529,7 @@ void Project::RemoveFile(File* file)
     }
 }
 
-void Project::RemoveDirectory(Directory* directory)
+void Project::RemoveDirectory(Directory* directory, bool exclude_only)
 {
   std::vector<Directory*>::iterator iterator = m_directories.begin();
 
