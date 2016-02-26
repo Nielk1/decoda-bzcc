@@ -194,6 +194,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(ID_MiscOpenInFilter,                   MainFrame::OnMiscOpenInFilter)
     EVT_TREE_ITEM_ACTIVATED(ID_ProjectExplorer,     MainFrame::OnProjectExplorerItemActivated)
     EVT_TREE_KEY_DOWN(ID_ProjectExplorer,           MainFrame::OnProjectExplorerKeyDown)
+    EVT_TREE_SEL_CHANGED(ID_ProjectExplorer, MainFrame::OnProjectExplorerItemSelected)
 
     // Project explorer context menu events.
     EVT_MENU(ID_ContextRemove, MainFrame::OnContextRemove)
@@ -417,7 +418,7 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     // Create the context menu for files in the project explorer.
     m_contextMenu = new wxMenu;   
     m_contextMenu->Append(ID_ContextOpen,         _("&Open"));
-    m_contextMenu->Append(ID_ContextShowFile,     _("Show in &Folder"));
+    m_contextMenu->Append(ID_ContextShowFile,     _("Show in E&xplorer"));
     m_contextMenu->AppendSeparator();
     m_contextMenu->Append(ID_ContextExcludeFromProject, _("&Exclude from project\tDel"));
     m_contextMenu->Append(ID_ContextRemove,         _("&Remove\tShift+Del"));
@@ -431,7 +432,7 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     m_notebookTabMenu = new wxMenu;
     m_notebookTabMenu->Append(ID_NotebookTabSave,           _("&Save"));
     m_notebookTabMenu->Append(ID_NotebookTabClose,          _("&Close"));
-    m_notebookTabMenu->Append(ID_NotebookTabShowFile,       _("Show in &Folder"));
+    m_notebookTabMenu->Append(ID_NotebookTabShowFile,       _("Show in E&xplorer"));
 
     // Make down the default option for find operaitons, since that's a lot
     // more common than up.
@@ -585,21 +586,6 @@ void MainFrame::InitializeMenu()
     menuEdit->AppendSeparator();
     menuEdit->Append(ID_EditZoomIn,                     _("&Zoom In"));
     menuEdit->Append(ID_EditZoomOut,                    _("&Zoom Out"));
-
-    // Project menu.
-    /*wxMenu* menuProject = new wxMenu;
-    menuProject->Append(ID_FileNewProject,              _("&New Project"));
-    menuProject->Append(ID_FileOpenProject,             _("Open &Project..."));
-    menuProject->Append(ID_FileSaveProject,             _("&Save Project"));
-    menuProject->Append(ID_FileSaveProjectAs,           _("Save Project &As..."));
-    menuProject->AppendSeparator();
-    menuProject->Append(ID_ProjectAddNewFile,           _("Add Ne&w File..."));
-    menuProject->Append(ID_ProjectAddExistingFile,      _("Add Existin&g File..."));
-    menuProject->Append(ID_ProjectAddDirectory,         _("Add Directory..."));
-    menuProject->AppendSeparator();
-    menuProject->AppendSubMenu(menuRecentProjects,      _("&Recent Files..."));
-    menuProject->AppendSeparator();
-    menuProject->Append(ID_ProjectSettings,             _("&Settings..."));*/
 
     // Debug menu.
     wxMenu* menuDebug = new wxMenu;
@@ -1610,43 +1596,63 @@ void MainFrame::OnDebugDeleteAllBreakpoints(wxCommandEvent& event)
     DeleteAllBreakpoints();
 }
 
+void MainFrame::switchPaneShow(wxAuiPaneInfo& pane, bool only_show_mode)
+{  
+    if (only_show_mode) {
+        if (!pane.IsShown())
+            { pane.Show(); m_mgr.Update(); }
+        return;
+    }
+    if (!pane.IsShown())
+        pane.Show();
+    else
+        pane.Hide();
+    m_mgr.Update();
+}
+
 void MainFrame::OnWindowProjectExplorer(wxCommandEvent& WXUNUSED(event))
 {
-    m_mgr.GetPane(m_projectExplorer).Show();
-    m_mgr.Update();
+    switchPaneShow(  m_mgr.GetPane(m_projectExplorer) );
 }
 
 void MainFrame::OnWindowCallStack(wxCommandEvent& WXUNUSED(event))
 {
-    m_mgr.GetPane(m_callStack).Show();
-    m_mgr.Update();
+    switchPaneShow( m_mgr.GetPane(m_callStack) );
 }
 
 void MainFrame::OnWindowOutput(wxCommandEvent& WXUNUSED(event))
 {
-    ShowOutputWindow();
+    switchPaneShow( m_mgr.GetPane(m_output) );
 }
 
 void MainFrame::OnWindowSearch(wxCommandEvent& WXUNUSED(event))
 {
-    ShowSearchWindow();
+    switchPaneShow( m_mgr.GetPane(m_searchWindow) );
 }
 
 void MainFrame::OnWindowWatch(wxCommandEvent& WXUNUSED(event))
 {
-    ShowWatchWindow();
+    switchPaneShow( m_mgr.GetPane(m_watch) );
 }
 
 void MainFrame::OnWindowVirtualMachines(wxCommandEvent& WXUNUSED(event))
 {
-    m_mgr.GetPane(m_vmList).Show();
-    m_mgr.Update();
+    switchPaneShow( m_mgr.GetPane(m_vmList) );
 }
 
 void MainFrame::OnWindowBreakpoints(wxCommandEvent& WXUNUSED(event))
 {
-    m_mgr.GetPane(m_breakpointsWindow).Show();
-    m_mgr.Update();
+    switchPaneShow( m_mgr.GetPane(m_breakpointsWindow) );
+}
+
+void MainFrame::ShowSearchWindow()
+{
+    switchPaneShow( m_mgr.GetPane(m_searchWindow), true );
+}
+
+void MainFrame::ShowWatchWindow()
+{
+    switchPaneShow( m_mgr.GetPane(m_watch), true );
 }
 
 void MainFrame::OnWindowNextDocument(wxCommandEvent& event)
@@ -3121,9 +3127,9 @@ void MainFrame::GotoNewLine(CodeEdit* edit, unsigned int newLine, bool center)
     
     int pos = edit->PositionFromLine(newLine);
     
-    edit->SetSelectionStart( pos );
     edit->SetCurrentPos( pos );
-
+    edit->SetSelectionStart( pos );
+    
 }
 
 MainFrame::OpenFile* MainFrame::GotoOldLine(unsigned int scriptIndex, unsigned int oldLine, bool center)
@@ -3433,8 +3439,10 @@ void MainFrame::OnProcessTerminate(wxProcessEvent& event)
 
 }
 
-void MainFrame::OnProjectExplorerItemActivated(wxTreeEvent& event)
+void MainFrame::OnProjectExplorerItemSelected(wxTreeEvent& event)
 {
+    if (m_projectExplorer->IsTreeFrozen() && m_projectExplorer->HasFilter())
+        return;
 
     wxTreeItemId item = event.GetItem();
 
@@ -3469,11 +3477,23 @@ void MainFrame::OnProjectExplorerItemActivated(wxTreeEvent& event)
             if (data->symbol != NULL)
             {
                 GotoNewLine(file->edit, data->symbol->line, true);
+                int line = data->symbol->line-1;
+                int pos = file->edit->PositionFromLine(line);
+                wxString str = file->edit->GetLine(line);
+                const wxString &symstr = data->symbol->name;
+                size_t sympos = str.find(symstr);
+                if (sympos != -1)
+                  file->edit->SetSelection(pos + sympos, pos+sympos+symstr.Len());
             }
+            m_projectExplorer->SetFocusToTree();
         }
 
     }
 
+}
+
+void MainFrame::OnProjectExplorerItemActivated(wxTreeEvent& event)
+{
 }
 
 void MainFrame::onRemoveAllSelectedInProjectExplorer(bool exclude_only)
@@ -4881,9 +4901,7 @@ void MainFrame::UpdateStatusBarLineAndColumn()
 {
 
     // Update the line and column number in the status bar.
-  /*
     CodeEdit *pageIndex = GetSelectedPage();
-
     if (pageIndex != nullptr)
     {
 
@@ -4905,7 +4923,6 @@ void MainFrame::UpdateStatusBarLineAndColumn()
         m_statusBar->SetStatusText(_(""), 2);
 
     }
-    */
 }
 
 void MainFrame::ToggleBreakpoint(Project::File* file, unsigned int newLine)
@@ -5598,97 +5615,6 @@ void MainFrame::RemoveAllLocalBreakpoints(Project::File* file)
 
 }
 
-/*bool MainFrame::InitializeSourceControl()
-{
-
-    m_sourceControl.Shutdown();
-
-    if (!m_project->GetSccProvider().IsEmpty())
-    {
-        if (!m_sourceControl.Initialize(m_project->GetSccProvider(), static_cast<HWND>(GetHandle())))
-        {
-            m_output->OutputError("Error: Couldn't initialize source control provider");
-            return false;
-        }
-        if (!m_sourceControl.OpenProject(m_project->GetSccUser(), m_project->GetSccProjectName(), m_project->GetSccLocalPath(), m_project->GetSccAuxProjectPath()))
-        {
-            m_sourceControl.Shutdown();
-            m_output->OutputError("Error: Couldn't open source control project");
-            return false;
-        }
-    }
-
-    UpdateProjectFileStatus();
-    return true;
-
-}
-
-void MainFrame::UpdateProjectFileStatus()
-{
-
-    if (m_sourceControl.GetIsInitialized())
-    {
-
-        // Check if we've already queued up a thread.
-
-        FileStatusThread* thread = NULL;
-
-        if (m_fileStatusThread[0] == NULL)
-        {
-            thread = new FileStatusThread(this, m_sourceControl);
-            m_fileStatusThread[0] = thread;
-        }
-        else if (m_fileStatusThread[1] == NULL)
-        {
-            thread  = new FileStatusThread(this, m_sourceControl);
-            m_fileStatusThread[1] = thread;
-        }
-        else
-        {
-            thread = m_fileStatusThread[1];
-        }
-
-        for (unsigned int i = 0; i < m_project->GetNumFiles(); ++i)
-        {
-            Project::File* file = m_project->GetFile(i);
-            thread->AddFileName(file->fileName.GetFullPath());
-        }
-
-        for (unsigned int directoryIndex = 0; directoryIndex < m_project->GetNumDirectories(); ++directoryIndex)
-        {
-          Project::Directory *directory = m_project->GetDirectory(directoryIndex);
-          for (unsigned int fileIndex = 0; fileIndex < directory->files.size(); ++fileIndex)
-          {
-            Project::File *file = directory->files[fileIndex];
-            thread->AddFileName(file->fileName.GetFullPath());
-          }
-        }
-
-        if (thread == m_fileStatusThread[0])
-        {
-            thread->Create();
-            thread->Run();
-        }
-
-    }
-
-}
-
-void MainFrame::UpdateProjectFileStatus(Project::File* file)
-{
-
-    if (m_sourceControl.GetIsInitialized())
-    {
-        
-        SourceControl::Status status = m_sourceControl.GetFileStatus(file->fileName.GetFullPath());
-        SetFileStatus(file, status);
-
-        m_projectExplorer->UpdateFileImages();
-    
-    }
-
-}*/
-
 void MainFrame::DebugExe(const wxString& fileName)
 {
 
@@ -5706,24 +5632,6 @@ void MainFrame::DebugExe(const wxString& fileName)
         StartProcess(fileName, "", "", "", true, false);
     }
 
-}
-
-void MainFrame::ShowOutputWindow()
-{
-    m_mgr.GetPane(m_output).Show();
-    m_mgr.Update();
-}
-
-void MainFrame::ShowWatchWindow()
-{
-    m_mgr.GetPane(m_watch).Show();
-    m_mgr.Update();
-}
-
-void MainFrame::ShowSearchWindow()
-{
-    m_mgr.GetPane(m_searchWindow).Show();
-    m_mgr.Update();
 }
 
 void MainFrame::SetMode(Mode mode)
@@ -5802,12 +5710,6 @@ bool MainFrame::ShowProjectSettingsDialog()
     dialog.SetWorkingDirectory(m_project->GetWorkingDirectory());
     dialog.SetSymbolsDirectory(m_project->GetSymbolsDirectory());
 
-    //dialog.SetSccProvider(m_project->GetSccProvider());
-    //dialog.SetSccUser(m_project->GetSccUser());
-    //dialog.SetSccProjectName(m_project->GetSccProjectName());
-    //dialog.SetSccLocalPath(m_project->GetSccLocalPath());
-    //dialog.SetSccAuxProjectPath(m_project->GetSccAuxProjectPath());
-
     if (dialog.ShowModal() == wxID_OK)
     {
 
@@ -5815,14 +5717,7 @@ bool MainFrame::ShowProjectSettingsDialog()
         m_project->SetCommandArguments(dialog.GetCommandArguments());
         m_project->SetWorkingDirectory(dialog.GetWorkingDirectory());
         m_project->SetSymbolsDirectory(dialog.GetSymbolsDirectory());
-    
-        /*m_project->SetSccProvider(dialog.GetSccProvider());
-        m_project->SetSccUser(dialog.GetSccUser());
-        m_project->SetSccProjectName(dialog.GetSccProjectName());
-        m_project->SetSccLocalPath(dialog.GetSccLocalPath());
-        m_project->SetSccAuxProjectPath(dialog.GetSccAuxProjectPath());*/
 
-        //InitializeSourceControl();
         return true;
     
     }

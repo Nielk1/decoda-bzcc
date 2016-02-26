@@ -79,6 +79,8 @@ public:
      */
     virtual ~ProjectExplorerWindow();
 
+    bool IsTreeFrozen();
+    bool HasFilter();
 
     /**
     * Updates the colors of the panel to match the settings
@@ -89,6 +91,8 @@ public:
      * Sets the keyboard focus to the filter text box.
      */
     void SetFocusToFilter();
+
+    void SetFocusToTree();
 
     /**
      * Called when the user changes the text in the filter box.
@@ -128,7 +132,7 @@ public:
     /**
      * Called when the user clicks on the filter button.
      */
-    //void OnFilterButton(wxCommandEvent& event);
+     //void OnFilterButton(wxCommandEvent& event);
 
     /**
      * Rebuilds the entire tree for the project.
@@ -335,10 +339,6 @@ private:
         Image_File                  = 1,
         Image_Function              = 2,
         Image_FileTemp              = 3,
-        Image_FileCheckedIn         = 4,
-        Image_FileTempCheckedIn     = 5,
-        Image_FileCheckedOut        = 6,
-        Image_FileTempCheckedOut    = 7,
     };
 
     Project*                     m_project;
@@ -351,12 +351,7 @@ private:
                                  
     wxTreeItemId                 m_root;
     class wxProjectTree*         m_tree;
-                                 
-    //wxImageList*                 m_filterImageList;
-    //wxBitmapButton*              m_filterButton;
-    //ProjectFilterPopup*          m_filterPopup;
-    //unsigned int                 m_filterFlags;
-                                 
+                             
     ProjectFileInfoCtrl*         m_infoBox;
                                  
     wxTreeItemId                 m_stopExpansion;
@@ -382,7 +377,7 @@ public:
   wxProjectTree(wxWindow *parent, wxWindowID id = wxID_ANY,
     const wxPoint& pos = wxDefaultPosition,
     const wxSize& size = wxDefaultSize,
-    long style = wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT,
+    long style = wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_FULL_ROW_HIGHLIGHT,
     const wxValidator& validator = wxDefaultValidator,
     const wxString& name = wxTreeCtrlNameStr)
   {

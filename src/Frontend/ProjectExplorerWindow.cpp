@@ -140,13 +140,10 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
     m_directoryContextMenu = NULL;
     m_filterMatchAnywhere = false;
     m_hasFilter = false;
-
-    //UpdateFilterButtonImage();
 }
 
 ProjectExplorerWindow::~ProjectExplorerWindow()
 {
-    //delete m_filterImageList;
 }
 
 
@@ -164,6 +161,11 @@ void ProjectExplorerWindow::SetFontColorSettings(const FontColorSettings& settin
   m_itemSelectBackground = settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).backColor;
 
   Rebuild();
+}
+
+void ProjectExplorerWindow::SetFocusToTree()
+{
+    m_tree->SetFocus();
 }
 
 void ProjectExplorerWindow::SetFocusToFilter()
@@ -206,6 +208,16 @@ wxTreeItemId ProjectExplorerWindow::GetSelection() const
 
 }
 
+bool ProjectExplorerWindow::IsTreeFrozen()
+{
+    return m_tree->IsFrozen();
+}
+
+bool ProjectExplorerWindow::HasFilter()
+{
+    return m_hasFilter;
+}
+
 void ProjectExplorerWindow::OnFilterTextChanged(wxCommandEvent& event)
 {
     //No previous filter
@@ -245,6 +257,7 @@ void ProjectExplorerWindow::OnFilterTextChanged(wxCommandEvent& event)
     {
       LoadExpansion();
     }
+    m_searchBox->SetFocus();
 }
 
 void ProjectExplorerWindow::Rebuild()
@@ -280,12 +293,6 @@ void ProjectExplorerWindow::Rebuild()
     m_infoBox->SetFile(NULL);
 
     m_tree->Thaw();
-
-    // Select the first item in the newly created list
-    wxTreeItemId firstItem = m_tree->GetFirstVisibleItem();
-    if (firstItem.IsOk())
-     m_tree->SelectItem(firstItem);
-
 }
 
 void ProjectExplorerWindow::RebuildForDirectory(Project::Directory *directory)
@@ -495,7 +502,6 @@ void ProjectExplorerWindow::AddFile(wxTreeItemId parent, Project::File* file)
 
 wxTreeItemId ProjectExplorerWindow::AddSymbol(wxTreeItemId parent, Project::File* file, Symbol* symbol)
 {
-
     ItemData* data = new ItemData;
     data->file      = file;
     data->symbol    = symbol;
@@ -558,7 +564,6 @@ void ProjectExplorerWindow::OnTreeItemActivated(wxTreeEvent& event)
 
 void ProjectExplorerWindow::OnTreeItemContextMenu(wxTreeEvent& event)
 {
-
     m_tree->SelectItem(event.GetItem(), true);
 
     if (m_contextMenu != NULL)
@@ -597,7 +602,7 @@ void ProjectExplorerWindow::OnTreeItemSelectionChanged(wxTreeEvent& event)
     // the tree is frozen. This would not happen if Microsoft did not LIE in its
     // documentation.
     if (m_tree->IsFrozen()) {
-        event.Skip();
+        event.Skip(false);
         return;
     }
 
@@ -621,7 +626,7 @@ void ProjectExplorerWindow::OnTreeItemSelectionChanged(wxTreeEvent& event)
     }
 
     m_infoBox->SetFile(file);
-
+    event.Skip(true);
 }
 
 void ProjectExplorerWindow::GetSelectedFiles(std::vector<Project::File*>& selectedFiles) const
@@ -783,33 +788,12 @@ void ProjectExplorerWindow::SetDirectoryContextMenu(wxMenu* contextMenu)
 int ProjectExplorerWindow::GetImageForFile(const Project::File* file) const
 {
 
-    int image = 0;
-
-    if (file->status == Project::Status_CheckedIn)
+    int image = Image_File;
+    if (file->temporary)
     {
-        image = Image_FileCheckedIn;
-        if (file->temporary)
-        {
-            image = Image_FileTempCheckedIn;
-        }
+       image = Image_FileTemp;
     }
-    else if (file->status == Project::Status_CheckedOut)
-    {
-        image = Image_FileCheckedOut;
-        if (file->temporary)
-        {
-            image = Image_FileTempCheckedOut;
-        }
-    }
-    else
-    {
-        image = Image_File;
-        if (file->temporary)
-        {
-            image = Image_FileTemp;
-        }
-    }
-    
+  
     return image;
 }
 
@@ -921,76 +905,6 @@ void ProjectExplorerWindow::UpdateFile(Project::File* file)
     m_tree->SetScrollPos(wxVERTICAL, scroll_pos);
     m_tree->Thaw();
 }
-
-/*void ProjectExplorerWindow::SetFilterFlags(unsigned int filterFlags)
-{
-    if (m_filterFlags != filterFlags)
-    {
-        
-        m_filterFlags = filterFlags;
-        
-        // Because rebuilding the tree can take a few milliseconds which prevents
-        // the message pump from dispatching paint events, we get less flickering
-        // if we update the button image after rebuilding the tree.
-        Rebuild();
-        UpdateFilterButtonImage();
-
-    }
-}
-
-unsigned int ProjectExplorerWindow::GetFilterFlags() const
-{
-    return m_filterFlags;
-}
-
-void ProjectExplorerWindow::UpdateFilterButtonImage()
-{
-
-    const wxColor chromaKey(0xFF, 0x9B, 0x77);
-
-    wxBitmap bitmap(18, 17, 24);
-
-    wxMemoryDC dc;
-    dc.SelectObject(bitmap);
-
-    wxBrush backgroundBrush( chromaKey );
-
-    dc.SetBackground( backgroundBrush );
-    dc.Clear();
-
-    if (m_filterFlags & FilterFlag_Temporary && !(m_filterFlags & FilterFlag_Unversioned))
-    {
-        dc.DrawBitmap( m_filterImageList->GetBitmap(1), 0, 0, true );
-    }
-    else if (m_filterFlags & FilterFlag_Unversioned && m_filterFlags & FilterFlag_Temporary)
-    {
-        dc.DrawBitmap( m_filterImageList->GetBitmap(2), 0, 0, true );
-    }
-    else
-    {
-        dc.DrawBitmap( m_filterImageList->GetBitmap(0), 0, 0, true );
-    }
-
-    if (m_filterFlags & FilterFlag_CheckedIn)
-    {
-        dc.DrawBitmap( m_filterImageList->GetBitmap(3), 0, 0, true );
-    }
-
-    if (m_filterFlags & FilterFlag_CheckedOut)
-    {
-        dc.DrawBitmap( m_filterImageList->GetBitmap(4), 0, 0, true );
-    }
-
-    wxBitmap temp;
-    dc.SelectObject(temp);
-
-    // Create a mask for the bitmap to mark the transparent areas.
-    wxMask* mask = new wxMask( bitmap, chromaKey );
-    bitmap.SetMask( mask );
-
-    m_filterButton->SetBitmapLabel(bitmap);
-    
-}*/
 
 void ProjectExplorerWindow::SortTree(wxTreeItemId node)
 {

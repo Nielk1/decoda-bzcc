@@ -354,6 +354,12 @@ public:
      */
     void OnToolsExternalTools(wxCommandEvent& event);
 
+private:
+    void switchPaneShow(wxAuiPaneInfo& pane, bool only_show_mode = false);
+
+public:
+    void ShowSearchWindow();
+    void ShowWatchWindow();
     /**
      * Called when the user selects Window/Project Explorer from the menu.
      */
@@ -413,16 +419,6 @@ public:
      * Called when the user selects Help/About from the menu.
      */
     void OnHelpAbout(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects Help/Support from the menu.
-     */
-    //void OnHelpSupport(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects Help/Contents from the menu.
-     */
-    //void OnHelpContents(wxCommandEvent& event);
     
     /**
      * Called when the user selects a menu item that isn't handled elswewhere. This is used
@@ -470,53 +466,6 @@ public:
      * Called when the user clicks the right mouse button on a notebook tab.
      */
     void OnNotebookTabRightUp(wxAuiNotebookEvent& event);
-
-    /**
-     * Called when the user selects the Check Out option from the notebook tab
-     * context menu.
-     */
-    //void OnNotebookTabCheckOut(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Check In option from the notebook tab
-     * context menu.
-     */
-    //void OnNotebookTabCheckIn(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Undo Check Out option from the notebook
-     * tab context menu.
-     */
-    //void OnNotebookTabUndoCheckOut(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Diff option from the notebook tab
-     * context menu.
-     */
-    //void OnNotebookTabDiff(wxCommandEvent& event);
-
-    /**
-     * Called when the user selects the Show History option from the notebook
-     * tab context menu.
-     */
-    //void OnNotebookTabShowHistory(wxCommandEvent& event);
-
-    /**
-     * Called to update the Check Out and Show Changes options on the notebook
-     * tab context menu.
-     */
-    //void OnUpdateNotebookTabCheckOut(wxUpdateUIEvent& event);
-
-    /**
-     * Called to update the Check In and Undo Check Out options on the notebook
-     * tab menu.
-     */
-    //void OnUpdateNotebookTabCheckIn(wxUpdateUIEvent& event);
-
-    /**
-     * Called to update the Show History option on the notebook tab context menu.
-     */
-    //void OnUpdateNotebookTabShowHistory(wxUpdateUIEvent& event);
 
     /**
      * Called when the user double clicks in the call stack window.
@@ -621,6 +570,9 @@ public:
      * clicking it.
      */
     void OnProjectExplorerItemActivated(wxTreeEvent& event);
+
+    // single click in explorer view
+    void OnProjectExplorerItemSelected(wxTreeEvent& event);
 
     // Implmentation of Remove/Exclude
     void onRemoveAllSelectedInProjectExplorer(bool exclude_only);
@@ -777,21 +729,6 @@ public:
      * settings.
      */
     void DebugExe(const wxString& fileName);
-
-    /**
-     * Shows the watch window if it's not already displayed.
-     */
-    void ShowWatchWindow();
-
-    /**
-     * Shows the output window if it's not already displayed.
-     */
-    void ShowOutputWindow();
-
-    /**
-     * Shows the search window if it's not already displayed.
-     */
-    void ShowSearchWindow();
 
     /**
      * From wxWindow.

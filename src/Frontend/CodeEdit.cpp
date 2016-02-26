@@ -126,13 +126,13 @@ void CodeEdit::SetFontColorSettings(const FontColorSettings& settings)
 
     StyleSetSize(wxSTC_STYLE_LINENUMBER, font.GetPointSize());
 
-    // Set the caret color as the inverse of the background color so it's always visible.
-    SetCaretForeground( GetInverse(settings.GetColors(FontColorSettings::DisplayItem_Default).backColor) );
-
-
     StyleSetBackground(wxSTC_STYLE_LINENUMBER, settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).backColor);
     StyleSetForeground(wxSTC_STYLE_LINENUMBER, settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).foreColor);
     //SetFoldMarginHiColour(true, settings.GetColors(FontColorSettings::DisplayItem_Window).backColor);
+
+    SetCaretForeground(settings.GetColors(FontColorSettings::DisplayItem_CaretLine).foreColor);
+    SetCaretLineBackground(settings.GetColors(FontColorSettings::DisplayItem_CaretLine).backColor);
+    SetCaretLineVisible(true);
 }
 
 void CodeEdit::SetAutoCompleteManager(const AutoCompleteManager* autoCompleteManager)
