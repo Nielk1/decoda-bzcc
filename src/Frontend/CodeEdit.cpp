@@ -135,6 +135,30 @@ void CodeEdit::SetFontColorSettings(const FontColorSettings& settings)
     SetCaretLineVisible(true);
 }
 
+bool CodeEdit::LoadFile(const wxString& filename)
+{
+    return wxStyledTextCtrl::LoadFile(filename);
+}
+
+bool CodeEdit::SaveFile(const wxString& filename)
+{
+    unsigned char bom[3] = { 0xEF, 0xBB, 0xBF };
+    wxString tmp(bom);
+    wxFile f;
+    if (!f.Open(filename, wxFile::write ))
+        return false;
+    f.Write(bom, 3);
+    wxScopedCharBuffer buffer(GetText().ToUTF8());
+    f.Write(buffer.data(), buffer.length());
+    f.Close();
+    return true;
+}
+
+void CodeEdit::SetText(const wxString& text)
+{
+    wxStyledTextCtrl::SetText(wxString::FromUTF8(text));
+}
+
 void CodeEdit::SetAutoCompleteManager(const AutoCompleteManager* autoCompleteManager)
 {
     m_autoCompleteManager = autoCompleteManager;
@@ -150,6 +174,7 @@ void CodeEdit::SetEditorSettings(const EditorSettings& settings)
     bool useTabs = settings.GetUseTabs();
     bool showWhiteSpace = settings.GetShowWhiteSpace();
 
+    //SetCodePage(1251); //todo wxSTC_CP_UTF8);
     SetUseTabs(useTabs);
     SetTabIndents(useTabs);
     SetBackSpaceUnIndents(useTabs);

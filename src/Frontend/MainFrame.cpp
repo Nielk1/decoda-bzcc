@@ -3514,11 +3514,7 @@ void MainFrame::onRemoveAllSelectedInProjectExplorer(bool exclude_only)
     bool alltemp = true;
     for (unsigned int i = 0; i < files.size(); ++i)
     {
-        if (!files[i]->temporary)
-        {
-            DeleteProjectFile(files[i], exclude_only);
-            alltemp = false;
-        }
+        DeleteProjectFile(files[i], exclude_only);
     }
 
     std::vector<Project::Directory*> directories;
@@ -3529,11 +3525,11 @@ void MainFrame::onRemoveAllSelectedInProjectExplorer(bool exclude_only)
         alltemp = false;
     }
 
-    if (alltemp)
+    /*if (alltemp)
     {
         // Tell the user why we didn't delete any of the files the selected.
         wxMessageBox("Temporary files cannot be removed from the Project Explorer. They are\nautomatically removed when the debugging session ends or the file is closed."); 
-    }
+    }*/
 }
 
 void MainFrame::OnProjectExplorerKeyDown(wxTreeEvent& event)
@@ -4530,6 +4526,14 @@ MainFrame::OpenFile* MainFrame::OpenProjectFile(Project::File* file)
 
 void MainFrame::DeleteProjectFile(Project::File* file, bool exclude_only)
 {
+/*    if (file->temporary)
+    {
+        
+        m_projectExplorer->RemoveFile(file);
+        m_breakpointsWindow->RemoveFile(file);
+        return;   
+    }*/
+
     for (unsigned int i = 0; i < m_openFiles.size(); ++i)
     {
         if (m_openFiles[i]->file == file)
@@ -4542,7 +4546,8 @@ void MainFrame::DeleteProjectFile(Project::File* file, bool exclude_only)
     }
 
     m_projectExplorer->RemoveFile(file);
-    m_project->RemoveFile(file, exclude_only);
+    if (!file->temporary)
+      m_project->RemoveFile(file, exclude_only);
     m_breakpointsWindow->RemoveFile(file);
 
 }

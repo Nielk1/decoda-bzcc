@@ -64,6 +64,10 @@ public:
      */
     CodeEdit();
 
+    bool LoadFile(const wxString& filename);
+    bool SaveFile(const wxString& filename);
+    void SetText(const wxString& text);
+
     /**
      * Sets the auto completion manager used to supply the editor with data
      * for trying to complete the user's typing.
