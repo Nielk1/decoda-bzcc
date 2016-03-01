@@ -4835,7 +4835,6 @@ void MainFrame::SetDefaultHotKeys()
 
     // Setup the hotkeys.
 
-    //m_keyBinder.SetShortcut(ID_FileNew,                     wxT("Ctrl+N"));
     m_keyBinder.SetShortcut(ID_FileSave,                    wxT("Ctrl+S"));
     m_keyBinder.SetShortcut(ID_FileSaveProject,             wxT("Ctrl+Shift+S"));
     m_keyBinder.SetShortcut(ID_FileNewProject,              wxT("Ctrl+Shift+N"));
@@ -4874,6 +4873,7 @@ void MainFrame::SetDefaultHotKeys()
 
     m_keyBinder.SetShortcut(ID_DebugStart,                  wxT("F5"));
     m_keyBinder.SetShortcut(ID_DebugStartWithoutDebugging,  wxT("Ctrl+F5"));
+    m_keyBinder.SetShortcut(ID_DebugStop,                   wxT("Shift+F5"));
     m_keyBinder.SetShortcut(ID_DebugStepInto,               wxT("F11"));
     m_keyBinder.SetShortcut(ID_DebugStepOver,               wxT("F10"));
     m_keyBinder.SetShortcut(ID_DebugQuickWatch,             wxT("Shift+F9"));
@@ -5449,8 +5449,6 @@ void MainFrame::StartProcess(bool debug, bool startBroken)
     wxString workingDirectory;
     wxString symbolsDirectory;
 
-#ifndef DEDICATED_PRODUCT_VERSION
-
     // Check to see if the project has a startup application associated with it.
 
     if (m_project->GetCommandLine().IsEmpty())
@@ -5466,13 +5464,6 @@ void MainFrame::StartProcess(bool debug, bool startBroken)
     workingDirectory = m_project->GetWorkingDirectory();
     symbolsDirectory = m_project->GetSymbolsDirectory();
     commandArguments = m_project->GetCommandArguments();
-
-#else
-
-    command          = GetDedicatedProductCommand();
-    commandArguments = GetDedicatedProductCommandArguments(m_project->GetCommandArguments());
-
-#endif
 
     //Make the command local to the project
     if (command.StartsWith("."))
@@ -5513,7 +5504,9 @@ void MainFrame::StartProcess(const wxString& command, const wxString& commandArg
 
     if (!DebugFrontend::Get().Start(command, commandArguments, workingDirectory, symbolsDirectory, debug, startBroken))
     {
-        wxMessageBox("Error starting process", s_applicationName, wxOK | wxICON_ERROR, this);
+        // removed error message box ( error in output window). Show output window if hidden
+        switchPaneShow( m_mgr.GetPane(m_output), true );
+
     }
     else if (debug)
     {

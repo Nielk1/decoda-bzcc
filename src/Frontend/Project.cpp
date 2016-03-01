@@ -1173,11 +1173,9 @@ bool Project::SaveUserSettings(const wxString& fileName)
     wxXmlNode* root = new wxXmlNode(wxXML_ELEMENT_NODE, "project");
     document.SetRoot(root);
 
-#ifndef DEDICATED_PRODUCT_VERSION
     root->AddChild(WriteXmlNode("command",              m_commandLine));
     root->AddChild(WriteXmlNode("working_directory",    m_workingDirectory));
     root->AddChild(WriteXmlNode("symbols_directory",    m_symbolsDirectory));
-#endif
     root->AddChild(WriteXmlNode("command_arguments",    m_commandArguments));
 
     wxString baseDirectory = wxFileName(fileName).GetPath();
@@ -1259,11 +1257,9 @@ bool Project::LoadUserSettings(const wxString& fileName)
     {
 
            ReadXmlNode(node, "command_arguments",   m_commandArguments)
-#ifndef DEDICATED_PRODUCT_VERSION
         || ReadXmlNode(node, "command",             m_commandLine)
         || ReadXmlNode(node, "working_directory",   m_workingDirectory)
         || ReadXmlNode(node, "symbols_directory",   m_symbolsDirectory)
-#endif
         || LoadUserFilesNode(baseDirectory, node)
         || LoadOpenFilesNode(node);
         

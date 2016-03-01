@@ -62,8 +62,6 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 
     wxStaticText* staticText = NULL;
     
-#ifndef DEDICATED_PRODUCT_VERSION
-
     // Command controls.
 	
 	staticText = new wxStaticText( this, wxID_ANY, wxT("Command:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -75,8 +73,6 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 	m_button1 = new wxButton( this, ID_BrowseCommandLine, wxT("..."), wxDefaultPosition, wxSize( 23,-1 ), 0 );
 	fgSizer1->Add( m_button1, 0, wxALL, 5 );
 
-#endif
-
     // Command line arguments controls.
 	
 	staticText = new wxStaticText( this, wxID_ANY, wxT("Command Arguments:"), wxDefaultPosition, wxSize( 110,-1 ), 0 );
@@ -86,8 +82,6 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 	fgSizer1->Add( m_commandArgumentsBox, 0, wxALL|wxEXPAND, 5 );
 	
 	fgSizer1->Add( 0, 0, 1, wxEXPAND, 0 );
-
-#ifndef DEDICATED_PRODUCT_VERSION
 
     // Working directory controls.
 	
@@ -110,8 +104,6 @@ NewProcessDialog::NewProcessDialog( wxWindow* parent )
 	
 	m_button21 = new wxButton( this, ID_BrowseSymbolsDirectory, wxT("..."), wxDefaultPosition, wxSize( 23,-1 ), 0 );
 	fgSizer1->Add( m_button21, 0, wxALL, 5 );
-
-#endif
 	
 	sbSizer1->Add( fgSizer1, 1, wxEXPAND, 5 );
 	

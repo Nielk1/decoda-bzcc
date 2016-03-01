@@ -29,11 +29,9 @@ const char* FontColorSettings::s_displayItemName[] = { DisplayColorsDef(DisplayC
 
 FontColorSettings::FontColorSettings()
 {
-    m_font = wxFont(8, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+    m_font = wxFont(10, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
     DisplayColorsDef(DisplayColorInit);
-
-    int a = 1;
 }
 
 unsigned int FontColorSettings::GetNumDisplayItems() const

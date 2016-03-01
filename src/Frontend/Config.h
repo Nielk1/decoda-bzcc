@@ -25,38 +25,10 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <wx/wx.h>
 
-// This define determines if Decoda is being compiled to work only for a
-// specific product.
-//#define DEDICATED_PRODUCT_VERSION
-
-#ifdef DEDICATED_PRODUCT_VERSION
-
-/**
- * Returns a human-readable name of the product that Decoda is being built
- * for.
- */
-wxString GetDedicatedProductName();
-
-/**
- * Returns the command line that should be used to launch the dedicated
- * application.
- */
-wxString GetDedicatedProductCommand();
-
-/**
- * Returns the command line arguments that will be used to launch the dedicated
- * application. The arguments passed in are the arguments specified by the user.
- * In general, these should be added to whatever special arguments the dedicated
- * product requires.
- */
-wxString GetDedicatedProductCommandArguments(const wxString& arguments);
-
-#endif
-
-#endif
 
 #ifdef WIN32
 #pragma warning(disable: 4996)
+#endif
 
 #ifdef _DEBUG
 #include <crtdbg.h>

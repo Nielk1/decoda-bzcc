@@ -53,10 +53,6 @@ AboutDialog::AboutDialog( wxWindow* parent ) :
 	bSizer4->Add( m_staticText3, 0, wxALL, 5 );
 	
     wxString message = MainApp::s_versionDesc;
-    
-#ifdef DEDICATED_PRODUCT_VERSION
-    message += wxString::Format( wxT("\n%s edition"), GetDedicatedProductName() );
-#endif
 
 	m_staticText13 = new wxStaticText( this, wxID_ANY, message, wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer4->Add( m_staticText13, 0, wxALL, 5 );

@@ -148,9 +148,7 @@ void MainApp::OnInitCmdLine(wxCmdLineParser& parser)
     const wxCmdLineEntryDesc cmdLineDesc[] =
         {
             { wxCMD_LINE_PARAM,  NULL,          NULL,       "input file", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_MULTIPLE | wxCMD_LINE_PARAM_OPTIONAL },
-#ifndef DEDICATED_PRODUCT_VERSION
             { wxCMD_LINE_OPTION, "debugexe",    "debugexe", "executable", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL },
-#endif
             { wxCMD_LINE_NONE }
         };
     
@@ -181,9 +179,7 @@ bool MainApp::OnCmdLineParsed(wxCmdLineParser& parser)
 
     }
     
-#ifndef DEDICATED_PRODUCT_VERSION
     parser.Found("debugexe", &m_debugExe);
-#endif
  
     return true;
 }

@@ -53,11 +53,11 @@ void OutputWindow::SetFontColorSettings(const FontColorSettings& settings)
     m_messageAttr.SetFont(settings.GetFont(FontColorSettings::DisplayItem_Window));
 
     m_warningAttr.SetTextColour(settings.GetColors(FontColorSettings::DisplayItem_Warning).foreColor);
-    m_warningAttr.SetBackgroundColour(settings.GetColors(FontColorSettings::DisplayItem_Window).backColor);
+    m_warningAttr.SetBackgroundColour(settings.GetColors(FontColorSettings::DisplayItem_Warning).backColor);
     m_warningAttr.SetFont(settings.GetFont(FontColorSettings::DisplayItem_Warning));
     
     m_errorAttr.SetTextColour(settings.GetColors(FontColorSettings::DisplayItem_Error).foreColor);
-    m_errorAttr.SetBackgroundColour(settings.GetColors(FontColorSettings::DisplayItem_Window).backColor);
+    m_errorAttr.SetBackgroundColour(settings.GetColors(FontColorSettings::DisplayItem_Error).backColor);
     m_errorAttr.SetFont(settings.GetFont(FontColorSettings::DisplayItem_Error));
 
 }
