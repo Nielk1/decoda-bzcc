@@ -148,7 +148,8 @@ bool CodeEdit::SaveFile(const wxString& filename)
     if (!f.Open(filename, wxFile::write ))
         return false;
     f.Write(bom, 3);
-    wxScopedCharBuffer buffer(GetText().ToUTF8());
+    wxString text(GetText());
+    wxScopedCharBuffer buffer(text.ToUTF8());
     f.Write(buffer.data(), buffer.length());
     f.Close();
     return true;
