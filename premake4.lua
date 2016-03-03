@@ -4,7 +4,7 @@ solution "Decoda"
 	--debugdir "working"
 	flags { "No64BitChecks" }
     
-	defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+	defines { "_CRT_SECURE_NO_WARNINGS", "WIN32", "wxUSE_UNICODE" }
     
     vpaths { 
         ["Header Files"] = { "**.h" },
@@ -44,7 +44,7 @@ project "Frontend"
 
     configuration "Debug"
         defines { "DEBUG" }
-        flags { "Symbols" }
+        flags { "Symbols", "Unicode" }
         targetdir "bin/debug"
 		includedirs { "libs/wxWidgets/lib/vc_lib/mswud" }
 		links {
@@ -65,7 +65,7 @@ project "Frontend"
 
     configuration "Release"
         defines { "NDEBUG" }
-        flags { "Optimize", "Symbols" }
+        flags { "Optimize", "Symbols", "Unicode" }
         targetdir "bin/release"
 		includedirs { "libs/wxWidgets/lib/vc_lib/mswu" }
 		links {

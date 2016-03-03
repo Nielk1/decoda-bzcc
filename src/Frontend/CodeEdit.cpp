@@ -175,7 +175,7 @@ void CodeEdit::SetEditorSettings(const EditorSettings& settings)
     bool useTabs = settings.GetUseTabs();
     bool showWhiteSpace = settings.GetShowWhiteSpace();
 
-    //SetCodePage(1251); //todo wxSTC_CP_UTF8);
+    SetCodePage(wxSTC_CP_UTF8);
     SetUseTabs(useTabs);
     SetTabIndents(useTabs);
     SetBackSpaceUnIndents(useTabs);
