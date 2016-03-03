@@ -583,7 +583,6 @@ public:
     
 
     // Called when click Remove in project context menu.
-    void OnContextOpen(wxCommandEvent& event);
     void OnContextRemove(wxCommandEvent& event);
     void OnContextExclude(wxCommandEvent& event);
     void OnContextShowFile(wxCommandEvent& event);
@@ -1277,8 +1276,9 @@ private:
         ID_FileSaveProjectAs                = 48,
         ID_FileNew                          = 49,
 
+        ID_ContextSaveAs                    = 54,
         ID_ContextRemove                    = 55,
-        ID_ContextOpen                      = 56,
+        //ID_ContextOpen                      = 56,
         ID_ContextExcludeFromProject        = 57,
         ID_ContextShowFile                  = 58,
         
@@ -1387,8 +1387,10 @@ private:
     StringHistory                   m_findTextHistory;
 
     wxMenu*                         m_contextMenu;
+    wxMenu*                         m_contextMenuForTemporary;
     wxMenu*                         m_directoryContextMenu;
     wxMenu*                         m_notebookTabMenu;
+    wxMenu*                         m_notebookTabMenuForTemporary;
 
     FileChangeWatcher               m_fileChangeWatcher;
 

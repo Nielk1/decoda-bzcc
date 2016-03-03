@@ -73,16 +73,6 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
 
     m_stopExpansion = 0;
 
-    // Initially everything will be displayed.
-    //m_filterFlags = FilterFlag_Temporary | FilterFlag_Unversioned | FilterFlag_CheckedIn | FilterFlag_CheckedOut;
-
-    // Load the bitmaps for the filter button.
-
-    /*wxBitmap filterBitmap(filter_bitmap, wxBITMAP_TYPE_XPM);
-
-    m_filterImageList = new wxImageList(18, 17);
-    m_filterImageList->Add(filterBitmap, wxColour(0xFF, 0x9B, 0x77));*/
-
     // Load the bitmaps for the tree view.
 
     wxBitmap bitmap(explorer, wxBITMAP_TYPE_XPM);
@@ -108,12 +98,7 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
 
     m_searchBox = new SearchTextCtrl(this, ID_Filter, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_RICH);
     
-    //m_filterButton = new wxBitmapButton( this, ID_FilterButton, wxNullBitmap, wxDefaultPosition, wxSize(18, 17), 0 );
-    //m_filterPopup  = NULL;
-
     gSizer2->Add( m_searchBox, 1, wxALL | wxEXPAND, 4);
-    //gSizer2->Add( m_filterButton, 1, wxALL | wxEXPAND, 4);
-
     gSizer1->Add( gSizer2, 1, wxEXPAND, 5  );
 
     m_tree = new wxProjectTree(this, winid, wxDefaultPosition, wxDefaultSize, wxTR_NO_LINES | wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_MULTIPLE | wxTR_EXTENDED | wxTR_FULL_ROW_HIGHLIGHT);
@@ -137,6 +122,7 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
     m_project = NULL;
 
     m_contextMenu = NULL;
+    m_temporaryContextMenu = NULL;
     m_directoryContextMenu = NULL;
     m_filterMatchAnywhere = false;
     m_hasFilter = false;
@@ -211,6 +197,22 @@ wxTreeItemId ProjectExplorerWindow::GetSelection() const
 void ProjectExplorerWindow::ClearSelection()
 {
     m_tree->UnselectAll();
+}
+
+void ProjectExplorerWindow::ColapseOrExpandSelectedItem()
+{
+    wxArrayTreeItemIds selectedIds;
+    m_tree->GetSelections(selectedIds);
+    if (selectedIds.size() != 1)
+        return;
+    wxTreeItemId id = selectedIds[0];
+    if (id.IsOk() && m_tree->ItemHasChildren(id))
+    {
+        if (m_tree->IsExpanded(id))
+            m_tree->Collapse(id);
+        else
+            m_tree->Expand(id);
+    }
 }
 
 bool ProjectExplorerWindow::IsTreeFrozen()
@@ -319,32 +321,6 @@ void ProjectExplorerWindow::RebuildForDirectory(Project::Directory *directory)
 void ProjectExplorerWindow::RebuildForFile(wxTreeItemId node, Project::File* file)
 {
 
-    // Check if the file passes our filter flags.
-
-    bool matchesFlags = true;
-
-    /*if ((m_filterFlags & FilterFlag_Unversioned) && file->status == Project::Status_None)
-    {
-        matchesFlags = !file->temporary;
-    }
-
-    if ((m_filterFlags & FilterFlag_CheckedIn) && file->status == Project::Status_CheckedIn)
-    {
-        matchesFlags = true;
-    }
-    
-    if ((m_filterFlags & FilterFlag_CheckedOut) && file->status == Project::Status_CheckedOut)
-    {
-        matchesFlags = true;
-    }
-
-    if ((m_filterFlags & FilterFlag_Temporary) && file->temporary)
-    {
-        matchesFlags = true;
-    }*/
-
-    if (matchesFlags)
-    {
         if (m_filter.IsEmpty())
         {
             // Just include the files like the standard Visual Studio project view.
@@ -375,8 +351,6 @@ void ProjectExplorerWindow::RebuildForFile(wxTreeItemId node, Project::File* fil
             }
         
         }
-    }
-
 }
 
 bool ProjectExplorerWindow::MatchesFilter(const wxString& string, const wxString& filter) const
@@ -581,6 +555,9 @@ void ProjectExplorerWindow::OnTreeItemContextMenu(wxTreeEvent& event)
         {
             wxTreeEvent copy(event);
             copy.SetInt(0);
+            Project::File *f = static_cast<Project::File *>(itemData->file);
+            if (f->temporary && m_temporaryContextMenu != NULL)
+                copy.SetInt(2);
             copy.SetEventType(wxEVT_TREE_CONTEXT_MENU);
             AddPendingEvent(copy);
         }
@@ -784,6 +761,12 @@ void ProjectExplorerWindow::SetFileContextMenu(wxMenu* contextMenu)
     m_contextMenu = contextMenu;
 }
 
+void ProjectExplorerWindow::SetTemporaryFileContextMenu(wxMenu* contextMenu)
+{
+    m_temporaryContextMenu = contextMenu;
+}
+
+
 void ProjectExplorerWindow::SetDirectoryContextMenu(wxMenu* contextMenu)
 {
     m_directoryContextMenu = contextMenu;
@@ -832,29 +815,28 @@ void ProjectExplorerWindow::UpdateFileImages()
 void ProjectExplorerWindow::OnMenu(wxTreeEvent& event)
 {
   if (event.GetInt() == 0)
-    m_tree->PopupMenu(m_contextMenu, event.GetPoint());
+  {
+      m_tree->PopupMenu(m_contextMenu, event.GetPoint());
+  }
+  else if (event.GetInt() == 2)
+  {
+      m_tree->PopupMenu(m_temporaryContextMenu, event.GetPoint());
+  }
   else if (event.GetInt() == 1)
-    m_tree->PopupMenu(m_directoryContextMenu, event.GetPoint());
+  {
+      wxArrayTreeItemIds selectedItems;
+      m_tree->GetSelections(selectedItems);
+      if (selectedItems.size() == 1)
+      {
+         wxTreeItemId item = selectedItems[0];
+         wxString name = m_tree->GetItemText(item);
+         if (name == "Debug Temporary Files")
+             return;
+      }
+
+      m_tree->PopupMenu(m_directoryContextMenu, event.GetPoint());
+  }
 }
-
-/*void ProjectExplorerWindow::OnFilterButton(wxCommandEvent& event)
-{
-    
-    wxPoint point = m_filterButton->GetScreenPosition();
-    point.y += m_filterButton->GetSize().y; 
-
-    if (m_filterPopup == NULL)
-    {
-        // For some reason, creating this in the constructor causes hangs on some
-        // machines. It *seems* like a problem with Windows/wxWidgets so we just
-        // defer construction until we need it.
-        m_filterPopup = new ProjectFilterPopup( this, this );
-    }
-    
-    m_filterPopup->Position(point, wxDefaultSize);
-    m_filterPopup->Popup(NULL);
-
-}*/
 
 void ProjectExplorerWindow::UpdateFile(Project::File* file)
 {

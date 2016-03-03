@@ -200,7 +200,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(ID_ContextRemove, MainFrame::OnContextRemove)
     EVT_MENU(ID_ContextExcludeFromProject, MainFrame::OnContextExclude)
     EVT_MENU(ID_ContextShowFile, MainFrame::OnContextShowFile)
-    EVT_MENU(ID_ContextOpen, MainFrame::OnContextOpen)
+    //EVT_MENU(ID_ContextSaveAs, MainFrame::OnContextSaveAs)
         
     EVT_MENU(wxID_ANY,                              MainFrame::OnMenu)
 
@@ -417,12 +417,18 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
 
     // Create the context menu for files in the project explorer.
     m_contextMenu = new wxMenu;   
-    m_contextMenu->Append(ID_ContextOpen,         _("&Open"));
+    //m_contextMenu->Append(ID_ContextSaveAs,         _("&Save as..."));
     m_contextMenu->Append(ID_ContextShowFile,     _("Show in E&xplorer"));
     m_contextMenu->AppendSeparator();
     m_contextMenu->Append(ID_ContextExcludeFromProject, _("&Exclude from project\tDel"));
     m_contextMenu->Append(ID_ContextRemove,         _("&Remove\tShift+Del"));
     m_projectExplorer->SetFileContextMenu(m_contextMenu);
+
+    m_contextMenuForTemporary = new wxMenu;
+    //m_contextMenuForTemporary->Append(ID_ContextSaveAs,         _("&Save as..."));
+    //m_contextMenuForTemporary->AppendSeparator();
+    m_contextMenuForTemporary->Append(ID_ContextExcludeFromProject, _("&Exclude from project\tDel"));
+    m_projectExplorer->SetTemporaryFileContextMenu(m_contextMenuForTemporary);
 
     m_directoryContextMenu = new wxMenu;
     m_directoryContextMenu->Append(ID_ProjectAddNewFile, _("Add New File"));
@@ -433,6 +439,10 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     m_notebookTabMenu->Append(ID_NotebookTabSave,           _("&Save"));
     m_notebookTabMenu->Append(ID_NotebookTabClose,          _("&Close"));
     m_notebookTabMenu->Append(ID_NotebookTabShowFile,       _("Show in E&xplorer"));
+
+    m_notebookTabMenuForTemporary = new wxMenu;
+    m_notebookTabMenuForTemporary->Append(ID_NotebookTabSave,           _("&Save as..."));
+    m_notebookTabMenuForTemporary->Append(ID_NotebookTabClose,          _("&Close"));
 
     // Make down the default option for find operaitons, since that's a lot
     // more common than up.
@@ -467,8 +477,14 @@ MainFrame::~MainFrame()
     delete m_contextMenu;
     m_contextMenu = NULL;
 
+    delete m_contextMenuForTemporary;
+    m_contextMenuForTemporary = NULL;
+
     delete m_notebookTabMenu;
     m_notebookTabMenu = NULL;
+
+    delete m_notebookTabMenuForTemporary;
+    m_notebookTabMenuForTemporary = NULL;
     
     // Remove the drop target, since otherwise we get a crash.
     SetDropTarget(NULL);
@@ -2188,109 +2204,17 @@ void MainFrame::OnNotebookTabRightDown(wxAuiNotebookEvent& event)
 void MainFrame::OnNotebookTabRightUp(wxAuiNotebookEvent& event)
 {
     // Show the context menu for the tab.
-    m_notebook->PopupMenu(m_notebookTabMenu);
-}
-
-/*void MainFrame::OnNotebookTabCheckOut(wxCommandEvent& event)
-{
-
-    std::vector<std::string> fileNames;
-    GetNotebookTabSelectedFileNames(fileNames);
-
-    m_sourceControl.CheckOut(fileNames, NULL);
-    UpdateProjectFileStatus();
-
-}
-
-void MainFrame::OnNotebookTabCheckIn(wxCommandEvent& event)
-{
-
-    std::vector<std::string> fileNames;
-    GetNotebookTabSelectedFileNames(fileNames);
-
-    m_sourceControl.CheckIn(fileNames, NULL);
-    UpdateProjectFileStatus();
-
-}
-
-void MainFrame::OnNotebookTabUndoCheckOut(wxCommandEvent& event)
-{
-
-    std::vector<std::string> fileNames;
-    GetNotebookTabSelectedFileNames(fileNames);
-
-    m_sourceControl.UndoCheckOut(fileNames);
-    UpdateProjectFileStatus();
-
-}
-
-void MainFrame::OnNotebookTabDiff(wxCommandEvent& event)
-{
-
-    std::vector<std::string> fileNames;
-    GetNotebookTabSelectedFileNames(fileNames);
-
-    if (fileNames.size() > 0)
-    {
-        m_sourceControl.ShowDiff(fileNames[0].c_str());
-    }
-
-}
-
-void MainFrame::OnNotebookTabShowHistory(wxCommandEvent& event)
-{
-
-    std::vector<std::string> fileNames;
-    GetNotebookTabSelectedFileNames(fileNames);
-
-    m_sourceControl.ShowHistory(fileNames);
-
-}
-
-void MainFrame::OnUpdateNotebookTabCheckOut(wxUpdateUIEvent& event)
-{
-
-  CodeEdit *page = GetSelectedPage();
-    bool allowed = false;
-
-    if (page != nullptr)
-    {
-      allowed = (page->GetOpenFile()->file->status == Project::Status_CheckedIn);
-    }
-
-    event.Enable(allowed);
-
-}
-
-void MainFrame::OnUpdateNotebookTabCheckIn(wxUpdateUIEvent& event)
-{
-
-  CodeEdit *page = GetSelectedPage();
-    bool allowed = false;
-
-    if (page != nullptr)
-    {
-      allowed = (page->GetOpenFile()->file->status == Project::Status_CheckedOut);
-    }
-
-    event.Enable(allowed);
-
-}
-
-void MainFrame::OnUpdateNotebookTabShowHistory(wxUpdateUIEvent& event)
-{
 
     CodeEdit *page = GetSelectedPage();
-    bool allowed = false;
-
     if (page != nullptr)
     {
-      allowed = (page->GetOpenFile()->file->status != Project::Status_None);
-    }
-
-    event.Enable(allowed);
-
-}*/
+      bool temporary = page->GetOpenFile()->file->temporary;
+      if (temporary)
+          m_notebook->PopupMenu(m_notebookTabMenuForTemporary);
+      else
+          m_notebook->PopupMenu(m_notebookTabMenu);
+    }    
+}
 
 void MainFrame::OnCallStackDoubleClick(wxListEvent& event)
 {
@@ -2515,20 +2439,6 @@ void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event)
 
         bool checkOutOption = false;
 
-        // Check to see if the file is under source control.
-        /*if (m_sourceControl.GetIsInitialized())
-        {
-        
-            SourceControl::Status status;
-            status = m_sourceControl.GetFileStatus(file->file->fileName.GetFullPath());
-
-            if (status == SourceControl::Status_CheckedOut || status == SourceControl::Status_CheckedIn)
-            {
-                checkOutOption = true;
-            }
-
-        }*/
-
         wxString fileName = file->file->fileName.GetFullPath();
         ReadOnlyDialog dialog(this, file->file->fileName.GetFullName(), checkOutOption);
         
@@ -2536,14 +2446,6 @@ void MainFrame::OnCodeEditReadOnlyModifyAttempt(wxStyledTextEvent& event)
 
         if (result == ReadOnlyDialog::ID_CheckOut)
         {
-            
-            /*std::vector<std::string> fileNames;
-            fileNames.push_back(std::string(fileName));
-            
-            m_sourceControl.CheckOut(fileNames, NULL);
-            UpdateDocumentReadOnlyStatus();
-            UpdateProjectFileStatus(file->file);*/
-
         }
         else if (result == ReadOnlyDialog::ID_MakeWriteable)
         {
@@ -3493,11 +3395,31 @@ void MainFrame::OnProjectExplorerItemSelected(wxTreeEvent& event)
 
 void MainFrame::OnProjectExplorerItemActivated(wxTreeEvent& event)
 {
+    m_projectExplorer->ColapseOrExpandSelectedItem();
+    event.Skip();
 }
 
 void MainFrame::onRemoveAllSelectedInProjectExplorer(bool exclude_only)
 {
-    if (!exclude_only)
+    std::vector<Project::File*> files;
+    m_projectExplorer->GetSelectedFiles(files);
+    std::vector<Project::Directory*> directories;
+    m_projectExplorer->GetSelectedDirectories(directories);
+    
+    bool alltemp = true;
+    for (unsigned int i = 0; i < files.size(); ++i)
+    {
+        if (!files[i]->temporary)
+            alltemp = false;
+    }
+    
+    for (unsigned int i = 0; i < directories.size(); ++i)
+    {
+        Project::Directory* d = directories[i];
+        alltemp = false;
+    }
+    
+    if (!exclude_only && !alltemp)
     {
         wxMessageDialog *dial = new wxMessageDialog(NULL, wxT("Are you sure you want to delete all selected files from the disk?"), wxT("Question"),
         wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
@@ -3507,28 +3429,16 @@ void MainFrame::onRemoveAllSelectedInProjectExplorer(bool exclude_only)
         }   
     }
 
-    std::vector<Project::File*> files;
-    m_projectExplorer->GetSelectedFiles(files);
-
-    bool alltemp = true;
     for (unsigned int i = 0; i < files.size(); ++i)
-    {
         DeleteProjectFile(files[i], exclude_only);
-    }
 
-    std::vector<Project::Directory*> directories;
-    m_projectExplorer->GetSelectedDirectories(directories);
     for (unsigned int i = 0; i < directories.size(); ++i)
     {
         //DeleteProjectDirectory(directories[i], exclude_only);
-        alltemp = false;
     }
 
-    /*if (alltemp)
-    {
-        // Tell the user why we didn't delete any of the files the selected.
-        wxMessageBox("Temporary files cannot be removed from the Project Explorer. They are\nautomatically removed when the debugging session ends or the file is closed."); 
-    }*/
+
+
 }
 
 void MainFrame::OnProjectExplorerKeyDown(wxTreeEvent& event)
@@ -3548,14 +3458,6 @@ void MainFrame::OnContextRemove(wxCommandEvent& event)
 void MainFrame::OnContextExclude(wxCommandEvent& event)
 {
     onRemoveAllSelectedInProjectExplorer(true);
-}
-
-void MainFrame::OnContextOpen(wxCommandEvent& event)
-{
-    std::vector<Project::File*> files;
-    m_projectExplorer->GetSelectedFiles(files);
-    for (Project::File* f : files)
-       OpenDocument(f->fileName.GetFullPath());   
 }
 
 void MainFrame::OnContextShowFile(wxCommandEvent& event)
@@ -4525,14 +4427,6 @@ MainFrame::OpenFile* MainFrame::OpenProjectFile(Project::File* file)
 
 void MainFrame::DeleteProjectFile(Project::File* file, bool exclude_only)
 {
-/*    if (file->temporary)
-    {
-        
-        m_projectExplorer->RemoveFile(file);
-        m_breakpointsWindow->RemoveFile(file);
-        return;   
-    }*/
-
     for (unsigned int i = 0; i < m_openFiles.size(); ++i)
     {
         if (m_openFiles[i]->file == file)
@@ -4548,7 +4442,7 @@ void MainFrame::DeleteProjectFile(Project::File* file, bool exclude_only)
     if (!file->temporary)
       m_project->RemoveFile(file, exclude_only);
     m_breakpointsWindow->RemoveFile(file);
-
+    m_projectExplorer->ClearSelection();
 }
 
 void MainFrame::DeleteProjectDirectory(Project::Directory* directory, bool exclude_only)
@@ -4870,11 +4764,13 @@ void MainFrame::SetDefaultHotKeys()
     m_keyBinder.SetShortcut(ID_WindowProjectExplorer,       wxT("Alt+1"));
     m_keyBinder.SetShortcut(ID_WindowOutput,                wxT("Alt+2"));
     m_keyBinder.SetShortcut(ID_WindowWatch,                 wxT("Alt+3"));
+    m_keyBinder.SetShortcut(ID_WindowSearch,                wxT("Alt+4"));
     m_keyBinder.SetShortcut(ID_WindowCallStack,             wxT("Alt+7"));
     m_keyBinder.SetShortcut(ID_WindowBreakpoints,           wxT("Alt+F9"));
     m_keyBinder.SetShortcut(ID_WindowNextDocument,          wxT("Ctrl+Tab"));
     m_keyBinder.SetShortcut(ID_WindowPreviousDocument,      wxT("Shift+Ctrl+Tab"));
-
+    m_keyBinder.SetShortcut(ID_WindowClose,                 wxT("Ctrl+W"));
+ 
     m_keyBinder.SetShortcut(ID_DebugStart,                  wxT("F5"));
     m_keyBinder.SetShortcut(ID_DebugStartWithoutDebugging,  wxT("Ctrl+F5"));
     m_keyBinder.SetShortcut(ID_DebugStop,                   wxT("Shift+F5"));

@@ -152,6 +152,8 @@ public:
 
     void ClearSelection();
 
+    void ColapseOrExpandSelectedItem();
+
     /**
     * Adds references for the directory into the explorer view. This should be
     * called when a directory is added to the project.
@@ -187,6 +189,7 @@ public:
      * retains with the caller.
      */
     void SetFileContextMenu(wxMenu* menu);
+    void SetTemporaryFileContextMenu(wxMenu* contextMenu);
 
     /**
     * Sets the menu displays when the user right clicks on a directory. Ownership
@@ -359,6 +362,7 @@ private:
     wxTreeItemId                 m_stopExpansion;
                                  
     wxMenu*                      m_contextMenu;
+    wxMenu*                      m_temporaryContextMenu;
     wxMenu*                      m_directoryContextMenu;
                                  
     wxColor                      m_itemColor;

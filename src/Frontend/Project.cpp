@@ -392,6 +392,12 @@ Project::Directory* Project::AddDirectory(const wxString& directoryStr)
 
   for (auto &filename : filenames)
   {
+    wxFileName localPath(filename);
+    localPath.MakeRelativeTo(dir->name);
+    wxString ext(localPath.GetExt().Lower());
+    if (ext != "lua" && ext != "txt")
+        continue;
+
     File* file = new File;
 
     file->state = CodeState_Normal;
@@ -399,9 +405,6 @@ Project::Directory* Project::AddDirectory(const wxString& directoryStr)
     file->temporary = false;
     file->status = Status_None;
     file->fileId = ++s_lastFileId;
-
-    wxFileName localPath(filename);
-    localPath.MakeRelativeTo(dir->name);
 
     file->localPath = localPath.GetPath();
     file->directoryPath = dir->name;
@@ -422,8 +425,7 @@ Project::Directory* Project::AddDirectory(const wxString& directoryStr)
 }
 
 Project::File* Project::AddTemporaryFile(unsigned int scriptIndex)
-{
-    
+{   
     const DebugFrontend::Script* script = DebugFrontend::Get().GetScript(scriptIndex);
     assert(script != NULL);
 
@@ -440,7 +442,6 @@ Project::File* Project::AddTemporaryFile(unsigned int scriptIndex)
     m_files.push_back(file);
 
     return file;
-
 }
 
 Project::File* Project::AddTemporaryFile(const wxString& fileName)
