@@ -766,10 +766,7 @@ void MainFrame::OnFileSaveProjectAs(wxCommandEvent& WXUNUSED(event))
 
 void MainFrame::OnFileExit(wxCommandEvent& WXUNUSED(event))
 {
-    if (SaveProjectIfNeeded())
-    {
-        Close(TRUE);
-    }
+    Close(TRUE);
 }
 
 void MainFrame::OnFileNew(wxCommandEvent& event)
@@ -1721,12 +1718,13 @@ void MainFrame::OnWindowClose(wxCommandEvent& WXUNUSED(event))
         }
 
     }
-
+    m_projectExplorer->ClearSelection();
 }
 
 void MainFrame::OnWindowCloseAllDocuments(wxCommandEvent& WXUNUSED(event))
 {
     CloseAllFiles();
+    m_projectExplorer->ClearSelection();
 }
 
 void MainFrame::OnHelpAbout(wxCommandEvent& WXUNUSED(event))
@@ -2144,6 +2142,7 @@ void MainFrame::OnNotebookPageClose(wxAuiNotebookEvent& event)
     {
         event.Veto();
     }
+    m_projectExplorer->ClearSelection();
 }
 
 void MainFrame::OnNotebookPageChanged(wxAuiNotebookEvent& event)

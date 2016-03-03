@@ -208,6 +208,11 @@ wxTreeItemId ProjectExplorerWindow::GetSelection() const
 
 }
 
+void ProjectExplorerWindow::ClearSelection()
+{
+    m_tree->UnselectAll();
+}
+
 bool ProjectExplorerWindow::IsTreeFrozen()
 {
     return m_tree->IsFrozen();
@@ -721,11 +726,10 @@ void ProjectExplorerWindow::RemoveFiles(const std::vector<Project::File*>& files
 
 void ProjectExplorerWindow::RemoveFileSymbols(wxTreeItemId node, Project::File* file)
 {
-
     ItemData* data = static_cast<ItemData*>(m_tree->GetItemData(node));
-
     if (data != NULL && data->file == file)
     {
+        m_tree->Collapse(node);
         m_tree->Delete(node);
     }
     else

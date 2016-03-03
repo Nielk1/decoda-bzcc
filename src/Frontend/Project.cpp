@@ -484,8 +484,6 @@ void Project::RemoveFile(File* file, bool exclude_only)
             }
 
             ClearVector(file->symbols);
-            delete file;
-
             break;
         }
         ++iterator;
@@ -513,7 +511,6 @@ void Project::RemoveFile(File* file, bool exclude_only)
         }
         ++iterator;
       }
-
       ++dirIterator;
     }
 
@@ -527,6 +524,7 @@ void Project::RemoveFile(File* file, bool exclude_only)
       }
       ++iterator;
     }
+    delete file;
 }
 
 void Project::RemoveDirectory(Directory* directory, bool exclude_only)
@@ -540,8 +538,6 @@ void Project::RemoveDirectory(Directory* directory, bool exclude_only)
       for (File *file : directory->files)
       {
         ClearVector(file->symbols);
-        delete file;
-
         std::vector<File*>::iterator iterator = m_openFiles.begin();
         while (iterator != m_openFiles.end())
         {
@@ -552,6 +548,7 @@ void Project::RemoveDirectory(Directory* directory, bool exclude_only)
           }
           ++iterator;
         }
+        delete file;
       }
 
       m_directories.erase(iterator);

@@ -150,6 +150,8 @@ public:
      */
     wxTreeItemId GetSelection() const;
 
+    void ClearSelection();
+
     /**
     * Adds references for the directory into the explorer view. This should be
     * called when a directory is added to the project.
