@@ -23,11 +23,11 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef DEBUG_FRONTEND_H
 #define DEBUG_FRONTEND_H
 
+#include "wx/event.h"
+
 #include <windows.h>
 #include <string>
 #include <vector>
-
-#include "wx/event.h"
 
 #include "Channel.h"
 #include "Protocol.h"

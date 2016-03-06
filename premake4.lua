@@ -26,19 +26,14 @@ project "Frontend"
     includedirs {
 		"src/Shared",
 		"libs/wxWidgets/include",
-		"libs/wxScintilla/include",
-		"libs/Update/include",
 	}
 	libdirs {
 		"libs/wxWidgets/lib/vc_lib",
-		"libs/wxScintilla/lib",
-		"libs/Update/lib",
 	}
     links {
 		"comctl32",
 		"rpcrt4",
 		"imagehlp",
-		"Update",
 		"Shared",		
 	}
 
@@ -48,18 +43,18 @@ project "Frontend"
         targetdir "bin/debug"
 		includedirs { "libs/wxWidgets/lib/vc_lib/mswud" }
 		links {
-			"wxbase30ud",
-			"wxmsw30ud_core",
-      "wxmsw30ud_stc",
-			"wxmsw30ud_aui",
+			"wxbase31ud",
+			"wxmsw31ud_core",
+			"wxmsw31ud_stc",
+			"wxmsw31ud_aui",
 			"wxscintillad",
-			"wxbase30ud_xml",
+			"wxbase31ud_xml",
 			"wxexpatd",
-			"wxmsw30ud_adv",
-			"wxmsw30ud_qa",
+			"wxmsw31ud_adv",
+			"wxmsw31ud_qa",
 			"wxzlibd",
-			"wxmsw30ud_richtext",
-			"wxmsw30ud_html",
+			"wxmsw31ud_richtext",
+			"wxmsw31ud_html",
 			"wxpngd",
 		}
 
@@ -69,18 +64,18 @@ project "Frontend"
         targetdir "bin/release"
 		includedirs { "libs/wxWidgets/lib/vc_lib/mswu" }
 		links {
-			"wxbase30u",
-			"wxmsw30u_core",
-      "wxmsw30u_stc",
-			"wxmsw30u_aui",
+			"wxbase31u",
+			"wxmsw31u_core",
+			"wxmsw31u_stc",
+			"wxmsw31u_aui",
 			"wxscintilla",
-			"wxbase30u_xml",
+			"wxbase31u_xml",
 			"wxexpat",
-			"wxmsw30u_adv",
-			"wxmsw30u_qa",
+			"wxmsw31u_adv",
+			"wxmsw31u_qa",
 			"wxzlib",
-			"wxmsw30u_richtext",
-			"wxmsw30u_html",
+			"wxmsw31u_richtext",
+			"wxmsw31u_html",
 			"wxpng",
 		}		
 		

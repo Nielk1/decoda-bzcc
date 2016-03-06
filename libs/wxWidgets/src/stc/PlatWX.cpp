@@ -14,6 +14,7 @@
 #if wxUSE_STC
 
 #ifndef WX_PRECOMP
+    #include "wx/math.h"
     #include "wx/menu.h"
     #include "wx/dcmemory.h"
     #include "wx/settings.h"
@@ -50,8 +51,8 @@ Point Point::FromLong(long lpoint) {
 }
 
 wxRect wxRectFromPRectangle(PRectangle prc) {
-    wxRect r(prc.left, prc.top,
-             prc.Width(), prc.Height());
+    wxRect r(wxRound(prc.left), wxRound(prc.top),
+             wxRound(prc.Width()), wxRound(prc.Height()));
     return r;
 }
 
@@ -75,9 +76,45 @@ wxColour wxColourFromCDandAlpha(ColourDesired& cd, int alpha) {
 
 //----------------------------------------------------------------------
 
+namespace
+{
+
+// wxFont with ascent cached, a pointer to this type is stored in Font::fid.
+class wxFontWithAscent : public wxFont
+{
+public:
+    explicit wxFontWithAscent(const wxFont &font)
+        : wxFont(font),
+          m_ascent(0)
+    {
+    }
+
+    static wxFontWithAscent* FromFID(FontID fid)
+    {
+        return static_cast<wxFontWithAscent*>(fid);
+    }
+
+    void SetAscent(int ascent) { m_ascent = ascent; }
+    int GetAscent() const { return m_ascent; }
+
+private:
+    int m_ascent;
+};
+
+void SetAscent(Font& f, int ascent)
+{
+    wxFontWithAscent::FromFID(f.GetID())->SetAscent(ascent);
+}
+
+int GetAscent(Font& f)
+{
+    return wxFontWithAscent::FromFID(f.GetID())->GetAscent();
+}
+
+} // anonymous namespace
+
 Font::Font() {
     fid = 0;
-    ascent = 0;
 }
 
 Font::~Font() {
@@ -104,20 +141,20 @@ void Font::Create(const FontParameters &fp) {
     else
         weight = wxFONTWEIGHT_NORMAL;
 
-    wxFont* font = new wxFont(fp.size,
-                              wxFONTFAMILY_DEFAULT,
-                              fp.italic ? wxFONTSTYLE_ITALIC :  wxFONTSTYLE_NORMAL,
-                              weight,
-                              false,
-                              stc2wx(fp.faceName),
-                              encoding);
-    fid = font;
+    wxFont font(wxRound(fp.size),
+        wxFONTFAMILY_DEFAULT,
+        fp.italic ? wxFONTSTYLE_ITALIC :  wxFONTSTYLE_NORMAL,
+        weight,
+        false,
+        stc2wx(fp.faceName),
+        encoding);
+    fid = new wxFontWithAscent(font);
 }
 
 
 void Font::Release() {
     if (fid)
-        delete (wxFont*)fid;
+        delete wxFontWithAscent::FromFID(fid);
     fid = 0;
 }
 
@@ -136,47 +173,47 @@ public:
     SurfaceImpl();
     ~SurfaceImpl();
 
-    virtual void Init(WindowID wid);
-    virtual void Init(SurfaceID sid, WindowID wid);
-    virtual void InitPixMap(int width, int height, Surface *surface_, WindowID wid);
+    virtual void Init(WindowID wid) wxOVERRIDE;
+    virtual void Init(SurfaceID sid, WindowID wid) wxOVERRIDE;
+    virtual void InitPixMap(int width, int height, Surface *surface_, WindowID wid) wxOVERRIDE;
 
-    virtual void Release();
-    virtual bool Initialised();
-    virtual void PenColour(ColourDesired fore);
-    virtual int LogPixelsY();
-    virtual int DeviceHeightFont(int points);
-    virtual void MoveTo(int x_, int y_);
-    virtual void LineTo(int x_, int y_);
-    virtual void Polygon(Point *pts, int npts, ColourDesired fore, ColourDesired back);
-    virtual void RectangleDraw(PRectangle rc, ColourDesired fore, ColourDesired back);
-    virtual void FillRectangle(PRectangle rc, ColourDesired back);
-    virtual void FillRectangle(PRectangle rc, Surface &surfacePattern);
-    virtual void RoundedRectangle(PRectangle rc, ColourDesired fore, ColourDesired back);
+    virtual void Release() wxOVERRIDE;
+    virtual bool Initialised() wxOVERRIDE;
+    virtual void PenColour(ColourDesired fore) wxOVERRIDE;
+    virtual int LogPixelsY() wxOVERRIDE;
+    virtual int DeviceHeightFont(int points) wxOVERRIDE;
+    virtual void MoveTo(int x_, int y_) wxOVERRIDE;
+    virtual void LineTo(int x_, int y_) wxOVERRIDE;
+    virtual void Polygon(Point *pts, int npts, ColourDesired fore, ColourDesired back) wxOVERRIDE;
+    virtual void RectangleDraw(PRectangle rc, ColourDesired fore, ColourDesired back) wxOVERRIDE;
+    virtual void FillRectangle(PRectangle rc, ColourDesired back) wxOVERRIDE;
+    virtual void FillRectangle(PRectangle rc, Surface &surfacePattern) wxOVERRIDE;
+    virtual void RoundedRectangle(PRectangle rc, ColourDesired fore, ColourDesired back) wxOVERRIDE;
     virtual void AlphaRectangle(PRectangle rc, int cornerSize, ColourDesired fill, int alphaFill,
-                                ColourDesired outline, int alphaOutline, int flags);
+                                ColourDesired outline, int alphaOutline, int flags) wxOVERRIDE;
     virtual void DrawRGBAImage(PRectangle rc, int width, int height,
-                               const unsigned char *pixelsImage);
-    virtual void Ellipse(PRectangle rc, ColourDesired fore, ColourDesired back);
-    virtual void Copy(PRectangle rc, Point from, Surface &surfaceSource);
+                               const unsigned char *pixelsImage) wxOVERRIDE;
+    virtual void Ellipse(PRectangle rc, ColourDesired fore, ColourDesired back) wxOVERRIDE;
+    virtual void Copy(PRectangle rc, Point from, Surface &surfaceSource) wxOVERRIDE;
 
-    virtual void DrawTextNoClip(PRectangle rc, Font &font_, XYPOSITION ybase, const char *s, int len, ColourDesired fore, ColourDesired back);
-    virtual void DrawTextClipped(PRectangle rc, Font &font_, XYPOSITION ybase, const char *s, int len, ColourDesired fore, ColourDesired back);
-    virtual void DrawTextTransparent(PRectangle rc, Font &font_, XYPOSITION ybase, const char *s, int len, ColourDesired fore);
-    virtual void MeasureWidths(Font &font_, const char *s, int len, XYPOSITION *positions);
-    virtual XYPOSITION WidthText(Font &font_, const char *s, int len);
-    virtual XYPOSITION WidthChar(Font &font_, char ch);
-    virtual XYPOSITION Ascent(Font &font_);
-    virtual XYPOSITION Descent(Font &font_);
-    virtual XYPOSITION InternalLeading(Font &font_);
-    virtual XYPOSITION ExternalLeading(Font &font_);
-    virtual XYPOSITION Height(Font &font_);
-    virtual XYPOSITION AverageCharWidth(Font &font_);
+    virtual void DrawTextNoClip(PRectangle rc, Font &font_, XYPOSITION ybase, const char *s, int len, ColourDesired fore, ColourDesired back) wxOVERRIDE;
+    virtual void DrawTextClipped(PRectangle rc, Font &font_, XYPOSITION ybase, const char *s, int len, ColourDesired fore, ColourDesired back) wxOVERRIDE;
+    virtual void DrawTextTransparent(PRectangle rc, Font &font_, XYPOSITION ybase, const char *s, int len, ColourDesired fore) wxOVERRIDE;
+    virtual void MeasureWidths(Font &font_, const char *s, int len, XYPOSITION *positions) wxOVERRIDE;
+    virtual XYPOSITION WidthText(Font &font_, const char *s, int len) wxOVERRIDE;
+    virtual XYPOSITION WidthChar(Font &font_, char ch) wxOVERRIDE;
+    virtual XYPOSITION Ascent(Font &font_) wxOVERRIDE;
+    virtual XYPOSITION Descent(Font &font_) wxOVERRIDE;
+    virtual XYPOSITION InternalLeading(Font &font_) wxOVERRIDE;
+    virtual XYPOSITION ExternalLeading(Font &font_) wxOVERRIDE;
+    virtual XYPOSITION Height(Font &font_) wxOVERRIDE;
+    virtual XYPOSITION AverageCharWidth(Font &font_) wxOVERRIDE;
 
-    virtual void SetClip(PRectangle rc);
-    virtual void FlushCachedState();
+    virtual void SetClip(PRectangle rc) wxOVERRIDE;
+    virtual void FlushCachedState() wxOVERRIDE;
 
-    virtual void SetUnicodeMode(bool unicodeMode_);
-    virtual void SetDBCSMode(int codePage);
+    virtual void SetUnicodeMode(bool unicodeMode_) wxOVERRIDE;
+    virtual void SetDBCSMode(int codePage) wxOVERRIDE;
 
     void BrushColour(ColourDesired back);
     void SetFont(Font &font_);
@@ -211,14 +248,22 @@ void SurfaceImpl::Init(SurfaceID hdc_, WindowID) {
     hdc = (wxDC*)hdc_;
 }
 
-void SurfaceImpl::InitPixMap(int width, int height, Surface *WXUNUSED(surface_), WindowID winid) {
+void SurfaceImpl::InitPixMap(int width, int height, Surface *surface, WindowID winid) {
     Release();
-    hdc = new wxMemoryDC();
+    if (surface)
+        hdc = new wxMemoryDC(static_cast<SurfaceImpl*>(surface)->hdc);
+    else
+        hdc = new wxMemoryDC();
     hdcOwned = true;
     if (width < 1) width = 1;
     if (height < 1) height = 1;
+#ifdef __WXMSW__
+    bitmap = new wxBitmap(width, height);
+    wxUnusedVar(winid);
+#else
     bitmap = new wxBitmap();
     bitmap->CreateScaled(width, height,wxBITMAP_SCREEN_DEPTH,((wxWindow*)winid)->GetContentScaleFactor());
+#endif
     ((wxMemoryDC*)hdc)->SelectObject(*bitmap);
 }
 
@@ -281,8 +326,8 @@ void SurfaceImpl::Polygon(Point *pts, int npts, ColourDesired fore, ColourDesire
     wxPoint *p = new wxPoint[npts];
 
     for (int i=0; i<npts; i++) {
-        p[i].x = pts[i].x;
-        p[i].y = pts[i].y;
+        p[i].x = wxRound(pts[i].x);
+        p[i].y = wxRound(pts[i].y);
     }
     hdc->DrawPolygon(npts, p);
     delete [] p;
@@ -462,7 +507,7 @@ void SurfaceImpl::Copy(PRectangle rc, Point from, Surface &surfaceSource) {
     wxRect r = wxRectFromPRectangle(rc);
     hdc->Blit(r.x, r.y, r.width, r.height,
               ((SurfaceImpl&)surfaceSource).hdc,
-              from.x, from.y, wxCOPY);
+              wxRound(from.x), wxRound(from.y), wxCOPY);
 }
 
 void SurfaceImpl::DrawTextNoClip(PRectangle rc, Font &font, XYPOSITION ybase,
@@ -475,7 +520,7 @@ void SurfaceImpl::DrawTextNoClip(PRectangle rc, Font &font, XYPOSITION ybase,
 
     // ybase is where the baseline should be, but wxWin uses the upper left
     // corner, so I need to calculate the real position for the text...
-    hdc->DrawText(stc2wx(s, len), rc.left, ybase - font.ascent);
+    hdc->DrawText(stc2wx(s, len), wxRound(rc.left), wxRound(ybase - GetAscent(font)));
 }
 
 void SurfaceImpl::DrawTextClipped(PRectangle rc, Font &font, XYPOSITION ybase,
@@ -488,7 +533,7 @@ void SurfaceImpl::DrawTextClipped(PRectangle rc, Font &font, XYPOSITION ybase,
     hdc->SetClippingRegion(wxRectFromPRectangle(rc));
 
     // see comments above
-    hdc->DrawText(stc2wx(s, len), rc.left, ybase - font.ascent);
+    hdc->DrawText(stc2wx(s, len), wxRound(rc.left), wxRound(ybase - GetAscent(font)));
     hdc->DestroyClippingRegion();
 }
 
@@ -503,7 +548,7 @@ void SurfaceImpl::DrawTextTransparent(PRectangle rc, Font &font, XYPOSITION ybas
 
     // ybase is where the baseline should be, but wxWin uses the upper left
     // corner, so I need to calculate the real position for the text...
-    hdc->DrawText(stc2wx(s, len), rc.left, ybase - font.ascent);
+    hdc->DrawText(stc2wx(s, len), wxRound(rc.left), wxRound(ybase - GetAscent(font)));
 
     hdc->SetBackgroundMode(wxBRUSHSTYLE_SOLID);
 }
@@ -519,23 +564,31 @@ void SurfaceImpl::MeasureWidths(Font &font, const char *s, int len, XYPOSITION *
     hdc->GetPartialTextExtents(str, tpos);
 
 #if wxUSE_UNICODE
-    // Map the widths for UCS-2 characters back to the UTF-8 input string
-    // NOTE:  I don't think this is right for when sizeof(wxChar) > 2, ie wxGTK2
-    // so figure it out and fix it!
-    size_t i = 0;
-    size_t ui = 0;
-    while ((int)i < len) {
-        unsigned char uch = (unsigned char)s[i];
-        positions[i++] = tpos[ui];
-        if (uch >= 0x80) {
-            if (uch < (0x80 + 0x40 + 0x20)) {
-                positions[i++] = tpos[ui];
-            } else {
-                positions[i++] = tpos[ui];
-                positions[i++] = tpos[ui];
-            }
+    // Map the widths back to the UTF-8 input string
+    size_t utf8i = 0;
+    for (size_t wxi = 0; wxi < str.size(); ++wxi) {
+        wxUniChar c = str[wxi];
+
+#if SIZEOF_WCHAR_T == 2
+        // For surrogate pairs, the position for the lead surrogate is garbage
+        // and we need to use the position of the trail surrogate for all four bytes
+        if (c >= 0xD800 && c < 0xE000 && wxi + 1 < str.size()) {
+            ++wxi;
+            positions[utf8i++] = tpos[wxi];
+            positions[utf8i++] = tpos[wxi];
+            positions[utf8i++] = tpos[wxi];
+            positions[utf8i++] = tpos[wxi];
+            continue;
         }
-        ui++;
+#endif
+
+        positions[utf8i++] = tpos[wxi];
+        if (c >= 0x80)
+            positions[utf8i++] = tpos[wxi];
+        if (c >= 0x800)
+            positions[utf8i++] = tpos[wxi];
+        if (c >= 0x10000)
+            positions[utf8i++] = tpos[wxi];
     }
 #else // !wxUSE_UNICODE
     // If not unicode then just use the widths we have
@@ -572,8 +625,9 @@ XYPOSITION SurfaceImpl::Ascent(Font &font) {
     SetFont(font);
     int w, h, d, e;
     hdc->GetTextExtent(EXTENT_TEST, &w, &h, &d, &e);
-    font.ascent = h - d;
-    return font.ascent;
+    const int ascent = h - d;
+    SetAscent(font, ascent);
+    return ascent;
 }
 
 XYPOSITION SurfaceImpl::Descent(Font &font) {
@@ -736,7 +790,7 @@ PRectangle Window::GetMonitorRect(Point pt) {
     if (! wid) return PRectangle();
 #if wxUSE_DISPLAY
     // Get the display the point is found on
-    int n = wxDisplay::GetFromPoint(wxPoint(pt.x, pt.y));
+    int n = wxDisplay::GetFromPoint(wxPoint(wxRound(pt.x), wxRound(pt.y)));
     wxDisplay dpy(n == wxNOT_FOUND ? 0 : n);
     rect = dpy.GetGeometry();
 #else
@@ -792,17 +846,17 @@ public:
 #endif
 
 private:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
-BEGIN_EVENT_TABLE(wxSTCListBox, wxListView)
+wxBEGIN_EVENT_TABLE(wxSTCListBox, wxListView)
     EVT_SET_FOCUS( wxSTCListBox::OnFocus)
     EVT_KILL_FOCUS(wxSTCListBox::OnKillFocus)
 #ifdef __WXMAC__
     EVT_KEY_DOWN(  wxSTCListBox::OnKeyDown)
     EVT_CHAR(      wxSTCListBox::OnChar)
 #endif
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 
 
@@ -848,7 +902,7 @@ public:
     // Set position in client coords
     virtual void DoSetSize(int x, int y,
                            int width, int height,
-                           int sizeFlags = wxSIZE_AUTO) {
+                           int sizeFlags = wxSIZE_AUTO) wxOVERRIDE {
         if (x != wxDefaultCoord) {
             GetParent()->ClientToScreen(&x, NULL);
         }
@@ -859,7 +913,7 @@ public:
     }
 
     // return position as if it were in client coords
-    virtual void DoGetPosition( int *x, int *y ) const {
+    virtual void DoGetPosition( int *x, int *y ) const wxOVERRIDE {
         int sx, sy;
         wxPopupWindow::DoGetPosition(&sx, &sy);
         GetParent()->ScreenToClient(&sx, &sy);
@@ -868,7 +922,7 @@ public:
     }
 
 
-    bool Destroy() {
+    bool Destroy() wxOVERRIDE {
         if ( !wxPendingDelete.Member(this) )
             wxPendingDelete.Append(this);
         return true;
@@ -925,15 +979,15 @@ public:
     wxListView* GetLB() { return lv; }
 
 private:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
 };
 
-BEGIN_EVENT_TABLE(wxSTCListBoxWin, wxPopupWindow)
+wxBEGIN_EVENT_TABLE(wxSTCListBoxWin, wxPopupWindow)
     EVT_SET_FOCUS          (          wxSTCListBoxWin::OnFocus)
     EVT_SIZE               (          wxSTCListBoxWin::OnSize)
     EVT_LIST_ITEM_ACTIVATED(wxID_ANY, wxSTCListBoxWin::OnActivate)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 
 
@@ -1077,15 +1131,15 @@ public:
     wxListView* GetLB() { return lv; }
 
 private:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 
-BEGIN_EVENT_TABLE(wxSTCListBoxWin, wxWindow)
+wxBEGIN_EVENT_TABLE(wxSTCListBoxWin, wxWindow)
     EVT_SET_FOCUS          (          wxSTCListBoxWin::OnFocus)
     EVT_SIZE               (          wxSTCListBoxWin::OnSize)
     EVT_LIST_ITEM_ACTIVATED(wxID_ANY, wxSTCListBoxWin::OnActivate)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 #endif // wxUSE_POPUPWIN -----------------------------------
 
@@ -1116,27 +1170,27 @@ public:
     ~ListBoxImpl();
     static ListBox *Allocate();
 
-    virtual void SetFont(Font &font);
-    virtual void Create(Window &parent, int ctrlID, Point location_, int lineHeight_, bool unicodeMode_, int technology_);
-    virtual void SetAverageCharWidth(int width);
-    virtual void SetVisibleRows(int rows);
-    virtual int GetVisibleRows() const;
-    virtual PRectangle GetDesiredRect();
-    virtual int CaretFromEdge();
-    virtual void Clear();
-    virtual void Append(char *s, int type = -1);
+    virtual void SetFont(Font &font) wxOVERRIDE;
+    virtual void Create(Window &parent, int ctrlID, Point location_, int lineHeight_, bool unicodeMode_, int technology_) wxOVERRIDE;
+    virtual void SetAverageCharWidth(int width) wxOVERRIDE;
+    virtual void SetVisibleRows(int rows) wxOVERRIDE;
+    virtual int GetVisibleRows() const wxOVERRIDE;
+    virtual PRectangle GetDesiredRect() wxOVERRIDE;
+    virtual int CaretFromEdge() wxOVERRIDE;
+    virtual void Clear() wxOVERRIDE;
+    virtual void Append(char *s, int type = -1) wxOVERRIDE;
             void Append(const wxString& text, int type);
-    virtual int Length();
-    virtual void Select(int n);
-    virtual int GetSelection();
-    virtual int Find(const char *prefix);
-    virtual void GetValue(int n, char *value, int len);
-    virtual void RegisterImage(int type, const char *xpm_data);
+    virtual int Length() wxOVERRIDE;
+    virtual void Select(int n) wxOVERRIDE;
+    virtual int GetSelection() wxOVERRIDE;
+    virtual int Find(const char *prefix) wxOVERRIDE;
+    virtual void GetValue(int n, char *value, int len) wxOVERRIDE;
+    virtual void RegisterImage(int type, const char *xpm_data) wxOVERRIDE;
             void RegisterImageHelper(int type, wxBitmap& bmp);
-    virtual void RegisterRGBAImage(int type, int width, int height, const unsigned char *pixelsImage);
-    virtual void ClearRegisteredImages();
-    virtual void SetDoubleClickAction(CallBackAction, void *);
-    virtual void SetList(const char* list, char separator, char typesep);
+    virtual void RegisterRGBAImage(int type, int width, int height, const unsigned char *pixelsImage) wxOVERRIDE;
+    virtual void ClearRegisteredImages() wxOVERRIDE;
+    virtual void SetDoubleClickAction(CallBackAction, void *) wxOVERRIDE;
+    virtual void SetList(const char* list, char separator, char typesep) wxOVERRIDE;
 };
 
 
@@ -1380,7 +1434,7 @@ void Menu::Destroy() {
 }
 
 void Menu::Show(Point pt, Window &w) {
-    GETWIN(w.GetID())->PopupMenu((wxMenu*)mid, pt.x - 4, pt.y);
+    GETWIN(w.GetID())->PopupMenu((wxMenu*)mid, wxRound(pt.x - 4), wxRound(pt.y));
     Destroy();
 }
 
@@ -1595,10 +1649,11 @@ wxWX2MBbuf wx2stc(const wxString& str)
     size_t wclen         = str.length();
     size_t len           = UTF8Length(wcstr, wclen);
 
-    wxCharBuffer buffer(len+1);
-    UTF8FromUTF16(wcstr, wclen, buffer.data(), len);
-
-    // TODO check NULL termination!!
+    // The buffer object adds extra byte for the terminating NUL and we must
+    // pass the total length, including this NUL, to UTF8FromUTF16() to ensure
+    // that it NULL-terminates the string.
+    wxCharBuffer buffer(len);
+    UTF8FromUTF16(wcstr, wclen, buffer.data(), len + 1);
 
     return buffer;
 }

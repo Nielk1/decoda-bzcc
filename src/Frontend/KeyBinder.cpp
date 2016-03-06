@@ -72,7 +72,7 @@ void KeyBinder::AddCommand(const wxString& group, wxMenuItem* menuItem)
 {
     if (menuItem->GetKind() != wxITEM_SEPARATOR)
     {
-        AddCommand(menuItem->GetId(), group, menuItem->GetText(), menuItem->GetHelp());
+        AddCommand(menuItem->GetId(), group, menuItem->GetName(), menuItem->GetHelp()); //todo
     }
 }
 
@@ -83,7 +83,7 @@ void KeyBinder::AddCommandsFromMenuBar(wxMenuBar* menuBar)
 
     for (int i = 0; i < numMenus; ++i)
     {
-        AddCommandsFromMenu(menuBar->GetLabelTop(i), menuBar->GetMenu(i));
+        AddCommandsFromMenu(menuBar->GetMenuLabel(i), menuBar->GetMenu(i)); //todo
     }
 
 }
@@ -201,7 +201,7 @@ void KeyBinder::UpdateMenu(wxMenu* menu)
 
         if (GetMenuItemText(item, label))
         {
-            item->SetText(label);
+            item->SetItemLabel(label); //todo
         }
         
     }

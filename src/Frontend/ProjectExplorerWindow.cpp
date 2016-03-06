@@ -101,7 +101,7 @@ ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
     gSizer2->Add( m_searchBox, 1, wxALL | wxEXPAND, 4);
     gSizer1->Add( gSizer2, 1, wxEXPAND, 5  );
 
-    m_tree = new wxProjectTree(this, winid, wxDefaultPosition, wxDefaultSize, wxTR_NO_LINES | wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_MULTIPLE | wxTR_EXTENDED | wxTR_FULL_ROW_HIGHLIGHT);
+    m_tree = new wxProjectTree(this, winid, wxDefaultPosition, wxDefaultSize, wxTR_NO_LINES | wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT | wxTR_HIDE_ROOT | wxTR_MULTIPLE | wxTR_FULL_ROW_HIGHLIGHT);
     m_tree->AssignImageList(imageList);
 
     // The "best size" for the tree component must be 0 so that the tree control doesn't
@@ -290,10 +290,11 @@ void ProjectExplorerWindow::Rebuild()
 
     SortTree(m_tree->GetRootItem());
 
-    TraverseTree(m_root, [&,this](wxTreeItemId const &id)
+    
+    /*TraverseTree(m_root, [&,this](wxTreeItemId const &id)
     {
       m_tree->SetItemSelectedColour(id, m_itemSelectBackground);
-    });
+    });*/ //todo
 
     // For whatever reason the unselect event isn't reported properly
     // after deleting all items, so explicitly clear out the info box.

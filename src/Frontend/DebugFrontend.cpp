@@ -19,8 +19,8 @@ You should have received a copy of the GNU General Public License
 along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-#undef _UNICODE
-#undef UNICODE
+//#undef _UNICODE
+//#undef UNICODE
 #include "DebugFrontend.h"
 #include "DebugEvent.h"
 #include "CriticalSectionLock.h"
@@ -71,7 +71,7 @@ bool DebugFrontend::Start(const char* command, const char* commandArguments, con
 
     Stop(false);
 
-    STARTUPINFO startUpInfo = { 0 };
+    STARTUPINFOA startUpInfo = { 0 };
     startUpInfo.cb = sizeof(startUpInfo);
 
     char commandLine[8191];
@@ -98,7 +98,7 @@ bool DebugFrontend::Start(const char* command, const char* commandArguments, con
     else
     {
 
-        if (!CreateProcess(NULL, commandLine, NULL, NULL, TRUE, 0, NULL, directory.c_str(), &startUpInfo, &processInfo))
+        if (!CreateProcessA(NULL, commandLine, NULL, NULL, TRUE, 0, NULL, directory.c_str(), &startUpInfo, &processInfo))
         {
             OutputError(GetLastError());
             return false;
@@ -235,16 +235,16 @@ bool DebugFrontend::AttachDebuggerToHost()
         std::string commandLine;
         HKEY key;
         
-        if (RegOpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION\\AEDEBUG", &key) == ERROR_SUCCESS)
+        if (RegOpenKeyA(HKEY_LOCAL_MACHINE, "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION\\AEDEBUG", &key) == ERROR_SUCCESS)
         {
 
             DWORD type;
             DWORD size;
 
-            if (RegQueryValueEx(key, "Debugger", NULL, &type, NULL, &size) == ERROR_SUCCESS && type == REG_SZ)
+            if (RegQueryValueExA(key, "Debugger", NULL, &type, NULL, &size) == ERROR_SUCCESS && type == REG_SZ)
             {
                 char* buffer = new char[size + 1];
-                RegQueryValueEx(key, "Debugger", NULL, &type, reinterpret_cast<PBYTE>(buffer), &size);
+                RegQueryValueExA(key, "Debugger", NULL, &type, reinterpret_cast<PBYTE>(buffer), &size);
                 commandLine = buffer;
                 delete [] buffer;
             }
@@ -352,7 +352,7 @@ bool DebugFrontend::InjectDll(DWORD processId, const char* dllFileName)
         return false;
     }
     
-    HMODULE kernelModule = GetModuleHandle("Kernel32");
+    HMODULE kernelModule = GetModuleHandleA("Kernel32");
     FARPROC loadLibraryProc = GetProcAddress(kernelModule, "LoadLibraryA");
 
     // Load the DLL.
@@ -444,7 +444,7 @@ bool DebugFrontend::GetIsBeingDebugged(DWORD processId)
 bool DebugFrontend::ExecuteRemoteKernelFuntion(HANDLE process, const char* functionName, LPVOID param, DWORD& exitCode)
 {
 
-    HMODULE kernelModule = GetModuleHandle("Kernel32");
+    HMODULE kernelModule = GetModuleHandleA("Kernel32");
     FARPROC function = GetProcAddress(kernelModule, functionName);
 
     if (function == NULL)
@@ -476,7 +476,7 @@ bool DebugFrontend::ExecuteRemoteKernelFuntion(HANDLE process, const char* funct
 bool DebugFrontend::GetStartupDirectory(char* path, int maxPathLength)
 {
 
-    if (!GetModuleFileName(NULL, path, maxPathLength))
+    if (!GetModuleFileNameA(NULL, path, maxPathLength))
     {
 		return false;
     }
@@ -931,7 +931,7 @@ void DebugFrontend::GetProcesses(std::vector<Process>& processes) const
                     if (hWnd != NULL)
                     {
                         char buffer[1024];
-                        GetWindowText(hWnd, buffer, 1024);
+                        GetWindowTextA(hWnd, buffer, 1024);
                         process.title = buffer;
                     }
 
@@ -1064,7 +1064,7 @@ void DebugFrontend::SetBreakpoint(HANDLE hProcess, LPVOID entryPoint, bool set, 
 bool DebugFrontend::StartProcessAndRunToEntry(LPCSTR exeFileName, LPSTR commandLine, LPCSTR directory, PROCESS_INFORMATION& processInfo)
 {
 
-    STARTUPINFO startUpInfo = { 0 };
+    STARTUPINFOA startUpInfo = { 0 };
     startUpInfo.cb = sizeof(startUpInfo);
 
     ExeInfo info;
@@ -1082,7 +1082,7 @@ bool DebugFrontend::StartProcessAndRunToEntry(LPCSTR exeFileName, LPSTR commandL
 
     DWORD flags = DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS;
 
-    if (!CreateProcess(NULL, commandLine, NULL, NULL, TRUE, flags, NULL, directory, &startUpInfo, &processInfo))
+    if (!CreateProcessA(NULL, commandLine, NULL, NULL, TRUE, flags, NULL, directory, &startUpInfo, &processInfo))
     {
         OutputError(GetLastError());
         return false;
@@ -1176,7 +1176,7 @@ void DebugFrontend::OutputError(DWORD error)
 {
 
     char buffer[1024];
-    if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, buffer, 1024,  NULL))
+    if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, buffer, 1024,  NULL))
     {
         std::string message = "Error: ";
         message += buffer;

@@ -164,8 +164,8 @@ void ToolTipWindow::OnPaint(wxPaintEvent& event)
     wxColour bgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_INFOBK);
     wxColour fgColor = wxSystemSettings::GetColour(wxSYS_COLOUR_INFOTEXT);
 
-    dc.SetBrush(wxBrush(bgColor, wxSOLID));
-    dc.SetPen( wxPen(fgColor, 1, wxSOLID) );
+    dc.SetBrush(wxBrush(bgColor, wxBRUSHSTYLE_SOLID));
+    dc.SetPen( wxPen(fgColor, 1, wxPENSTYLE_SOLID) );
     dc.DrawRectangle(rect);
 
     // Draw the text line by line.

@@ -226,8 +226,8 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_STC_MARGINCLICK(wxID_ANY,                   MainFrame::OnCodeEditMarginClick)
     EVT_STC_ROMODIFYATTEMPT(wxID_ANY,               MainFrame::OnCodeEditReadOnlyModifyAttempt)
     EVT_STC_MODIFIED(wxID_ANY,                      MainFrame::OnCodeEditModified)
-    EVT_STC_DO_CONTEXT_COMMAND(wxID_ANY,            MainFrame::OnCodeContextCommand)
-    EVT_STC_ON_CONTEXT_MENU(wxID_ANY,               MainFrame::OnCodeContextMenu)
+    //todo EVT_STC_DO_CONTEXT_COMMAND(wxID_ANY,            MainFrame::OnCodeContextCommand)
+    //todo EVT_STC_ON_CONTEXT_MENU(wxID_ANY,               MainFrame::OnCodeContextMenu)
     
     EVT_IDLE(                                       MainFrame::OnIdle)
     EVT_TIMER(wxID_ANY,                             MainFrame::OnTimer)
@@ -3525,8 +3525,7 @@ void MainFrame::OnFindReplace(wxFindDialogEvent& event)
         int searchStart = file->edit->GetSelectionStart();
         int searchEnd   = file->edit->GetSelectionEnd();    
         
-        int length;
-        int start = file->edit->FindText(searchStart, searchEnd, event.GetFindString(), flags, &length);
+        int start = file->edit->FindText(searchStart, searchEnd, event.GetFindString(), flags);
 
         if (start == searchStart)
         {
@@ -3573,8 +3572,8 @@ void MainFrame::OnFindReplaceAll(wxFindDialogEvent& event)
         while (searchStart < searchEnd)
         {
 
-            int length;
-            int start = file->edit->FindText(searchStart, searchEnd, event.GetFindString(), flags, &length);
+            int length = searchEnd - searchStart; //todo
+            int start = file->edit->FindText(searchStart, searchEnd, event.GetFindString(), flags);
 
             if (start != -1)
             {
@@ -3663,8 +3662,8 @@ void MainFrame::FindText(OpenFile* file, const wxString& text, int flags)
     }
 
 
-    int length;
-    int start = file->edit->FindText(searchStart, searchEnd, text, f, &length);
+    int length = searchEnd - searchStart; //todo
+    int start = file->edit->FindText(searchStart, searchEnd, text, f);
 
     if (start == -1)
     {
@@ -3695,7 +3694,7 @@ void MainFrame::FindText(OpenFile* file, const wxString& text, int flags)
             searchStart = file->edit->GetLength();
         }
 
-        start = file->edit->FindText(searchStart, searchEnd, text, f, &length);
+        start = file->edit->FindText(searchStart, searchEnd, text, f);
 
     }
 
@@ -3917,7 +3916,7 @@ void MainFrame::LoadOptions()
                 else if (ReadXmlNode(node, "layout", data))
                 {
 
-                    wxString mode = node->GetPropVal("mode", "");
+                    wxString mode = node->GetAttribute("mode", "");
                     
                     for (unsigned int i = 0; i < Mode_NumModes; ++i)
                     {
@@ -3974,16 +3973,16 @@ void MainFrame::LoadExternalTool(wxXmlNode* node)
 {
 
     wxString title;
-    node->GetPropVal("title", &title);
+    node->GetAttribute("title", &title);
 
     wxString command;
-    node->GetPropVal("command", &command);
+    node->GetAttribute("command", &command);
 
     wxString arguments;
-    node->GetPropVal("arguments", &arguments);
+    node->GetAttribute("arguments", &arguments);
 
     wxString initialDirectory;
-    node->GetPropVal("initialdirectory", &initialDirectory);
+    node->GetAttribute("initialdirectory", &initialDirectory);
 
     ExternalTool* tool = new ExternalTool;
 
@@ -4053,7 +4052,7 @@ void MainFrame::SaveOptions()
     for (unsigned int i = 0; i < Mode_NumModes; ++i)
     {
         wxXmlNode* node = WriteXmlNode("layout", m_modeLayout[i]);
-        node->AddProperty("mode", s_modeName[i]);
+        node->AddAttribute("mode", s_modeName[i]);
         root->AddChild(node);
     }
 
@@ -4114,10 +4113,10 @@ wxXmlNode* MainFrame::SaveExternalTool(const ExternalTool* tool) const
 
     wxXmlNode* node = new wxXmlNode(wxXML_ELEMENT_NODE, "tool");
 
-    node->AddProperty("title", tool->GetTitle());
-    node->AddProperty("command", tool->GetCommand());
-    node->AddProperty("arguments", tool->GetArguments());
-    node->AddProperty("initialdirectory", tool->GetInitialDirectory());
+    node->AddAttribute("title", tool->GetTitle());
+    node->AddAttribute("command", tool->GetCommand());
+    node->AddAttribute("arguments", tool->GetArguments());
+    node->AddAttribute("initialdirectory", tool->GetInitialDirectory());
 
     return node;
 

@@ -1110,9 +1110,9 @@ wxTreeListHeaderWindow::~wxTreeListHeaderWindow()
 void wxTreeListHeaderWindow::DoDrawRect( wxDC *dc, int x, int y, int w, int h )
 {
 #if !wxCHECK_VERSION(2, 5, 0)
-    wxPen pen (wxSystemSettings::GetSystemColour (wxSYS_COLOUR_BTNSHADOW ), 1, wxSOLID);
+    wxPen pen (wxSystemSettings::GetSystemColour (wxSYS_COLOUR_BTNSHADOW ), 1, wxPENSTYLE_SOLID);
 #else
-    wxPen pen (wxSystemSettings::GetColour (wxSYS_COLOUR_BTNSHADOW ), 1, wxSOLID);
+    wxPen pen (wxSystemSettings::GetColour (wxSYS_COLOUR_BTNSHADOW ), 1, wxPENSTYLE_SOLID);
 #endif
 
     const int m_corner = 1;
@@ -1265,7 +1265,7 @@ void wxTreeListHeaderWindow::DrawCurrent()
 
     wxScreenDC dc;
     dc.SetLogicalFunction (wxINVERT);
-    dc.SetPen (wxPen (*wxBLACK, 2, wxSOLID));
+    dc.SetPen (wxPen (*wxBLACK, 2, wxPENSTYLE_SOLID));
     dc.SetBrush (*wxTRANSPARENT_BRUSH);
 
     AdjustDC(dc);
@@ -1694,11 +1694,11 @@ void wxTreeListMainWindow::Init() {
     m_linespacing = 4;
 
 #if !wxCHECK_VERSION(2, 5, 0)
-    m_hilightBrush = new wxBrush (wxSystemSettings::GetSystemColour (wxSYS_COLOUR_HIGHLIGHT), wxSOLID);
-    m_hilightUnfocusedBrush = new wxBrush (wxSystemSettings::GetSystemColour (wxSYS_COLOUR_BTNSHADOW), wxSOLID);
+    m_hilightBrush = new wxBrush (wxSystemSettings::GetSystemColour (wxSYS_COLOUR_HIGHLIGHT), wxBRUSHSTYLE_SOLID);
+    m_hilightUnfocusedBrush = new wxBrush (wxSystemSettings::GetSystemColour (wxSYS_COLOUR_BTNSHADOW), wxBRUSHSTYLE_SOLID);
 #else
-    m_hilightBrush = new wxBrush (wxSystemSettings::GetColour (wxSYS_COLOUR_HIGHLIGHT), wxSOLID);
-    m_hilightUnfocusedBrush = new wxBrush (wxSystemSettings::GetColour (wxSYS_COLOUR_BTNSHADOW), wxSOLID);
+    m_hilightBrush = new wxBrush (wxSystemSettings::GetColour (wxSYS_COLOUR_HIGHLIGHT), wxBRUSHSTYLE_SOLID);
+    m_hilightUnfocusedBrush = new wxBrush (wxSystemSettings::GetColour (wxSYS_COLOUR_BTNSHADOW), wxBRUSHSTYLE_SOLID);
 #endif
 
     m_imageListNormal = (wxImageList *) NULL;
@@ -1731,7 +1731,7 @@ void wxTreeListMainWindow::Init() {
     m_boldFont = wxFont( m_normalFont.GetPointSize(),
                          m_normalFont.GetFamily(),
                          m_normalFont.GetStyle(),
-                         wxBOLD,
+                         wxFONTWEIGHT_BOLD,
                          m_normalFont.GetUnderlined(),
                          m_normalFont.GetFaceName(),
                          m_normalFont.GetEncoding());
@@ -1950,7 +1950,7 @@ bool wxTreeListMainWindow::SetFont (const wxFont &font) {
     m_boldFont = wxFont (m_normalFont.GetPointSize(),
                          m_normalFont.GetFamily(),
                          m_normalFont.GetStyle(),
-                         wxBOLD,
+                         wxFONTWEIGHT_BOLD,
                          m_normalFont.GetUnderlined(),
                          m_normalFont.GetFaceName());
     CalculateLineHeight();
@@ -2911,7 +2911,7 @@ void wxTreeListMainWindow::PaintItem (wxTreeListItem *item, wxDC& dc) {
     }else{
         colBg = m_backgroundColour;
     }
-    dc.SetBrush (wxBrush (colBg, wxSOLID));
+    dc.SetBrush (wxBrush (colBg, wxBRUSHSTYLE_SOLID));
     dc.SetPen (*wxTRANSPARENT_PEN);
     if (HasFlag (wxTR_FULL_ROW_HIGHLIGHT)) {
         if (item == m_dragItem) {

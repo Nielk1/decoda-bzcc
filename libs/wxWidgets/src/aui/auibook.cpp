@@ -54,11 +54,10 @@ wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_MIDDLE_UP, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_MIDDLE_DOWN, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_RIGHT_UP, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_RIGHT_DOWN, wxAuiNotebookEvent);
-wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_MOVED, wxAuiNotebookEvent);
 
-IMPLEMENT_CLASS(wxAuiNotebook, wxControl)
-IMPLEMENT_CLASS(wxAuiTabCtrl, wxControl)
-IMPLEMENT_DYNAMIC_CLASS(wxAuiNotebookEvent, wxBookCtrlEvent)
+wxIMPLEMENT_CLASS(wxAuiNotebook, wxControl);
+wxIMPLEMENT_CLASS(wxAuiTabCtrl, wxControl);
+wxIMPLEMENT_DYNAMIC_CLASS(wxAuiNotebookEvent, wxBookCtrlEvent);
 
 
 // -- wxAuiTabContainer class implementation --
@@ -187,6 +186,7 @@ bool wxAuiTabContainer::AddPage(wxWindow* page,
     wxAuiNotebookPage page_info;
     page_info = info;
     page_info.window = page;
+    page_info.hover = false;
 
     m_pages.Add(page_info);
 
@@ -206,6 +206,7 @@ bool wxAuiTabContainer::InsertPage(wxWindow* page,
     wxAuiNotebookPage page_info;
     page_info = info;
     page_info.window = page;
+    page_info.hover = false;
 
     if (idx >= m_pages.GetCount())
         m_pages.Add(page_info);
@@ -429,6 +430,10 @@ void wxAuiTabContainer::Render(wxDC* raw_dc, wxWindow* wnd)
 
     if (!dc.IsOk())
         return;
+
+    // ensure we show as many tabs as possible
+    while (m_tabOffset > 0 && IsTabVisible(page_count-1, m_tabOffset-1, &dc, wnd))
+        --m_tabOffset;
 
     // find out if size of tabs is larger than can be
     // afforded on screen
@@ -971,7 +976,7 @@ void wxAuiTabContainer::DoShowHide()
 
 
 
-BEGIN_EVENT_TABLE(wxAuiTabCtrl, wxControl)
+wxBEGIN_EVENT_TABLE(wxAuiTabCtrl, wxControl)
     EVT_PAINT(wxAuiTabCtrl::OnPaint)
     EVT_ERASE_BACKGROUND(wxAuiTabCtrl::OnEraseBackground)
     EVT_SIZE(wxAuiTabCtrl::OnSize)
@@ -989,7 +994,7 @@ BEGIN_EVENT_TABLE(wxAuiTabCtrl, wxControl)
     EVT_KILL_FOCUS(wxAuiTabCtrl::OnKillFocus)
     EVT_CHAR(wxAuiTabCtrl::OnChar)
     EVT_MOUSE_CAPTURE_LOST(wxAuiTabCtrl::OnCaptureLost)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 
 wxAuiTabCtrl::wxAuiTabCtrl(wxWindow* parent,
@@ -1234,20 +1239,28 @@ void wxAuiTabCtrl::OnMotion(wxMouseEvent& evt)
         }
     }
 
-#if wxUSE_TOOLTIPS
     wxWindow* wnd = NULL;
     if (evt.Moving() && TabHitTest(evt.m_x, evt.m_y, &wnd))
     {
+        SetHoverTab(wnd);
+
+#if wxUSE_TOOLTIPS
         wxString tooltip(m_pages[GetIdxFromWindow(wnd)].tooltip);
 
         // If the text changes, set it else, keep old, to avoid
         // 'moving tooltip' effect
         if (GetToolTipText() != tooltip)
             SetToolTip(tooltip);
+#endif // wxUSE_TOOLTIPS
     }
     else
+    {
+        SetHoverTab(NULL);
+
+#if wxUSE_TOOLTIPS
         UnsetToolTip();
 #endif // wxUSE_TOOLTIPS
+    }
 
     if (!evt.LeftIsDown() || m_clickPt == wxDefaultPosition)
         return;
@@ -1288,6 +1301,8 @@ void wxAuiTabCtrl::OnLeaveWindow(wxMouseEvent& WXUNUSED(event))
         Refresh();
         Update();
     }
+
+    SetHoverTab(NULL);
 }
 
 void wxAuiTabCtrl::OnButton(wxAuiNotebookEvent& event)
@@ -1503,20 +1518,20 @@ public:
 protected:
     void DoSetSize(int x, int y,
                    int width, int height,
-                   int WXUNUSED(sizeFlags = wxSIZE_AUTO))
+                   int WXUNUSED(sizeFlags = wxSIZE_AUTO)) wxOVERRIDE
     {
         m_rect = wxRect(x, y, width, height);
         DoSizing();
     }
 
-    void DoGetClientSize(int* x, int* y) const
+    void DoGetClientSize(int* x, int* y) const wxOVERRIDE
     {
         *x = m_rect.width;
         *y = m_rect.height;
     }
 
 public:
-    bool Show( bool WXUNUSED(show = true) ) { return false; }
+    bool Show( bool WXUNUSED(show = true) ) wxOVERRIDE { return false; }
 
     void DoSizing()
     {
@@ -1592,7 +1607,7 @@ public:
     }
 
 protected:
-    void DoGetSize(int* x, int* y) const
+    void DoGetSize(int* x, int* y) const wxOVERRIDE
     {
         if (x)
             *x = m_rect.GetWidth();
@@ -1601,7 +1616,7 @@ protected:
     }
 
 public:
-    void Update()
+    void Update() wxOVERRIDE
     {
         // does nothing
     }
@@ -1621,7 +1636,7 @@ const int wxAuiBaseTabCtrlId = 5380;
 #define EVT_AUI_RANGE(id1, id2, event, func) \
     wx__DECLARE_EVT2(event, id1, id2, wxAuiNotebookEventHandler(func))
 
-BEGIN_EVENT_TABLE(wxAuiNotebook, wxControl)
+wxBEGIN_EVENT_TABLE(wxAuiNotebook, wxControl)
     EVT_SIZE(wxAuiNotebook::OnSize)
     EVT_CHILD_FOCUS(wxAuiNotebook::OnChildFocusNotebook)
     EVT_AUI_RANGE(wxAuiBaseTabCtrlId, wxAuiBaseTabCtrlId+500,
@@ -1658,7 +1673,7 @@ BEGIN_EVENT_TABLE(wxAuiNotebook, wxControl)
                       wxEVT_AUINOTEBOOK_BG_DCLICK,
                       wxAuiNotebook::OnTabBgDClick)
     EVT_NAVIGATION_KEY(wxAuiNotebook::OnNavigationKeyNotebook)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 void wxAuiNotebook::Init()
 {
@@ -1697,7 +1712,7 @@ void wxAuiNotebook::InitNotebook(long style)
 
     m_normalFont = *wxNORMAL_FONT;
     m_selectedFont = *wxNORMAL_FONT;
-    m_selectedFont.SetWeight(wxBOLD);
+    m_selectedFont.SetWeight(wxFONTWEIGHT_BOLD);
 
     SetArtProvider(new wxAuiDefaultTabArt);
 
@@ -2569,13 +2584,6 @@ void wxAuiNotebook::OnTabDragMotion(wxAuiNotebookEvent& evt)
             dest_tabs->Refresh();
             m_lastDragX = pt.x;
 
-
-            // notify owner that the tab has been moved
-            wxAuiNotebookEvent e(wxEVT_AUINOTEBOOK_TAB_MOVED, m_windowId);
-            e.SetEventObject(this);
-            e.src_idx = src_idx;
-            e.dest_idx = dest_idx;
-            GetEventHandler()->ProcessEvent(e);
         }
 
         return;
@@ -3254,7 +3262,7 @@ bool wxAuiNotebook::SetFont(const wxFont& font)
 
     wxFont normalFont(font);
     wxFont selectedFont(normalFont);
-    selectedFont.SetWeight(wxBOLD);
+    selectedFont.SetWeight(wxFONTWEIGHT_BOLD);
 
     SetNormalFont(normalFont);
     SetSelectedFont(selectedFont);
@@ -3456,6 +3464,27 @@ int wxAuiNotebook::DoModifySelection(size_t n, bool events)
     }
 
     return m_curPage;
+}
+
+void wxAuiTabCtrl::SetHoverTab(wxWindow* wnd)
+{
+    bool hoverChanged = false;
+
+    const size_t page_count = m_pages.GetCount();
+    for ( size_t i = 0; i < page_count; ++i )
+    {
+        wxAuiNotebookPage& page = m_pages.Item(i);
+        bool oldHover = page.hover;
+        page.hover = (page.window == wnd);
+        if ( oldHover != page.hover )
+            hoverChanged = true;
+    }
+
+    if ( hoverChanged )
+    {
+        Refresh();
+        Update();
+    }
 }
 
 

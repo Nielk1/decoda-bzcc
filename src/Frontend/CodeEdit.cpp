@@ -40,8 +40,8 @@ BEGIN_EVENT_TABLE( CodeEdit, wxStyledTextCtrl )
     EVT_STC_CHARADDED(         wxID_ANY, CodeEdit::OnCharAdded)
     EVT_STC_CHANGE(            wxID_ANY, CodeEdit::OnChange)
     EVT_STC_MODIFIED(          wxID_ANY, CodeEdit::OnModified)
-    EVT_STC_AUTOCOMP_DWELLSTART(wxID_ANY, CodeEdit::OnAutocompletionDwellStart)
-    EVT_STC_AUTOCOMP_DWELLEND(wxID_ANY, CodeEdit::OnAutocompletionDwellEnd)
+    //EVT_STC_AUTOCOMP_DWELLSTART(wxID_ANY, CodeEdit::OnAutocompletionDwellStart) //todo
+    //EVT_STC_AUTOCOMP_DWELLEND(wxID_ANY, CodeEdit::OnAutocompletionDwellEnd) //todo
 
 END_EVENT_TABLE()
 
@@ -653,7 +653,7 @@ void CodeEdit::OnModified(wxStyledTextEvent& event)
 
 void CodeEdit::CreateContextMenu(wxStyledTextEvent& event)
 {
-  AddToPopUp("Go To Definition", idcmdGotoDefinition);
+    //todo AddToPopUp("Go To Definition", idcmdGotoDefinition);
 }
 
 bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxString& token)
