@@ -31,6 +31,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 BEGIN_EVENT_TABLE(WatchCtrl, wxTreeListCtrl)
     EVT_SIZE(                               WatchCtrl::OnSize)
     EVT_LIST_COL_END_DRAG(wxID_ANY,         WatchCtrl::OnColumnEndDrag)
+    //EVT_TREE_KEY_DOWN(wxID_ANY, WatchCtrl::OnKeyDown)
 END_EVENT_TABLE()
 
 WatchCtrl::WatchCtrl(wxWindow *parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxValidator &validator, const wxString& name)
@@ -39,13 +40,13 @@ WatchCtrl::WatchCtrl(wxWindow *parent, wxWindowID id, const wxPoint& pos, const 
 
     AddColumn(_("Name"), 0, wxALIGN_LEFT);
     SetColumnEditable(0, true);
-    AddColumn(_("Value"), 0, wxALIGN_LEFT);
-    SetColumnEditable(1, false);
     AddColumn(_("Type"), 0, wxALIGN_LEFT);
+    SetColumnEditable(1, false);
+    AddColumn(_("Value"), 0, wxALIGN_LEFT);
     SetColumnEditable(2, false);
-
-    m_columnSize[0] = 0.5f;
-    m_columnSize[1] = 0.5f;
+    
+    m_columnSize[0] = 0.2f;
+    m_columnSize[1] = 0.1f;
     m_columnSize[2] = -100;
 
     UpdateColumnSizes();
@@ -95,7 +96,6 @@ void WatchCtrl::UpdateFont(wxTreeItemId item)
 
 void WatchCtrl::UpdateColumnSizes()
 {
-
     // We subtract two off of the size to avoid generating scroll bars on the window.
     int totalSize = GetClientSize().x - 2;
 
@@ -111,9 +111,7 @@ void WatchCtrl::UpdateColumnSizes()
 
 void WatchCtrl::GetColumnSizes(int totalSize, int columnSize[s_numColumns]) const
 {
-
     int fixedSize = 0;
-
     for (unsigned int i = 0; i < s_numColumns; ++i)
     {
         if (m_columnSize[i] < 0.0f)
@@ -124,7 +122,6 @@ void WatchCtrl::GetColumnSizes(int totalSize, int columnSize[s_numColumns]) cons
     }
 
     // Set the size of the proportional columns.
-
     for (unsigned int i = 0; i < s_numColumns; ++i)
     {
         if (m_columnSize[i] >= 0.0f)
@@ -134,14 +131,11 @@ void WatchCtrl::GetColumnSizes(int totalSize, int columnSize[s_numColumns]) cons
     }
 
     // Make sure the total size is exactly correct by resizing the final column.
-
     for (unsigned int i = 0; i < s_numColumns - 1; ++i)
     {
         totalSize -= columnSize[i];
     }
-
     columnSize[s_numColumns - 1] = totalSize;
-
 }
 
 bool WatchCtrl::AddCompoundExpression(wxTreeItemId item, wxXmlNode* root)
@@ -166,19 +160,16 @@ bool WatchCtrl::AddCompoundExpression(wxTreeItemId item, wxXmlNode* root)
 
     if (englishWideCharacter)
     {
-
         size_t convertedLength = WideCharToMultiByte(CP_UTF8, 0, (const wchar_t*)text.c_str(), text.Length() / sizeof(wchar_t), NULL, 0, 0, 0);
-
         char* result = new char[convertedLength + 1]; 
         convertedLength = WideCharToMultiByte(CP_UTF8, 0, (const wchar_t*)text.c_str(), text.Length() / sizeof(wchar_t), result, convertedLength, 0, 0);
-
         text = wxString(result, convertedLength);
     
     }
 
-    SetItemText(item, 1, text);
-    SetItemText(item, 2, type);
-
+    SetItemText(item, 1, type);
+    SetItemText(item, 2, text);
+    
     if (root != NULL)
     {
         if (root->GetName() == "table")
@@ -194,7 +185,7 @@ bool WatchCtrl::AddCompoundExpression(wxTreeItemId item, wxXmlNode* root)
 
                 if (ReadXmlNode(node, "type", typeName))
                 {
-                    SetItemText(item, 2, typeName);
+                    SetItemText(item, 1, typeName);
                 }
                 else if (node->GetName() == "element")
                 {
@@ -274,8 +265,7 @@ void WatchCtrl::UpdateItem(wxTreeItemId item)
         }
         else
         {
-
-            wxStringInputStream stream(result);
+            wxStringInputStream stream(wxString::FromUTF8(result));
             wxXmlDocument document;
 
             wxLogNull logNo;
@@ -353,6 +343,11 @@ void WatchCtrl::OnColumnEndDrag(wxListEvent& event)
 
     UpdateColumnSizes();
 
+}
+
+void WatchCtrl::OnKeyDown(wxTreeEvent& event)
+{
+    int x = 1;
 }
 
 void WatchCtrl::OnSize(wxSizeEvent& event)

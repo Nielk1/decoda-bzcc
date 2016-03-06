@@ -95,6 +95,12 @@ void WatchWindow::AddWatch(const wxString& expression)
 
 void WatchWindow::OnKeyDown(wxTreeEvent& event)
 {
+   if (event.GetKeyCode() == WXK_RETURN)
+    {
+        EditLabel(event.GetItem());
+        event.Skip();
+        return;
+    }
 
     if (event.GetKeyCode() == WXK_DELETE ||
         event.GetKeyCode() == WXK_BACK)

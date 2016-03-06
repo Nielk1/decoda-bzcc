@@ -43,7 +43,7 @@ class WatchCtrl : public wxTreeListCtrl
 public:
 
     WatchCtrl(wxWindow *parent, wxWindowID id = -1, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-        long style = wxTR_HIDE_ROOT | wxTR_FULL_ROW_HIGHLIGHT | wxTR_ROW_LINES | wxTR_HAS_BUTTONS, const wxValidator &validator = wxDefaultValidator, const wxString& name = ""); 
+        long style = wxTR_EDIT_LABELS | wxTR_HIDE_ROOT | wxTR_FULL_ROW_HIGHLIGHT | wxTR_ROW_LINES | wxTR_HAS_BUTTONS, const wxValidator &validator = wxDefaultValidator, const wxString& name = ""); 
 
     /**
     * Updates the colors of the panel to match the settings
@@ -75,6 +75,8 @@ public:
      * Called after the user resizes one of of the column headings.
      */
     void OnColumnEndDrag(wxListEvent& event);
+
+    void OnKeyDown(wxTreeEvent& event);
 
     /**
      * Called when the window changes size.
