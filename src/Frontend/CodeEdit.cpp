@@ -128,7 +128,6 @@ void CodeEdit::SetFontColorSettings(const FontColorSettings& settings)
 
     StyleSetBackground(wxSTC_STYLE_LINENUMBER, settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).backColor);
     StyleSetForeground(wxSTC_STYLE_LINENUMBER, settings.GetColors(FontColorSettings::DisplayItem_WindowMargin).foreColor);
-    //SetFoldMarginHiColour(true, settings.GetColors(FontColorSettings::DisplayItem_Window).backColor);
 
     SetCaretForeground(settings.GetColors(FontColorSettings::DisplayItem_CaretLine).foreColor);
     SetCaretLineBackground(settings.GetColors(FontColorSettings::DisplayItem_CaretLine).backColor);
@@ -143,7 +142,6 @@ bool CodeEdit::LoadFile(const wxString& filename)
 bool CodeEdit::SaveFile(const wxString& filename)
 {
     unsigned char bom[3] = { 0xEF, 0xBB, 0xBF };
-    wxString tmp(bom);
     wxFile f;
     if (!f.Open(filename, wxFile::write ))
         return false;

@@ -531,7 +531,6 @@ void Project::RemoveFile(File* file, bool exclude_only)
 void Project::RemoveDirectory(Directory* directory, bool exclude_only)
 {
   std::vector<Directory*>::iterator iterator = m_directories.begin();
-
   while (iterator != m_directories.end())
   {
     if (directory == *iterator)
@@ -549,18 +548,17 @@ void Project::RemoveDirectory(Directory* directory, bool exclude_only)
           }
           ++iterator;
         }
-        delete file;
+        //delete file;
       }
 
       m_directories.erase(iterator);
+      delete directory;
       m_needsSave = true;
       m_needsUserSave = true;
       break;
     }
     ++iterator;
   }
-
-  delete directory;
 }
 
 void Project::CleanUpAfterSession()
@@ -1047,6 +1045,12 @@ bool Project::LoadDirectoryNode(const wxString& baseDirectory, wxXmlNode* node)
 
     for (auto &filename : filenames)
     {
+      wxFileName localPath(filename);
+      localPath.MakeRelativeTo(dir->name);
+      wxString ext(localPath.GetExt().Lower()); 
+      if (ext != "lua" && ext != "txt")
+        continue;
+
       File* file = new File;
 
       file->state = CodeState_Normal;
@@ -1054,9 +1058,6 @@ bool Project::LoadDirectoryNode(const wxString& baseDirectory, wxXmlNode* node)
       file->temporary = false;
       file->status = Status_None;
       file->fileId = ++s_lastFileId;
-
-      wxFileName localPath(filename);
-      localPath.MakeRelativeTo(dir->name);
 
       file->localPath = localPath.GetPath(); 
       file->directoryPath = dir->name;

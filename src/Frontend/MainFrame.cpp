@@ -3433,12 +3433,7 @@ void MainFrame::onRemoveAllSelectedInProjectExplorer(bool exclude_only)
         DeleteProjectFile(files[i], exclude_only);
 
     for (unsigned int i = 0; i < directories.size(); ++i)
-    {
-        //DeleteProjectDirectory(directories[i], exclude_only);
-    }
-
-
-
+        DeleteProjectDirectory(directories[i], exclude_only);
 }
 
 void MainFrame::OnProjectExplorerKeyDown(wxTreeEvent& event)
@@ -4160,7 +4155,7 @@ bool MainFrame::SaveProjectIfNeeded()
         wxString message;
         if (!m_project->GetFileName().IsEmpty())
         {
-            message = "File \'" + m_project->GetFileName() + "\' is modified. Save changes?";
+            message = "The project \'" + m_project->GetFileName() + "\' has been modified. Save changes?";
         }
         else
         {
