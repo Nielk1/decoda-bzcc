@@ -2411,7 +2411,8 @@ void MainFrame::UpdateLineMappingIfNecessary(Project::File* file)
         
         if (openFile->edit->GetIsLineMappingDirty())
         {
-            script->lineMapper.Update( script->source, std::string(openFile->edit->GetText()) );
+            wxString text(openFile->edit->GetText());
+            script->lineMapper.Update( script->source, std::string(text.ToUTF8()) );
             openFile->edit->SetIsLineMappingDirty(false);
         }
 

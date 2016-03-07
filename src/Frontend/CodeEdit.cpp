@@ -245,11 +245,11 @@ void CodeEdit::SetLuaLexer()
 
     SetLexer(wxSTC_LEX_LUA);
 
-    const char* keywords =
-        "and       break     do        else      elseif "
-        "end       false     for       function  if "
-        "in        local     nil       not       or "
-        "repeat    return    then      true      until     while ";
+    const wchar_t* keywords =
+        L"and       break     do        else      elseif "
+        L"end       false     for       function  if "
+        L"in        local     nil       not       or "
+        L"repeat    return    then      true      until     while ";
 
     SetKeyWords(1, keywords);
 
@@ -294,8 +294,8 @@ bool CodeEdit::Untabify(wxString& text) const
 
     assert(m_indentationSize < 32);
 
-    char indentation[32];
-    memset(indentation, ' ', 32);
+    wchar_t indentation[32];
+    memset(indentation, ' ', 32*sizeof(wchar_t));
     indentation[m_indentationSize] = 0;
 
     wxString result;
@@ -486,9 +486,9 @@ bool CodeEdit::GetHoverText(int position, wxString& result)
     
 }
 
-bool CodeEdit::GetIsIdentifierChar(char c) const
+bool CodeEdit::GetIsIdentifierChar(wchar_t c) const
 {
-    return isalnum(c) || c == '_';
+    return iswalnum(c) || c == L'_';
 }
 
 void CodeEdit::ShowToolTip(int position, const wxString& text)
@@ -556,9 +556,9 @@ void CodeEdit::OnCharAdded(wxStyledTextEvent& event)
     // Indent the line to the same indentation as the previous line.
     // Adapted from http://STCntilla.sourceforge.net/STCntillaUsage.html
 
-    char ch = event.GetKey();
+    wchar_t ch = event.GetKey();
 
-    if  (ch == '\r' || ch == '\n')
+    if  (ch == L'\r' || ch == L'\n')
     {
 
         int line        = GetCurrentLine();
@@ -665,11 +665,10 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
         // Search the text.
 
         int line = LineFromPosition(position);
-        int seek = position - PositionFromLine(line);
+        int seek = GetColumn(position); //position - PositionFromLine(line);        
+        wxString text = GetLine(line);
 
-        wxString text = GetLine(LineFromPosition(position));
-
-        if (!isalnum(text[seek]) && joiners.Find(text[seek]) == wxNOT_FOUND)
+        if (!iswalnum(text[seek]) && joiners.Find(text[seek]) == wxNOT_FOUND)
         {
             return false;
         }
@@ -681,15 +680,15 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
 
         while (start > 0 && (GetIsIdentifierChar(text[start - 1]) || joiners.Find(text[start - 1]) != wxNOT_FOUND || text[start - 1] == ')' || text[start - 1] == ']'))
         {
-          if (text[start - 1] == ')' || text[start - 1] == ']')
+          if (text[start - 1] == L')' || text[start - 1] == L']')
           {
-            char open = ')';
-            if (text[start - 1] == ']')
-              open = ']';
+            wchar_t open = L')';
+            if (text[start - 1] == L']')
+              open = L']';
 
-            char close = '(';
-            if (text[start - 1] == ']')
-              close = '[';
+            wchar_t close = L'(';
+            if (text[start - 1] == L']')
+              close = L'[';
 
             start--;
             int paren_stack = 0;
@@ -720,17 +719,17 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
 
         unsigned int end = seek;
 
-        while (end + 1 < text.Length() && (GetIsIdentifierChar(text[end + 1]) || text[end + 1] == '(' || text[end + 1] == '['))
+        while (end + 1 < text.Length() && (GetIsIdentifierChar(text[end + 1]) || text[end + 1] == L'(' || text[end + 1] == L'['))
         {
-          if (text[end + 1] == '(' || text[end + 1] == '[')
+          if (text[end + 1] == L'(' || text[end + 1] == L'[')
           {
-            char open = '(';
-            if (text[end + 1] == '[')
-              open = '[';
+            wchar_t open = L'(';
+            if (text[end + 1] == L'[')
+              open = L'[';
 
-            char close = ')';
-            if (text[end + 1] == '[')
-              close = ']';
+            wchar_t close = L')';
+            if (text[end + 1] == L'[')
+              close = L']';
 
             ++end;
             int paren_stack = 0;
@@ -783,7 +782,7 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
     if (GetLexer() == wxSTC_LEX_LUA)
     {
 
-        int end1 = token.Find('.', true);
+        int end1 = token.Find(L'.', true);
 
         if (end1 == wxNOT_FOUND)
         {
@@ -796,7 +795,7 @@ void CodeEdit::StartAutoCompletion(const wxString& token)
             member = true;
         }
 
-        int end2 = token.Find(':', true);
+        int end2 = token.Find(L':', true);
 
         if (end2 == wxNOT_FOUND)
         {

@@ -217,7 +217,7 @@ private:
     /**
      * Returns true if the character can appear in an identifier name.
      */
-    bool GetIsIdentifierChar(char c) const;
+    bool GetIsIdentifierChar(wchar_t c) const;
 
     /**
      * Gets the complete token that contains the specified position. The joints string
