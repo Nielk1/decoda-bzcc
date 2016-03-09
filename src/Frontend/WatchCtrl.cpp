@@ -45,8 +45,8 @@ WatchCtrl::WatchCtrl(wxWindow *parent, wxWindowID id, const wxPoint& pos, const 
     AddColumn(_("Value"), 0, wxALIGN_LEFT);
     SetColumnEditable(2, false);
     
-    m_columnSize[0] = 0.2f;
-    m_columnSize[1] = 0.1f;
+    m_columnSize[0] = 0.3f;
+    m_columnSize[1] = 0.2f;
     m_columnSize[2] = -100;
 
     UpdateColumnSizes();

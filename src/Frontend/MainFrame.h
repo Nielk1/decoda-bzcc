@@ -355,11 +355,13 @@ public:
     void OnToolsExternalTools(wxCommandEvent& event);
 
 private:
-    void switchPaneShow(wxAuiPaneInfo& pane, bool only_show_mode = false);
+    void switchPaneShow(wxWindow* pane, bool only_show_mode = false);
+    bool IsPaneShown(wxWindow* pane);
 
 public:
     void ShowSearchWindow();
     void ShowWatchWindow();
+    
     /**
      * Called when the user selects Window/Project Explorer from the menu.
      */
@@ -779,6 +781,7 @@ private:
      * Creates the menu for the window.
      */
     void InitializeMenu();
+    void SetCheckPoints();
 
     /**
      * Sets the line that is currently being displayed. This will open

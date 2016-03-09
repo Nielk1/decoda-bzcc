@@ -358,25 +358,25 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     // Add the panes to the manager
     
     m_mgr.AddPane(m_output, wxBOTTOM, wxT("Output"));
-    m_mgr.GetPane(m_output).Name("output");
+    m_mgr.GetPane(m_output).Name("output").MinSize(250, 100);;
 
     m_mgr.AddPane(m_callStack, wxBOTTOM, wxT("Call Stack"));
-    m_mgr.GetPane(m_callStack).Name("callstack");
+    m_mgr.GetPane(m_callStack).Name("callstack").MinSize(250, 100);
 
     m_mgr.AddPane(m_vmList, wxBOTTOM, wxT("Virtual Machines"));
-    m_mgr.GetPane(m_vmList).Name("vmlist");
+    m_mgr.GetPane(m_vmList).Name("vmlist").MinSize(200, 100);
 
     m_mgr.AddPane(m_watch,wxBOTTOM, wxT("Watch"));
-    m_mgr.GetPane(m_watch).Name("watch");
+    m_mgr.GetPane(m_watch).Name("watch").FloatingSize(250, 150).MinSize(250, 100);
 
     m_mgr.AddPane(m_projectExplorer, wxLEFT, wxT("Project Explorer"));
-    m_mgr.GetPane(m_projectExplorer).Name("projectexplorer");
+    m_mgr.GetPane(m_projectExplorer).Name("projectexplorer").MinSize(250, 150);
 
     m_mgr.AddPane(m_breakpointsWindow, wxBOTTOM, wxT("Breakpoints"));
-    m_mgr.GetPane(m_breakpointsWindow).Name("breakpoints");
+    m_mgr.GetPane(m_breakpointsWindow).Name("breakpoints").FloatingSize(250, 180).MinSize(250, 100);
 
     m_mgr.AddPane(m_searchWindow, wxBOTTOM, wxT("Search Results"));
-    m_mgr.GetPane(m_searchWindow).Name("search");
+    m_mgr.GetPane(m_searchWindow).Name("search").MinSize(250, 100);
 
     m_mgr.AddPane(m_notebook, wxCENTER);
     m_mgr.GetPane(m_notebook).Name("notebook");
@@ -640,40 +640,44 @@ void MainFrame::InitializeMenu()
     menuWindow->AppendSeparator();
     menuWindow->Append(ID_MiscOpenInFilter,             _("Open In &Filter"), _("Sets the keyboard focus to the project explorer filter search box"));
     menuWindow->AppendSeparator();
-    menuWindow->Append(ID_WindowProjectExplorer,        _("Project &Explorer"));
-    menuWindow->Append(ID_WindowOutput,                 _("&Output"));
-    menuWindow->Append(ID_WindowCallStack,              _("Call &Stack"));
-    menuWindow->Append(ID_WindowWatch,                  _("&Watch"));
-    menuWindow->Append(ID_WindowBreakpoints,            _("&Breakpoints"));
-    menuWindow->Append(ID_WindowVirtualMachines,        _("&Virtual Machines"));    
-    menuWindow->Append(ID_WindowSearch,                 _("&Search Results"));
+    menuWindow->AppendCheckItem(ID_WindowProjectExplorer,        _("Project &Explorer"));
+    menuWindow->AppendCheckItem(ID_WindowOutput,                 _("&Output"));
+    menuWindow->AppendCheckItem(ID_WindowCallStack,              _("Call &Stack"));
+    menuWindow->AppendCheckItem(ID_WindowWatch,                  _("&Watch"));
+    menuWindow->AppendCheckItem(ID_WindowBreakpoints,            _("&Breakpoints"));
+    menuWindow->AppendCheckItem(ID_WindowVirtualMachines,        _("&Virtual Machines"));
+    menuWindow->AppendCheckItem(ID_WindowSearch,                 _("&Search Results"));
 
     // Help menu.
     wxMenu* menuHelp = new wxMenu;
-    /*menuHelp->Append(ID_HelpContents,                   _("&Contents"));
-    menuHelp->AppendSeparator();
-    menuHelp->Append(ID_HelpSupport,                    _("&Support"));
-    menuHelp->AppendSeparator();*/
     menuHelp->Append(ID_HelpAbout,                      _("&About"));
 
     wxMenuBar* menuBar = new wxMenuBar;
     menuBar->Append( menuFile,                          _("&File"));
     menuBar->Append( menuEdit,                          _("&Edit"));
-    //menuBar->Append( menuProject,                       _("&Project"));
     menuBar->Append( menuDebug,                         _("&Debug"));
     menuBar->Append( m_menuTools,                       _("&Tools"));
     menuBar->Append( menuWindow,                        _("&Window"));
     menuBar->Append( menuHelp,                          _("&Help"));
-
-    //wxMenuBar* menuBar2 = new wxMenuBar;
-    //wxMenu* menuFile2 = new wxMenu;
-    //menuFile2->Append(ID_FileNew, _("&New..."));
-    //menuBar2->Append(menuFile2, _("&File"));
-    //
-    //menuBar2->AddChild(menuBar);
-    
-    //AttachMenuBar(menuBar2);
     AttachMenuBar(menuBar);
+}
+
+void MainFrame::SetCheckPoints()
+{
+    if (IsPaneShown(m_projectExplorer))
+        GetMenuBar()->FindItem(ID_WindowProjectExplorer)->Check();
+    if (IsPaneShown(m_output))
+        GetMenuBar()->FindItem(ID_WindowOutput)->Check();
+    if (IsPaneShown(m_callStack))
+        GetMenuBar()->FindItem(ID_WindowCallStack)->Check();
+    if (IsPaneShown(m_watch))
+        GetMenuBar()->FindItem(ID_WindowWatch)->Check();
+    if (IsPaneShown(m_breakpointsWindow))
+        GetMenuBar()->FindItem(ID_WindowBreakpoints)->Check();
+    if (IsPaneShown(m_vmList))
+        GetMenuBar()->FindItem(ID_WindowVirtualMachines)->Check();
+    if (IsPaneShown(m_searchWindow))
+        GetMenuBar()->FindItem(ID_WindowSearch)->Check();
 }
 
 void MainFrame::OnFileNewProject(wxCommandEvent& WXUNUSED(event))
@@ -1609,63 +1613,74 @@ void MainFrame::OnDebugDeleteAllBreakpoints(wxCommandEvent& event)
     DeleteAllBreakpoints();
 }
 
-void MainFrame::switchPaneShow(wxAuiPaneInfo& pane, bool only_show_mode)
+void MainFrame::switchPaneShow(wxWindow* pane, bool only_show_mode)
 {  
+    wxAuiPaneInfo& pi = m_mgr.GetPane(pane);
+    if (!pi.IsOk())
+        return;
     if (only_show_mode) {
-        if (!pane.IsShown())
-            { pane.Show(); m_mgr.Update(); }
+        if (!pi.IsShown())
+            { pi.Show(); m_mgr.Update(); }
         return;
     }
-    if (!pane.IsShown())
-        pane.Show();
+    if (!pi.IsShown())
+        pi.Show();
     else
-        pane.Hide();
+        pi.Hide();
     m_mgr.Update();
+}
+
+bool MainFrame::IsPaneShown(wxWindow* pane)
+{
+    wxAuiPaneInfo& pi = m_mgr.GetPane(pane);
+    if (!pi.IsOk())
+        return false;
+    return (pi.IsShown());
 }
 
 void MainFrame::OnWindowProjectExplorer(wxCommandEvent& WXUNUSED(event))
 {
-    switchPaneShow(  m_mgr.GetPane(m_projectExplorer) );
+    switchPaneShow( m_projectExplorer );
 }
 
 void MainFrame::OnWindowCallStack(wxCommandEvent& WXUNUSED(event))
 {
-    switchPaneShow( m_mgr.GetPane(m_callStack) );
+    switchPaneShow( m_callStack );
 }
 
 void MainFrame::OnWindowOutput(wxCommandEvent& WXUNUSED(event))
 {
-    switchPaneShow( m_mgr.GetPane(m_output) );
+    switchPaneShow( m_output );
 }
 
 void MainFrame::OnWindowSearch(wxCommandEvent& WXUNUSED(event))
 {
-    switchPaneShow( m_mgr.GetPane(m_searchWindow) );
+    switchPaneShow( m_searchWindow );
 }
 
 void MainFrame::OnWindowWatch(wxCommandEvent& WXUNUSED(event))
 {
-    switchPaneShow( m_mgr.GetPane(m_watch) );
+    switchPaneShow( m_watch );
 }
 
 void MainFrame::OnWindowVirtualMachines(wxCommandEvent& WXUNUSED(event))
 {
-    switchPaneShow( m_mgr.GetPane(m_vmList) );
+    switchPaneShow(m_vmList );
 }
 
 void MainFrame::OnWindowBreakpoints(wxCommandEvent& WXUNUSED(event))
 {
-    switchPaneShow( m_mgr.GetPane(m_breakpointsWindow) );
+    switchPaneShow( m_breakpointsWindow );
 }
 
 void MainFrame::ShowSearchWindow()
 {
-    switchPaneShow( m_mgr.GetPane(m_searchWindow), true );
+    switchPaneShow( m_searchWindow, true );
 }
 
 void MainFrame::ShowWatchWindow()
 {
-    switchPaneShow( m_mgr.GetPane(m_watch), true );
+    switchPaneShow( m_watch, true );
 }
 
 void MainFrame::OnWindowNextDocument(wxCommandEvent& event)
@@ -3968,6 +3983,7 @@ void MainFrame::LoadOptions()
     // Update the current layout.
     m_mgr.LoadPerspective(m_modeLayout[m_mode]);
 
+    SetCheckPoints();
 }
 
 void MainFrame::LoadExternalTool(wxXmlNode* node)
@@ -5400,7 +5416,7 @@ void MainFrame::StartProcess(const wxString& command, const wxString& commandArg
     if (!DebugFrontend::Get().Start(command, commandArguments, workingDirectory, symbolsDirectory, debug, startBroken))
     {
         // removed error message box ( error in output window). Show output window if hidden
-        switchPaneShow( m_mgr.GetPane(m_output), true );
+        switchPaneShow( m_output, true );
 
     }
     else if (debug)
