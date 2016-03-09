@@ -225,6 +225,7 @@ private:
     DECLARE_EVENT_TABLE()
 };
 
+class wxEditTextCtrl;
 
 // this is the "true" control
 class  wxTreeListMainWindow: public wxScrolledWindow
@@ -988,7 +989,7 @@ void wxEditTextCtrl::OnChar( wxKeyEvent &event )
             wxPendingDelete.Append(this);
 
         m_finished = true;
-        m_owner->SetFocus(); // This doesn't work. TODO.
+        m_owner->SetFocus();
 
         return;
     }
@@ -1001,7 +1002,7 @@ void wxEditTextCtrl::OnChar( wxKeyEvent &event )
             wxPendingDelete.Append(this);
 
         m_finished = true;
-        m_owner->SetFocus(); // This doesn't work. TODO.
+        m_owner->SetFocus();
 
         return;
     }
@@ -1033,7 +1034,15 @@ void wxEditTextCtrl::OnKillFocus( wxFocusEvent &event )
 {
     if (m_finished)
     {
-        event.Skip();
+        event.Skip();        
+        
+        /*wxFocusEvent *fe = new wxFocusEvent;
+        fe->SetWindow(m_owner);
+        QueueEvent(fe);*/ //tudu
+        
+        Destroy();
+        delete this;
+
         return;
     }
 
@@ -1051,6 +1060,14 @@ void wxEditTextCtrl::OnKillFocus( wxFocusEvent &event )
     {
         m_owner->OnRenameCancel();
     }
+    event.Skip();
+    
+    /*wxFocusEvent *fe = new wxFocusEvent;
+    fe->SetWindow(m_owner);
+    QueueEvent(fe);*/ //tudu
+
+    Destroy();
+    delete this;
 }
 
 //-----------------------------------------------------------------------------
@@ -3580,6 +3597,7 @@ void wxTreeListMainWindow::EditLabel (const wxTreeItemId& item, int column, cons
     w = header_win->GetColumnWidth (column); // width of column
 
     style |= wxBORDER_NONE;
+    style |= wxTE_PROCESS_ENTER;
 
     wxClientDC dc (this);
     PrepareDC (dc);
@@ -3591,7 +3609,6 @@ void wxTreeListMainWindow::EditLabel (const wxTreeItemId& item, int column, cons
     wxEditTextCtrl *textCtrl = new wxEditTextCtrl (this, -1, &m_renameAccept, &m_renameRes,
                                                this, text,
                                                wxPoint (x, y), wxSize (w, h), style);
-
     if (!initText.empty())
     {
         textCtrl->SetValue(initText);
