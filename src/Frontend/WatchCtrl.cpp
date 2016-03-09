@@ -31,7 +31,6 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 BEGIN_EVENT_TABLE(WatchCtrl, wxTreeListCtrl)
     EVT_SIZE(                               WatchCtrl::OnSize)
     EVT_LIST_COL_END_DRAG(wxID_ANY,         WatchCtrl::OnColumnEndDrag)
-    //EVT_TREE_KEY_DOWN(wxID_ANY, WatchCtrl::OnKeyDown)
 END_EVENT_TABLE()
 
 WatchCtrl::WatchCtrl(wxWindow *parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxValidator &validator, const wxString& name)
@@ -135,7 +134,7 @@ void WatchCtrl::GetColumnSizes(int totalSize, int columnSize[s_numColumns]) cons
     {
         totalSize -= columnSize[i];
     }
-    columnSize[s_numColumns - 1] = totalSize;
+    columnSize[s_numColumns - 1] = totalSize-20;
 }
 
 bool WatchCtrl::AddCompoundExpression(wxTreeItemId item, wxXmlNode* root)
@@ -241,7 +240,7 @@ bool WatchCtrl::AddCompoundExpression(wxTreeItemId item, wxXmlNode* root)
 
 void WatchCtrl::UpdateItem(wxTreeItemId item)
 {
-
+    SetItemFont(item, m_valueFont);
     if (m_vm != 0)
     {
 
@@ -256,7 +255,6 @@ void WatchCtrl::UpdateItem(wxTreeItemId item)
         }
 
         DeleteChildren(item);
-        SetItemFont(item, m_valueFont);
 
         if (result.IsEmpty())
         {
@@ -343,11 +341,6 @@ void WatchCtrl::OnColumnEndDrag(wxListEvent& event)
 
     UpdateColumnSizes();
 
-}
-
-void WatchCtrl::OnKeyDown(wxTreeEvent& event)
-{
-    int x = 1;
 }
 
 void WatchCtrl::OnSize(wxSizeEvent& event)
