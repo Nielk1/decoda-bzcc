@@ -358,25 +358,25 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     // Add the panes to the manager
     
     m_mgr.AddPane(m_output, wxBOTTOM, wxT("Output"));
-    m_mgr.GetPane(m_output).Name("output").MinSize(250, 100);;
+    m_mgr.GetPane(m_output).Name("output").MinSize(250, 100).Layer(1);
 
-    m_mgr.AddPane(m_callStack, wxBOTTOM, wxT("Call Stack"));
+    m_mgr.AddPane(m_callStack, wxRIGHT, wxT("Call Stack"));
     m_mgr.GetPane(m_callStack).Name("callstack").MinSize(250, 100);
 
-    m_mgr.AddPane(m_vmList, wxBOTTOM, wxT("Virtual Machines"));
+    m_mgr.AddPane(m_vmList, wxRIGHT, wxT("Virtual Machines"));
     m_mgr.GetPane(m_vmList).Name("vmlist").MinSize(200, 100);
 
     m_mgr.AddPane(m_watch,wxBOTTOM, wxT("Watch"));
-    m_mgr.GetPane(m_watch).Name("watch").FloatingSize(250, 150).MinSize(250, 100);
+    m_mgr.GetPane(m_watch).Name("watch").FloatingSize(250, 100).MinSize(250, 100);
 
     m_mgr.AddPane(m_projectExplorer, wxLEFT, wxT("Project Explorer"));
-    m_mgr.GetPane(m_projectExplorer).Name("projectexplorer").MinSize(250, 150);
+    m_mgr.GetPane(m_projectExplorer).Name("projectexplorer").MinSize(250, 100);
 
-    m_mgr.AddPane(m_breakpointsWindow, wxBOTTOM, wxT("Breakpoints"));
-    m_mgr.GetPane(m_breakpointsWindow).Name("breakpoints").FloatingSize(250, 180).MinSize(250, 100);
+    m_mgr.AddPane(m_breakpointsWindow, wxRIGHT, wxT("Breakpoints"));
+    m_mgr.GetPane(m_breakpointsWindow).Name("breakpoints").FloatingSize(250, 100).MinSize(250, 100);
 
     m_mgr.AddPane(m_searchWindow, wxBOTTOM, wxT("Search Results"));
-    m_mgr.GetPane(m_searchWindow).Name("search").MinSize(250, 100);
+    m_mgr.GetPane(m_searchWindow).Name("search").MinSize(250, 100).Layer(1);
 
     m_mgr.AddPane(m_notebook, wxCENTER);
     m_mgr.GetPane(m_notebook).Name("notebook");
@@ -392,8 +392,8 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     m_modeLayout[Mode_Debugging] = m_mgr.SavePerspective();
     
     // Save the default configuration for editing.
-    m_mgr.GetPane(m_watch).Show(false);
-    m_mgr.GetPane(m_callStack).Show(false);
+    //m_mgr.GetPane(m_watch).Show(false);
+    //m_mgr.GetPane(m_callStack).Show(false);
     m_mgr.GetPane(m_vmList).Show(false);
     m_modeLayout[Mode_Editing] = m_mgr.SavePerspective();
 

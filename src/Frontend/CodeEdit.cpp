@@ -517,7 +517,7 @@ void CodeEdit::ShowToolTip(int position, const wxString& text)
 
     if (showToolTip)
     {
-        m_tipWindow = new ToolTipWindow(this, text);
+        m_tipWindow = new ToolTipWindow(this, wxString::FromUTF8(text));
     }
 
 }
