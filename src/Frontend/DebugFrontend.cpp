@@ -19,8 +19,6 @@ You should have received a copy of the GNU General Public License
 along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-//#undef _UNICODE
-//#undef UNICODE
 #include "DebugFrontend.h"
 #include "DebugEvent.h"
 #include "CriticalSectionLock.h"
@@ -672,6 +670,13 @@ DWORD WINAPI DebugFrontend::StaticEventThreadProc(LPVOID param)
 
 void DebugFrontend::Continue(unsigned int vm)
 {
+    HWND hwnd = GetProcessWindow(m_processId);
+    if (::IsWindow(hwnd))
+    {
+        SetForegroundWindow(hwnd);
+        SetFocus(hwnd);
+    }
+
     m_state = State_Running;
     m_commandChannel.WriteUInt32(CommandId_Continue);
     m_commandChannel.WriteUInt32(vm);

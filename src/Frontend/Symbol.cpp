@@ -31,6 +31,7 @@ Symbol::Symbol(Symbol *_parent, const wxString& _name, unsigned int _line, Symbo
   :requiredModule(wxString())
 {
   parent = _parent;
+  assert(!_name.empty());
   name   = _name;
   line   = _line;
   type   = _type;
@@ -39,6 +40,7 @@ Symbol::Symbol(Symbol *_parent, const wxString& _name, unsigned int _line, Symbo
   {
     parent->children.push_back(this);
   }
+  typeSymbol = nullptr;
 }
 
 bool Symbol::operator<(const Symbol& symbol) const

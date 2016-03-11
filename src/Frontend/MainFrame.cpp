@@ -2794,7 +2794,7 @@ void MainFrame::OnBreak(wxDebugEvent& event)
     UpdateForNewState();
 
     // Bring ourself to the top of the z-order.
-    BringToFront();
+    //BringToFront();
 
     ClearBreakLineMarker();
 
@@ -2877,6 +2877,8 @@ void MainFrame::OnBreak(wxDebugEvent& event)
     // Set the VM the debugger is working with to the one that this event came
     // from. Note this will update the watch values.
     SetContext(event.GetVm(), stackLevel);
+    SetForegroundWindow(m_hWnd);
+    SetFocus();
 
 }
 
