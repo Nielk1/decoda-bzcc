@@ -771,6 +771,7 @@ void MainFrame::SetProject(Project* project)
     m_breakpointsWindow->SetProject(m_project);
 
     m_autoCompleteManager.BuildFromProject(project);
+    LoadAllWatchesInProject();
 
 }
 
@@ -4152,6 +4153,7 @@ bool MainFrame::SaveProject(bool promptForName)
     if (fileName.empty())
         return false;
 
+    SaveAllWatchesInProject();
     if (!m_project->Save(fileName, false))
     {
         wxMessageBox("Error saving project", s_applicationName, wxOK | wxICON_ERROR, this);
@@ -4185,6 +4187,7 @@ bool MainFrame::SaveProjectIfNeeded()
         }
         return false;
     }
+    SaveAllWatchesInProject();
     wxString filename = m_project->GetFileName();
     m_project->Save(filename, true);
     return true;
@@ -4978,6 +4981,20 @@ void MainFrame::DeleteAllBreakpoints()
     m_breakpointsWindow->UpdateBreakpoints();
 
 }
+
+void MainFrame::LoadAllWatchesInProject()
+{
+	const std::vector<wxString> &watches = m_project->GetWatches();
+	m_watch->SetWatches(watches);
+}
+
+void MainFrame::SaveAllWatchesInProject()
+{
+    std::vector<wxString> watches;
+    m_watch->GetWatches(&watches);
+    m_project->SetWatches(watches);
+}
+
 
 void MainFrame::CheckReload()
 {
@@ -5954,23 +5971,6 @@ void MainFrame::UpdateForNewFile(Project::File* file)
     m_symbolParser->QueueForParsing(file);
     m_autoCompleteManager.BuildFromProject(m_project);
 }
-
-/*void MainFrame::SetFileStatus(Project::File* file, SourceControl::Status status)
-{
-    if (status == SourceControl::Status_CheckedOutByUser)
-    {
-        file->status = Project::Status_CheckedOut;
-    }
-    else if (status == SourceControl::Status_CheckedIn ||
-             status == SourceControl::Status_CheckedOut)
-    {
-        file->status = Project::Status_CheckedIn;
-    }
-    else
-    {
-        file->status = Project::Status_None;
-    }
-}*/
 
 const wxString& MainFrame::GetApplicationName()
 {

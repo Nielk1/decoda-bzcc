@@ -756,6 +756,11 @@ public:
      */
     void DeleteAllBreakpoints();
 
+
+    void LoadAllWatchesInProject();
+    void SaveAllWatchesInProject();
+
+
     /**
      * Maps a line number from the currently open page to the backend script.
      */

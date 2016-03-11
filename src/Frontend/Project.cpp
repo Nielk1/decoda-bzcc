@@ -307,7 +307,6 @@ Project::File* Project::AddFile(const wxString& fileName)
     file->scriptIndex   = -1;
     file->temporary     = false;
     file->fileName      = fileName;
-    file->status        = Status_None;
     file->fileId        = ++s_lastFileId;
 
     if (fileName.IsEmpty())
@@ -403,7 +402,6 @@ Project::Directory* Project::AddDirectory(const wxString& directoryStr)
     file->state = CodeState_Normal;
     file->scriptIndex = -1;
     file->temporary = false;
-    file->status = Status_None;
     file->fileId = ++s_lastFileId;
 
     file->localPath = localPath.GetPath();
@@ -435,7 +433,6 @@ Project::File* Project::AddTemporaryFile(unsigned int scriptIndex)
     file->scriptIndex   = scriptIndex;
     file->temporary     = true;
     file->fileName      = script->name.c_str();
-    file->status        = Status_None;
     file->fileId        = ++s_lastFileId;
     file->localPath     = "Debug Temporary Files";
 
@@ -453,7 +450,6 @@ Project::File* Project::AddTemporaryFile(const wxString& fileName)
     file->scriptIndex   = -1;
     file->temporary     = true;
     file->fileName      = fileName;
-    file->status        = Status_None;
     file->fileId        = ++s_lastFileId;
 
     if (fileName.IsEmpty())
@@ -756,7 +752,17 @@ void Project::DeleteAllBreakpoints(File* file)
         }    
 
     }
+}
 
+void Project::SetWatches(const std::vector<wxString>& watches)
+{
+    m_watches.assign(watches.begin(), watches.end());
+    m_needsUserSave = true;
+}
+
+const std::vector<wxString>& Project::GetWatches()
+{
+    return m_watches;
 }
 
 wxXmlNode* Project::SaveFileNode(const wxString& baseDirectory, const File* file)
@@ -965,6 +971,25 @@ bool Project::LoadBreakpointNode(wxXmlNode* root, std::vector<unsigned int>& bre
 
 }
 
+bool Project::LoadWatchesNode(wxXmlNode* root)
+{
+    if (root->GetName() != "watches")
+       return false;
+
+    m_watches.clear();
+    wxXmlNode* node = root->GetChildren();
+    while (node != NULL)
+    {
+        wxString watch;
+        if (ReadXmlNode(node, wxT("watch"), watch))
+        {
+            m_watches.push_back(watch);
+        }
+        node = node->GetNext();    
+    }
+    return true;
+}
+
 bool Project::LoadFileNode(const wxString& baseDirectory, wxXmlNode* node)
 {
 
@@ -978,7 +1003,6 @@ bool Project::LoadFileNode(const wxString& baseDirectory, wxXmlNode* node)
     file->state         = CodeState_Normal;
     file->scriptIndex   = -1;
     file->temporary     = false;
-    file->status        = Status_None;
     file->fileId        = ++s_lastFileId;
 
     wxXmlNode* child = node->GetChildren();
@@ -1056,7 +1080,6 @@ bool Project::LoadDirectoryNode(const wxString& baseDirectory, wxXmlNode* node)
       file->state = CodeState_Normal;
       file->scriptIndex = -1;
       file->temporary = false;
-      file->status = Status_None;
       file->fileId = ++s_lastFileId;
 
       file->localPath = localPath.GetPath(); 
@@ -1194,6 +1217,15 @@ bool Project::SaveUserSettings(const wxString& fileName)
             filesNode->AddChild(node);
         }
     }
+    
+    const std::vector<wxString>& w = GetWatches();
+    if (!w.empty()) 
+    {
+        wxXmlNode* watches = new wxXmlNode(wxXML_ELEMENT_NODE, "watches");
+        for (int i = 0,e=w.size(); i<e; ++i)
+          watches->AddChild(WriteXmlNode("watch", w[i]));
+        root->AddChild(watches);
+    }
 
     if (filesNode != NULL)
     {
@@ -1260,7 +1292,8 @@ bool Project::LoadUserSettings(const wxString& fileName)
         || ReadXmlNode(node, "working_directory",   m_workingDirectory)
         || ReadXmlNode(node, "symbols_directory",   m_symbolsDirectory)
         || LoadUserFilesNode(baseDirectory, node)
-        || LoadOpenFilesNode(node);
+        || LoadOpenFilesNode(node)
+        || LoadWatchesNode(node);
         
         node = node->GetNext();
 

@@ -93,6 +93,27 @@ void WatchWindow::AddWatch(const wxString& expression)
 
 }
 
+void WatchWindow::SetWatches(const std::vector<wxString>& watches)
+{
+    DeleteChildren(m_root);
+    PrependItem(m_root, "");
+    for (int i=0,e=watches.size();i<e;++i)
+        AddWatch(watches[i]);
+}
+
+void WatchWindow::GetWatches(std::vector<wxString>* watches)
+{
+    wxTreeItemIdValue cookie;
+    wxTreeItemId item = GetFirstChild(m_root, cookie);
+    while (item.IsOk())
+    {
+        wxString watch = GetItemText(item);
+        if (!watch.IsEmpty())
+            watches->push_back(watch);
+        item = GetNextChild(m_root, cookie);   
+    }
+}
+
 void WatchWindow::OnKeyDown(wxTreeEvent& event)
 {
     if (event.GetKeyCode() == WXK_DELETE ||

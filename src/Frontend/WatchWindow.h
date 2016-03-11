@@ -49,6 +49,9 @@ public:
      */
     void AddWatch(const wxString& expression);
 
+    void SetWatches(const std::vector<wxString>& watches);
+    void GetWatches(std::vector<wxString>* watches);
+
     /**
      * Called when the user presses a key.
      */

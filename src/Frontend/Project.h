@@ -46,13 +46,6 @@ class Project
 
 public:
 
-    enum Status
-    {
-        Status_None,
-        Status_CheckedIn,
-        Status_CheckedOut,
-    };
-
     struct File
     {
 
@@ -66,7 +59,6 @@ public:
         wxFileName                  fileName;
         std::vector<unsigned int>   breakpoints;
         wxString                    tempName;
-        Status                      status;
 
         wxString                    type;       // Lua, etc.        
         
@@ -287,6 +279,10 @@ public:
      */
     void DeleteAllBreakpoints(File* file);
 
+    // Load/save watches list
+    void SetWatches(const std::vector<wxString>& watches);
+    const std::vector<wxString>& GetWatches();
+
     /**
     * Gets the base directory path
     */
@@ -370,6 +366,8 @@ private:
      */
     bool LoadBreakpointNode(wxXmlNode* root, std::vector<unsigned int>& breakpoints);
 
+    bool LoadWatchesNode(wxXmlNode* root);
+
     /**
      * Writes the user options file (which stores project information like the
      * executable to run that's specific to a user) to the specified file.
@@ -422,6 +420,9 @@ private:
     unsigned int             m_tempIndex;
                
     wxString                 m_baseDirectory;
+
+    
+    std::vector<wxString>    m_watches;
 };
 
 #endif
