@@ -67,7 +67,7 @@ BEGIN_EVENT_TABLE(ProjectExplorerWindow, wxPanel)
 END_EVENT_TABLE()
 
 ProjectExplorerWindow::ProjectExplorerWindow(wxWindow* parent, wxWindowID winid)
-    : wxPanel(parent, winid)
+    : wxPanel(parent, winid), first_click(false)
 {
     SetSize(250, 300);
 
@@ -577,6 +577,12 @@ void ProjectExplorerWindow::OnTreeItemContextMenu(wxTreeEvent& event)
 
 void ProjectExplorerWindow::OnTreeItemSelectionChanged(wxTreeEvent& event)
 {
+    if (!first_click)
+    {
+        first_click  = true;
+        return; // fix wxWidgets bug
+    }
+
     // HATE: So when windows deletes a treeview item it sends a ItemSelectionChange
     // event which in this code will cause the SelectItem function to be called
     // this will cause the DeleteAllItems function to bail but will not unfreeze
@@ -594,7 +600,9 @@ void ProjectExplorerWindow::OnTreeItemSelectionChanged(wxTreeEvent& event)
 
     if (item.IsOk())
     {
+        m_tree->Freeze();
         m_tree->SelectItem(item);
+        m_tree->Thaw();
         ItemData* itemData = GetDataForItem(item);
 
         if (itemData != NULL && itemData->file != NULL && itemData->isFile)

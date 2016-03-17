@@ -48,6 +48,7 @@ class ProjectFileInfoCtrl;
 class ProjectExplorerWindow : public wxPanel
 {
 	friend class MainFrame;
+    bool first_click;
 
 public:
 

@@ -65,14 +65,13 @@ public:
      * string is in the format used by STCntilla to display autocompletions.
      */
     void GetMatchingItems(const wxString& token, const wxVector<wxString> &prefixes, bool member, bool function, wxString& items, const wxString& fullToken, wxVector<wxString> &tooltips) const;
-
     void ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes, bool parsing_assignment = false) const;
 
-private:
+    void ClearEntries(const Project::File *file);
 
+private:
     struct Entry
     {
-
         Entry(const wxString& name, Type type, const Project::File *file, Symbol *symbol);
         ~Entry();
         bool operator<(const Entry& entry) const;
@@ -84,7 +83,6 @@ private:
         wxString    scope;
         const Project::File *file;
         Symbol *symbol;
-
     };
 
     /**
@@ -93,16 +91,13 @@ private:
     void BuildFromFile(const Project::File* file);
 
 private:
-
     std::vector<Entry>    m_entries;
     std::vector<Entry>    m_prefixModules;
     std::vector<Entry>    m_prefixNames;
     std::vector<Entry>    m_assignments;
-
     std::vector<Entry>    m_languageEntries;
     bool                  m_firstBuild = true;
-
-    std::vector<Symbol *> m_symbols;
+    std::vector<Symbol*>  m_symbols;
 };
 
 #endif

@@ -158,7 +158,7 @@ void SymbolParser::OnSymbolsParsed(SymbolParserEvent& event)
         {
 
             ClearVector(file->symbols);
-            file->symbols = event.GetSymbols();
+            file->symbols.swap(event.GetSymbols());
 
             // Pass along the event to the specified event handler.
             if (m_eventHandler != NULL)

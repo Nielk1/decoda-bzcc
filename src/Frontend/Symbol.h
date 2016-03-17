@@ -34,6 +34,7 @@ enum class SymbolSearch
 
 enum class SymbolType : int
 {
+  Unknown    = 0x00,
   Function   = 0x01,
   Type       = 0x02,
   Module     = 0x04,
@@ -56,14 +57,10 @@ inline bool operator & (SymbolType lhs, SymbolType rhs)
 
 class Symbol
 {
-    
 public:
-
     Symbol();
     Symbol(Symbol *parent, const wxString& name, unsigned int line, SymbolType type = SymbolType::Function);
-
     bool operator<(const Symbol& entry) const;
-
     static const SymbolType Type_Standard = (SymbolType)((int)SymbolType::Function | (int)SymbolType::Type | (int)SymbolType::Module | (int)SymbolType::Variable);
 public:
 
@@ -75,7 +72,6 @@ public:
 
   Symbol*             parent = nullptr;
   Symbol*             typeSymbol = nullptr;
-
   wxVector<Symbol *>  children;
   wxString            name;
   unsigned int        line;

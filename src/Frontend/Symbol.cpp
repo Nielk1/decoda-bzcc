@@ -25,6 +25,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 Symbol::Symbol()
 {
     line = 0;
+    type = SymbolType::Unknown;
 }
 
 Symbol::Symbol(Symbol *_parent, const wxString& _name, unsigned int _line, SymbolType _type)
@@ -35,11 +36,8 @@ Symbol::Symbol(Symbol *_parent, const wxString& _name, unsigned int _line, Symbo
   name   = _name;
   line   = _line;
   type   = _type;
-
   if (parent)
-  {
     parent->children.push_back(this);
-  }
   typeSymbol = nullptr;
 }
 
@@ -69,7 +67,6 @@ wxString Symbol::GetScope(int level)
     else
       return name;
   }
-
   return "";
 }
 
@@ -98,7 +95,6 @@ Symbol *Symbol::GetCurrentModule()
   {
     return parent->GetCurrentModule();
   }
-
   return nullptr;
 }
 
@@ -107,8 +103,6 @@ wxString Symbol::GetTooltip()
   wxString ret;
   if (typeSymbol)
     ret += typeSymbol->name + " ";
-
   ret += name + " ";
-
   return ret;
 }

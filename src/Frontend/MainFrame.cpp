@@ -3385,6 +3385,7 @@ void MainFrame::OnProjectExplorerItemSelected(wxTreeEvent& event)
     if (data != NULL && data->file != NULL && data->isFile)
     {
         Project::File *dataFile = (Project::File *)data->file;
+
         OpenFile* file = OpenProjectFile(dataFile);
 
         if (file == NULL)
@@ -4458,6 +4459,7 @@ void MainFrame::DeleteProjectFile(Project::File* file, bool exclude_only)
     if (!file->temporary)
       m_project->RemoveFile(file, exclude_only);
     m_breakpointsWindow->RemoveFile(file);
+    m_autoCompleteManager.ClearEntries(file);
     m_projectExplorer->ClearSelection();
 }
 
@@ -4476,6 +4478,7 @@ void MainFrame::DeleteProjectDirectory(Project::Directory* directory, bool exclu
       }
     }
     m_breakpointsWindow->RemoveFile(file);
+    m_autoCompleteManager.ClearEntries(file);
   }
 
   m_projectExplorer->RemoveDirectory(directory);
@@ -5350,6 +5353,7 @@ void MainFrame::CleanUpTemporaryFiles()
     for (unsigned int i = 0; i < files.size(); ++i)
     {
         m_project->RemoveFile(files[i], false);
+        m_autoCompleteManager.ClearEntries(files[i]);
     }
 
     m_breakpointsWindow->UpdateBreakpoints();
@@ -5938,7 +5942,8 @@ void MainFrame::OnSymbolsParsed(SymbolParserEvent& event)
         if (!event.GetIsFinalQueueItem())
         {
           //Don't add symbol data yet.
-          file->symbolsUpdated = true;
+          if (file)
+            file->symbolsUpdated = true;
           return;
         }
         else
@@ -5951,13 +5956,14 @@ void MainFrame::OnSymbolsParsed(SymbolParserEvent& event)
             m_projectExplorer->SaveExpansion();
             m_projectExplorer->Rebuild();
             m_projectExplorer->LoadExpansion();
+            file->symbolsUpdated = true;
 
             m_autoCompleteManager.BuildFromProject(m_project);
             return;
         }
     }
 
-    if (file != NULL)
+    if (file)
     {
         m_projectExplorer->UpdateFile(file);
         file->symbolsUpdated = true;

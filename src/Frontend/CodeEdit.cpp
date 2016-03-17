@@ -653,6 +653,7 @@ void CodeEdit::OnModified(wxStyledTextEvent& event)
 
 void CodeEdit::CreateContextMenu(wxStyledTextEvent& event)
 {
+    int x = 1;
     //todo AddToPopUp("Go To Definition", idcmdGotoDefinition);
 }
 

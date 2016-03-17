@@ -24,11 +24,11 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 DEFINE_EVENT_TYPE(wxEVT_SYMBOL_PARSER_EVENT)
 
-SymbolParserEvent::SymbolParserEvent(unsigned int fileId, const std::vector<Symbol*>& symbols, bool isFinalQueueItem)
+SymbolParserEvent::SymbolParserEvent(unsigned int fileId, std::vector<Symbol*>& symbols, bool isFinalQueueItem)
     : wxEvent(0, wxEVT_SYMBOL_PARSER_EVENT)
 {
     m_fileId  = fileId;
-    m_symbols = symbols;
+    m_symbols.swap(symbols);
     m_isFinalQueueItem = isFinalQueueItem;
 }
 
@@ -42,7 +42,7 @@ unsigned int SymbolParserEvent::GetFileId() const
     return m_fileId;
 }
 
-const std::vector<Symbol*>& SymbolParserEvent::GetSymbols() const
+std::vector<Symbol*>& SymbolParserEvent::GetSymbols()
 {
     return m_symbols;
 }
