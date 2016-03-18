@@ -68,6 +68,7 @@ public:
     void ParsePrefix(wxString& prefix, const Project::File *file, int current_line, wxVector<wxString> &prefixes, bool parsing_assignment = false) const;
 
     void ClearEntries(const Project::File *file);
+    void ClearAllEntries();
 
 private:
     struct Entry

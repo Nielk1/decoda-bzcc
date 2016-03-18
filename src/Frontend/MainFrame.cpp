@@ -770,6 +770,7 @@ void MainFrame::SetProject(Project* project)
     m_symbolParser->SetProject(m_project);
     m_breakpointsWindow->SetProject(m_project);
 
+    m_autoCompleteManager.ClearAllEntries();
     m_autoCompleteManager.BuildFromProject(project);
     LoadAllWatchesInProject();
 
@@ -1274,8 +1275,13 @@ void MainFrame::OnProjectAddNewFile(wxCommandEvent& WXUNUSED(event))
         wxString projectPath = projectFileName.GetPathWithSep();
         wxString selectedName = m_projectExplorer->GetSelectedDirectoryName();
 
-        if (selectedName.IsEmpty() == false)
-          projectPath = selectedName;
+        if (!selectedName.IsEmpty())
+        {
+            if (selectedName.Find("Debug Temporary Files") == -1)
+            {
+                projectPath = selectedName;
+            }
+        }
 
         NewFileDialog dialog(this, m_project->GetTemplates());
         dialog.SetPath(projectPath);
@@ -5348,12 +5354,16 @@ void MainFrame::CleanUpTemporaryFiles()
       }
     }
 
+    for (unsigned int i = 0; i < files.size(); ++i)
+    {
+       m_autoCompleteManager.ClearEntries(files[i]);
+    }
+
     m_projectExplorer->RemoveFiles(files);
 
     for (unsigned int i = 0; i < files.size(); ++i)
     {
         m_project->RemoveFile(files[i], false);
-        m_autoCompleteManager.ClearEntries(files[i]);
     }
 
     m_breakpointsWindow->UpdateBreakpoints();
@@ -5956,7 +5966,8 @@ void MainFrame::OnSymbolsParsed(SymbolParserEvent& event)
             m_projectExplorer->SaveExpansion();
             m_projectExplorer->Rebuild();
             m_projectExplorer->LoadExpansion();
-            file->symbolsUpdated = true;
+            if (file)
+                file->symbolsUpdated = true;
 
             m_autoCompleteManager.BuildFromProject(m_project);
             return;

@@ -50,8 +50,7 @@ AutoCompleteManager::AutoCompleteManager()
  
 AutoCompleteManager::~AutoCompleteManager()
 {
-    std::vector<Symbol *>::iterator it = m_symbols.begin(), it_end = m_symbols.end();
-    for(;it!=it_end;++it) {delete (*it);};
+    ClearAllEntries();
 }
 
 void AutoCompleteManager::ClearEntries(const Project::File *file)
@@ -76,11 +75,18 @@ void AutoCompleteManager::ClearEntries(const Project::File *file)
   ClearFromEntries(m_prefixModules, file);
   ClearFromEntries(m_prefixNames, file);
   ClearFromEntries(m_assignments, file);
-  ClearFromEntries(m_languageEntries, file);
+ // ClearFromEntries(m_languageEntries, file);
 
   if (removedSymbols.empty())
       return;
- 
+
+#ifdef _DEBUG
+   wxString temp("Unload symbols: ");
+   temp.Append(file->fileName.GetFullName());
+   temp.Append("\r\n");
+   OutputDebugString(temp);
+#endif
+
   //Remove symbols from the deleted entries
   for (size_t i = 0; i < m_symbols.size();)
   {
@@ -101,6 +107,17 @@ void AutoCompleteManager::ClearEntries(const Project::File *file)
     if (!deleted)
       ++i;
    }
+}
+
+void AutoCompleteManager::ClearAllEntries()
+{
+    m_entries.clear();
+    m_prefixModules.clear();
+    m_prefixNames.clear();
+    m_assignments.clear();
+    std::vector<Symbol *>::iterator it = m_symbols.begin(), it_end = m_symbols.end();
+    for(;it!=it_end;++it) {delete (*it);};
+    m_symbols.clear();
 }
 
 void AutoCompleteManager::BuildFromProject(const Project* project)
@@ -150,23 +167,24 @@ void AutoCompleteManager::BuildFromProject(const Project* project)
     }
   }
 
-  if (!updatedFiles.empty()) //todo
-  {
-      OutputDebugString(L"-------------------------\r\n");
-      for (const Project::File *file : updatedFiles)
-      {
-        wxString temp("Update for file:");
-        temp.Append(file->fileName.GetFullName());
-        temp.Append("\r\n");
-        OutputDebugString(temp);
-      }
-  }
-
   //Clear entries
   for (const Project::File *file : updatedFiles)
   {
     ClearEntries(file);
   }
+
+#ifdef _DEBUG
+  if (!updatedFiles.empty())
+  {
+      for (const Project::File *file : updatedFiles)
+      {
+        wxString temp("Load symbols: ");
+        temp.Append(file->fileName.GetFullName());
+        temp.Append("\r\n");
+        OutputDebugString(temp);
+      }
+  }
+#endif
 
   //Rebuild symbols
   for (const Project::File *file : updatedFiles)
