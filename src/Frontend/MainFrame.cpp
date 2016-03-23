@@ -3655,38 +3655,33 @@ void MainFrame::FindText(OpenFile* file, const wxString& text, int flags)
     bool firstSearch = false;
     bool passedStart = false;
 
-    if (file->edit->GetCurrentPos() != m_lastFindPosition)
-    {
-        m_findStart = file->edit->GetCurrentPos();
-        firstSearch = true;
-    }
-
     int searchStart = file->edit->GetCurrentPos();
     int searchEnd   = file->edit->GetLength();
 
-    int f = 0;
+    if (searchStart != m_lastFindPosition)
+    {
+        m_findStart = searchStart;
+        firstSearch = true;
+    }
 
+
+    int f = 0;
     if (flags & wxFR_WHOLEWORD)
     {
         f |= wxSTC_FIND_WHOLEWORD;
     }
-
     if (flags & wxFR_MATCHCASE)
     {
         f |= wxSTC_FIND_MATCHCASE;
     }
-
     if (!(flags & wxFR_DOWN))
     {
         searchEnd = 0;
-
         if (file->edit->GetCurrentPos() == m_lastFindPosition)
         {
             --searchStart;
         }
-
     }
-
 
     int length = searchEnd - searchStart; //todo
     int start = file->edit->FindText(searchStart, searchEnd, text, f);
@@ -3728,7 +3723,7 @@ void MainFrame::FindText(OpenFile* file, const wxString& text, int flags)
     {
 
         // Select the found text.
-        file->edit->SetSelection(start, start + length);
+        file->edit->SetSelection(start, start + text.Length());
 
         int firstLine = file->edit->GetFirstVisibleLine();
         int totalLines = file->edit->LinesOnScreen();
@@ -3767,7 +3762,7 @@ void MainFrame::FindText(OpenFile* file, const wxString& text, int flags)
                 m_findDialog->Enable(false);
             }
             
-            wxMessageBox("Find reached the start point of the search.", s_applicationName, wxOK | wxICON_INFORMATION, this);
+            //wxMessageBox("Find reached the start point of the search.", s_applicationName, wxOK | wxICON_INFORMATION, this);
 
             if (m_findDialog != NULL)
             {
