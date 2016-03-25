@@ -28,7 +28,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 
 EditorSettings::EditorSettings()
 {
-    m_indentSize                    = 4;
+    m_indentSize                    = 2;
     m_useTabs                       = false;
     m_removeTabsOnLoad              = false;
     m_showLineNumbers               = false;
@@ -40,7 +40,7 @@ EditorSettings::EditorSettings()
 
 void EditorSettings::SetIndentSize(unsigned int indentSize)
 {
-    m_indentSize = wxMin(indentSize, 32);
+    m_indentSize = wxMin(indentSize, 8);
 }
 
 void EditorSettings::SetUseTabs(bool useTabs)
