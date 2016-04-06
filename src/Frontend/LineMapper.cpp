@@ -58,7 +58,10 @@ unsigned int LineMapper::GetNewLine(unsigned int lineNumber) const
 {
     if (lineNumber < m_oldToNew.size())
     {
-        return m_oldToNew[lineNumber];
+        unsigned int number = m_oldToNew[lineNumber];
+        if (number > m_oldToNew.size())
+            return lineNumber;
+        return number;
     }  
     else if (m_oldToNew.empty())
     {

@@ -1735,6 +1735,23 @@ int DebugBackend::IndexChained(unsigned long api, lua_State* L)
     table[1] = lua_upvalueindex_dll(api, 3); // Up values
     table[2] = lua_upvalueindex_dll(api, 4); // Globals
 
+    /*lua_rawgeti_dll( api, L, GetRegistryIndex(api), 1);
+
+    int type = lua_type_dll(api, L, -1);
+    lua_pushnil_dll(api, L);                     // first key
+    while (lua_next_dll(api, L, -2) != 0)        // key index = -2, value index = -1
+    {
+        std::string key(lua_tostring_dll(api, L, -2));
+        //std::string val(lua_tostring_dll(api, L, -1));
+        lua_pop_dll(api, L, 1);
+    }
+    lua_pop_dll(api, L, 1);*/
+
+   /* lua_pushvalue_dll(api, L, key);
+    lua_gettable_dll(api, L, -2);
+    lua_insert_dll(api, L, -2);
+    lua_pop_dll(api, L, 1);*/    
+
     // Get from the local table.
     lua_pushvalue_dll(api, L, key);
     lua_gettable_dll(api, L, table[0]);

@@ -2011,8 +2011,10 @@ void MainFrame::OnDebugEvent(wxDebugEvent& event)
             // Add the exception to the output window.
             m_output->OutputError(event.GetMessage());
 
-            // Check if we're ignoring this exception.
+            // Always breaking on exceptions
 
+           /*
+            // Check if we're ignoring this exception.
             ExceptionDialog dialog(this, event.GetMessage(), true);
             int result = dialog.ShowModal();
 
@@ -2027,7 +2029,7 @@ void MainFrame::OnDebugEvent(wxDebugEvent& event)
                 DebugFrontend::Get().IgnoreException(std::string(event.GetMessage().ToAscii()));
                 DebugFrontend::Get().Continue(m_vm);
                 UpdateForNewState();
-            }
+            }*/
             
         }
         break;
@@ -2826,6 +2828,8 @@ void MainFrame::OnBreak(wxDebugEvent& event)
         file->edit->MarkerAdd(newLine, CodeEdit::Marker_BreakLine);
 
         ShowScriptLine(event.GetScriptIndex(), event.GetLine());
+
+        GotoNewLine(file->edit, newLine, true);
     
     }
     else
