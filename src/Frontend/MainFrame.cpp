@@ -2249,6 +2249,8 @@ void MainFrame::OnCallStackDoubleClick(wxListEvent& event)
     const DebugFrontend::StackFrame& stackFrame = frontend.GetStackFrame(selectedItem);
 
     ShowScriptLine(stackFrame.scriptIndex, stackFrame.line);
+    OpenFile* file = GotoOldLine(stackFrame.scriptIndex, stackFrame.line, false);
+    GotoNewLine(file->edit, stackFrame.line, true);
 
     // Change the context in which we're evaluating watches.
     SetContext(m_vm, selectedItem);

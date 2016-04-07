@@ -1667,7 +1667,11 @@ bool DebugBackend::CreateEnvironment(unsigned long api, lua_State* L, int stackL
     }
 
     // Copy the up values into a new table.
-    
+    if (lua_getstack_dll(api, L, stackLevel, &stackEntry) != 1)
+    {
+        return false;
+    }
+
     lua_newtable_dll(api, L);
     int upValueTable = lua_gettop_dll(api, L);
     
@@ -2024,9 +2028,16 @@ bool DebugBackend::Evaluate(unsigned long api, lua_State* L, const std::string& 
 
     std::string statement;
 
-    statement  = "return \n";
+    statement  = "return ";
     statement += expression;
     
+    /*statement  = "local ";
+    statement += expression;
+    statement += " = ";
+    statement += expression;
+    statement += " return ";
+    statement += expression;*/
+
     int error = LoadScriptWithoutIntercept(api, L, statement.c_str());
 
     if (error == LUA_ERRSYNTAX)
