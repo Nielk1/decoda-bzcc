@@ -585,8 +585,8 @@ void DebugFrontend::EventThreadProc()
             
             std::string message;
             m_eventChannel.ReadString(message);
-            
-            event.SetMessage(message);
+            wxString text(wxString::FromUTF8(message.c_str(), message.length()));
+            event.SetMessage(text);
         
         }
         else if (eventId == EventId_LoadError)
