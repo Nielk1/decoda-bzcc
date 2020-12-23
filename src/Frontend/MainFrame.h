@@ -355,6 +355,7 @@ public:
     void OnToolsExternalTools(wxCommandEvent& event);
 
 private:
+    void OnPaneClose(wxAuiManagerEvent& evt);
     void switchPaneShow(wxWindow* pane, bool only_show_mode = false);
     bool IsPaneShown(wxWindow* pane);
 

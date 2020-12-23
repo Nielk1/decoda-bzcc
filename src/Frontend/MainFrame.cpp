@@ -245,6 +245,8 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_SYMBOL_PARSER(                              MainFrame::OnSymbolsParsed)
     //EVT_SYMBOL_PARSER(                              MainFrame::OnSymbolsParsed)
 
+    EVT_AUI_PANE_CLOSE(MainFrame::OnPaneClose)
+
 END_EVENT_TABLE()
 
 const wxString MainFrame::s_scriptExtensions        = _("Lua files (*.lua)|*.lua|All files (*.*)|*.*");
@@ -664,20 +666,13 @@ void MainFrame::InitializeMenu()
 
 void MainFrame::SetCheckPoints()
 {
-    if (IsPaneShown(m_projectExplorer))
-        GetMenuBar()->FindItem(ID_WindowProjectExplorer)->Check();
-    if (IsPaneShown(m_output))
-        GetMenuBar()->FindItem(ID_WindowOutput)->Check();
-    if (IsPaneShown(m_callStack))
-        GetMenuBar()->FindItem(ID_WindowCallStack)->Check();
-    if (IsPaneShown(m_watch))
-        GetMenuBar()->FindItem(ID_WindowWatch)->Check();
-    if (IsPaneShown(m_breakpointsWindow))
-        GetMenuBar()->FindItem(ID_WindowBreakpoints)->Check();
-    if (IsPaneShown(m_vmList))
-        GetMenuBar()->FindItem(ID_WindowVirtualMachines)->Check();
-    if (IsPaneShown(m_searchWindow))
-        GetMenuBar()->FindItem(ID_WindowSearch)->Check();
+    GetMenuBar()->FindItem(ID_WindowProjectExplorer)->Check(IsPaneShown(m_projectExplorer));
+    GetMenuBar()->FindItem(ID_WindowOutput)         ->Check(IsPaneShown(m_output));
+    GetMenuBar()->FindItem(ID_WindowCallStack)      ->Check(IsPaneShown(m_callStack));
+    GetMenuBar()->FindItem(ID_WindowWatch)          ->Check(IsPaneShown(m_watch));
+    GetMenuBar()->FindItem(ID_WindowBreakpoints)    ->Check(IsPaneShown(m_breakpointsWindow));
+    GetMenuBar()->FindItem(ID_WindowVirtualMachines)->Check(IsPaneShown(m_vmList));
+    GetMenuBar()->FindItem(ID_WindowSearch)         ->Check(IsPaneShown(m_searchWindow));
 }
 
 void MainFrame::OnFileNewProject(wxCommandEvent& WXUNUSED(event))
@@ -1618,6 +1613,25 @@ void MainFrame::OnDebugToggleBreakpoint(wxCommandEvent& event)
 void MainFrame::OnDebugDeleteAllBreakpoints(wxCommandEvent& event)
 {
     DeleteAllBreakpoints();
+}
+
+void MainFrame::OnPaneClose(wxAuiManagerEvent& evt)
+{
+    //SetCheckPoints();
+    if (evt.pane->window == m_projectExplorer)
+        GetMenuBar()->FindItem(ID_WindowProjectExplorer)->Check(false);
+    if (evt.pane->window == m_output)
+        GetMenuBar()->FindItem(ID_WindowOutput)->Check(false);
+    if (evt.pane->window == m_callStack)
+        GetMenuBar()->FindItem(ID_WindowCallStack)->Check(false);
+    if (evt.pane->window == m_watch)
+        GetMenuBar()->FindItem(ID_WindowWatch)->Check(false);
+    if (evt.pane->window == m_breakpointsWindow)
+        GetMenuBar()->FindItem(ID_WindowBreakpoints)->Check(false);
+    if (evt.pane->window == m_vmList)
+        GetMenuBar()->FindItem(ID_WindowVirtualMachines)->Check(false);
+    if (evt.pane->window == m_searchWindow)
+        GetMenuBar()->FindItem(ID_WindowSearch)->Check(false);
 }
 
 void MainFrame::switchPaneShow(wxWindow* pane, bool only_show_mode)
@@ -3888,7 +3902,7 @@ void MainFrame::LoadOptions()
     wxXmlNode* keyBindingNode = NULL;
 
     wxXmlDocument document;
-    if (document.Load(GetAppDataDirectory() + "options_ce.xml"))
+    if (document.Load(GetAppDataDirectory() + "options.xml"))
     {
         
         wxXmlNode* root = document.GetRoot();
