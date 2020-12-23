@@ -27,7 +27,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <wx/treectrl.h>
 #include <wx/thread.h>
 #include <vector>
-#include <hash_set>
+#include <unordered_set>
 #include <functional>
 
 #include "Project.h"
@@ -297,7 +297,7 @@ private:
     /**
      * Removes any child nodes of the specified node that reference the file.
      */
-    void RemoveFileSymbols(wxTreeItemId node, const stdext::hash_set<Project::File*>& file);
+    void RemoveFileSymbols(wxTreeItemId node, const std::unordered_set<Project::File*>& file);
 
     /**
      * Adds the items for the file that match the filter into the tree control.

@@ -77,7 +77,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <shlobj.h>
 
 #include <algorithm>
-#include <hash_map>
+#include <unordered_map>
 
 BEGIN_EVENT_TABLE(MainFrame, wxFrame)
 
