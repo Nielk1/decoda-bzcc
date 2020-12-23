@@ -35,8 +35,10 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include <malloc.h>
 #include <assert.h>
 #include <set>
-#include <hash_map>
-#include <hash_set>
+#include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
+#include <iostream>
 
 // Macro for convenient pointer addition.
 // Essentially treats the last two parameters as DWORDs.  The first
@@ -67,7 +69,7 @@ typedef void            (*lua_gettable_cdecl_t)         (lua_State*, int);
 typedef void            (*lua_setglobal_cdecl_t)        (lua_State*, const char*);
 typedef void            (*lua_getglobal_cdecl_t)        (lua_State*, const char*);
 typedef void            (*lua_rawget_cdecl_t)           (lua_State *L, int idx);
-typedef void            (*lua_rawgeti_cdecl_t)          (lua_State *L, int idx, int n);
+typedef void            (*lua_rawgeti_cdecl_t)          (lua_State *L, int idx, lua_Integer n);
 typedef void            (*lua_rawset_cdecl_t)           (lua_State *L, int idx);
 typedef void            (*lua_pushstring_cdecl_t)       (lua_State*, const char*);
 typedef void            (*lua_pushlstring_cdecl_t)      (lua_State*, const char*, size_t);
@@ -140,7 +142,7 @@ typedef void            (__stdcall *lua_gettable_stdcall_t)       (lua_State*, i
 typedef void            (__stdcall *lua_setglobal_stdcall_t)      (lua_State*, const char*);
 typedef void            (__stdcall *lua_getglobal_stdcall_t)      (lua_State*, const char*);
 typedef void            (__stdcall *lua_rawget_stdcall_t)         (lua_State *L, int idx);
-typedef void            (__stdcall *lua_rawgeti_stdcall_t)        (lua_State *L, int idx, int n);
+typedef void            (__stdcall *lua_rawgeti_stdcall_t)        (lua_State *L, int idx, lua_Integer n);
 typedef void            (__stdcall *lua_rawset_stdcall_t)         (lua_State *L, int idx);
 typedef void            (__stdcall *lua_pushstring_stdcall_t)     (lua_State*, const char*);
 typedef void            (__stdcall *lua_pushlstring_stdcall_t)    (lua_State*, const char*, size_t);
@@ -198,17 +200,20 @@ typedef lua_State*      (__stdcall *luaL_newstate_stdcall_t)      ();
 typedef int             (__stdcall *lua_checkstack_stdcall_t)     (lua_State* L, int extra);
 
 typedef HMODULE         (WINAPI *LoadLibraryExW_t)              (LPCWSTR lpFileName, HANDLE hFile, DWORD dwFlags);
+typedef HMODULE			(WINAPI *LoadLibraryA_t)                (LPCSTR lpFileName);
+typedef HMODULE			(WINAPI *LoadLibraryW_t)                (LPCWSTR lpFileName);
 typedef ULONG           (WINAPI *LdrLockLoaderLock_t)           (ULONG flags, PULONG disposition, PULONG cookie);
 typedef LONG            (WINAPI *LdrUnlockLoaderLock_t)         (ULONG flags, ULONG cookie);
-
-
+typedef void            (*lua_rotate_cdecl_t )          (lua_State*, int, int);
+typedef int             (__stdcall *lua_getinfo_stdcall_t)        (lua_State*, const char*, lua_Debug*);
+typedef void            (__stdcall *lua_rotate_stdcall_t)         (lua_State*, int, int);
 /**
  * Structure that holds pointers to all of the Lua API functions.
  */
 struct LuaInterface
 {
 
-    int                          version;   // One of 401, 500, 510, 520
+    int                          version;   // One of 401, 500, 510, 520, 530
     bool                         finishedLoading;
 
     bool                         stdcall;
@@ -227,7 +232,7 @@ struct LuaInterface
     lua_close_cdecl_t            lua_close_dll_cdecl;
     lua_newthread_cdecl_t        lua_newthread_dll_cdecl;
     lua_error_cdecl_t            lua_error_dll_cdecl;
-		lua_absindex_cdecl_t         lua_absindex_dll_cdecl;
+	lua_absindex_cdecl_t         lua_absindex_dll_cdecl;
     lua_gettop_cdecl_t           lua_gettop_dll_cdecl;
     lua_sethook_cdecl_t          lua_sethook_dll_cdecl;
     lua_gethookmask_cdecl_t      lua_gethookmask_dll_cdecl;
@@ -293,7 +298,7 @@ struct LuaInterface
     lua_newuserdata_cdecl_t      lua_newuserdata_dll_cdecl;
     luaL_newstate_cdecl_t        luaL_newstate_dll_cdecl;
     lua_checkstack_cdecl_t       lua_checkstack_dll_cdecl;
-
+	lua_rotate_cdecl_t           lua_rotate_dll_cdecl;
     // stdcall functions.
     lua_open_stdcall_t           lua_open_dll_stdcall;
     lua_open_500_stdcall_t       lua_open_500_dll_stdcall;
@@ -367,7 +372,7 @@ struct LuaInterface
     lua_newuserdata_stdcall_t    lua_newuserdata_dll_stdcall;
     luaL_newstate_stdcall_t      luaL_newstate_dll_stdcall;
     lua_checkstack_stdcall_t     lua_checkstack_dll_stdcall;
-
+	lua_rotate_stdcall_t         lua_rotate_dll_stdcall;
     lua_CFunction                DecodaOutput;
     lua_CFunction                CPCallHandler;
     lua_Hook                     HookHandler;
@@ -434,6 +439,8 @@ struct CPCallHandlerArgs
 
 
 LoadLibraryExW_t                LoadLibraryExW_dll      = NULL;
+LoadLibraryA_t					LoadLibraryA_dll = NULL;
+LoadLibraryW_t					LoadLibraryW_dll = NULL;
 LdrLockLoaderLock_t             LdrLockLoaderLock_dll   = NULL;
 LdrUnlockLoaderLock_t           LdrUnlockLoaderLock_dll = NULL;
 
@@ -442,10 +449,10 @@ std::set<std::string>           g_loadedModules;
 CriticalSection                 g_loadedModulesCriticalSection;
 
 std::vector<LuaInterface>       g_interfaces;
-stdext::hash_map<void*, void*>  g_hookedFunctionMap;
+std::unordered_map<void*, void*>  g_hookedFunctionMap;
 
-stdext::hash_set<std::string>   g_warnedAboutLua;   // Indivates that we've warned the module contains Lua functions but none were loaded.
-stdext::hash_set<std::string>   g_warnedAboutPdb;   // Indicates that we've warned about a module having a mismatched PDB.
+std::unordered_set<std::string>   g_warnedAboutLua;   // Indivates that we've warned the module contains Lua functions but none were loaded.
+std::unordered_set<std::string>   g_warnedAboutPdb;   // Indicates that we've warned about a module having a mismatched PDB.
 bool                            g_warnedAboutThreads = false;
 bool                            g_warnedAboutJit     = false;
 
@@ -683,6 +690,7 @@ int GetEvent(unsigned long api, const lua_Debug* ar)
 {
     switch( g_interfaces[api].version)
     {
+		case 530:
         case 520: return ar->ld52.event;
         default: return ar->ld51.event;
     }
@@ -691,7 +699,8 @@ int GetEvent(unsigned long api, const lua_Debug* ar)
 int GetNups(unsigned long api, const lua_Debug* ar)
 {
     switch( g_interfaces[api].version)
-    {
+	{
+		case 530:
         case 520: return ar->ld52.nups;
         default: return ar->ld51.nups;
     }
@@ -701,6 +710,7 @@ int GetCurrentLine(unsigned long api, const lua_Debug* ar)
 {
     switch( g_interfaces[api].version)
     {
+		case 530:
         case 520: return ar->ld52.currentline;
         default: return ar->ld51.currentline;
     }
@@ -710,6 +720,7 @@ int GetLineDefined(unsigned long api, const lua_Debug* ar)
 {
     switch( g_interfaces[api].version)
     {
+		case 530:
         case 520: return ar->ld52.linedefined;
         default: return ar->ld51.linedefined;
     }
@@ -728,6 +739,7 @@ const char* GetSource(unsigned long api, const lua_Debug* ar)
 {
     switch( g_interfaces[api].version)
     {
+		case 530:
         case 520: return ar->ld52.source;
         default: return ar->ld51.source;
     }
@@ -737,6 +749,7 @@ const char* GetWhat(unsigned long api, const lua_Debug* ar)
 {
     switch( g_interfaces[api].version)
     {
+		case 530:
         case 520: ar->ld52.what;
         default: return ar->ld51.what;
     }
@@ -746,6 +759,7 @@ const char* GetName(unsigned long api, const lua_Debug* ar)
 {
     switch( g_interfaces[api].version)
     {
+		case 530:
         case 520: return ar->ld52.name;
         default: return ar->ld51.name;
     }
@@ -1132,14 +1146,22 @@ int lua_getinfo_dll(unsigned long api, lua_State* L, const char* what, lua_Debug
 
 void lua_remove_dll(unsigned long api, lua_State* L, int index)
 {
-    if (g_interfaces[api].lua_remove_dll_cdecl != NULL)
-    {
-        g_interfaces[api].lua_remove_dll_cdecl(L, index);
-    }
-    else
-    {
-        g_interfaces[api].lua_remove_dll_stdcall(L, index);
-    }
+	if (g_interfaces[api].version >= 530)
+	{
+		lua_rotate_dll(api, L, index, -1);
+		lua_pop_dll(api, L, 1);
+	}
+	else
+	{
+		if (g_interfaces[api].lua_remove_dll_cdecl != NULL)
+		{
+			g_interfaces[api].lua_remove_dll_cdecl(L, index);
+		}
+		else
+		{
+			g_interfaces[api].lua_remove_dll_stdcall(L, index);
+		}
+	}
 }
 
 void lua_settable_dll(unsigned long api, lua_State* L, int index)
@@ -1178,7 +1200,7 @@ void lua_rawget_dll(unsigned long api, lua_State* L, int idx)
     }
 }
 
-void lua_rawgeti_dll(unsigned long api, lua_State *L, int idx, int n)
+void lua_rawgeti_dll(unsigned long api, lua_State *L, int idx, lua_Integer n)
 {
     if (g_interfaces[api].lua_rawgeti_dll_cdecl != NULL)
     {
@@ -1339,6 +1361,11 @@ int lua_getstack_dll(unsigned long api, lua_State* L, int level, lua_Debug* ar)
 
 void lua_insert_dll(unsigned long api, lua_State* L, int index)
 {
+	if (g_interfaces[api].version >= 530)
+	{
+		lua_rotate_dll(api, L, index, 1);
+		return;
+	}
     if (g_interfaces[api].lua_insert_dll_cdecl != NULL)
     {
         g_interfaces[api].lua_insert_dll_cdecl(L, index);
@@ -1533,7 +1560,7 @@ int lua_toboolean_dll(unsigned long api, lua_State* L, int index)
     }
 }
 
-int lua_tointeger_dll(unsigned long api, lua_State* L, int index)
+lua_Integer lua_tointeger_dll(unsigned long api, lua_State* L, int index)
 {
     if (g_interfaces[api].lua_tointegerx_dll_cdecl != NULL ||
         g_interfaces[api].lua_tointegerx_dll_stdcall != NULL)
@@ -1922,6 +1949,18 @@ int lua_iswstring_dll(unsigned long api, lua_State* L, int index)
     }
 }
 
+void lua_rotate_dll(unsigned long api, lua_State* L, int index, int n)
+{
+	if (g_interfaces[api].lua_rotate_dll_cdecl != NULL)
+	{
+		g_interfaces[api].lua_rotate_dll_cdecl(L, index, n);
+	}
+	else
+	{
+		g_interfaces[api].lua_rotate_dll_stdcall(L, index, n);
+	}
+}
+
 const char* lua_getupvalue_dll(unsigned long api, lua_State *L, int funcindex, int n)
 {
     if (g_interfaces[api].lua_getupvalue_dll_cdecl != NULL)
@@ -2040,6 +2079,70 @@ HMODULE WINAPI LoadLibraryExW_intercept(LPCWSTR fileName, HANDLE hFile, DWORD dw
 
 }
 
+HMODULE WINAPI LoadLibraryA_intercept(LPCSTR fileName)
+{
+
+    // We have to call the loader lock (if it is available) so that we don't get deadlocks
+    // in the case where Dll initialization acquires the loader lock and calls LoadLibrary
+    // while another thread is inside PostLoadLibrary.
+
+    ULONG cookie;
+
+    if (LdrLockLoaderLock_dll != NULL &&
+        LdrUnlockLoaderLock_dll != NULL)
+    {
+        LdrLockLoaderLock_dll(0, 0, &cookie);
+    }
+
+    HMODULE hModule = LoadLibraryA_dll(fileName);
+
+    if (hModule != NULL)
+    {
+        PostLoadLibrary(hModule);
+    }
+
+    if (LdrLockLoaderLock_dll != NULL &&
+        LdrUnlockLoaderLock_dll != NULL)
+    {
+        LdrUnlockLoaderLock_dll(0, cookie);
+    }
+
+    return hModule;
+
+}
+
+HMODULE WINAPI LoadLibraryW_intercept(LPCWSTR fileName)
+{
+
+    // We have to call the loader lock (if it is available) so that we don't get deadlocks
+    // in the case where Dll initialization acquires the loader lock and calls LoadLibrary
+    // while another thread is inside PostLoadLibrary.
+
+    ULONG cookie;
+
+    if (LdrLockLoaderLock_dll != NULL &&
+        LdrUnlockLoaderLock_dll != NULL)
+    {
+        LdrLockLoaderLock_dll(0, 0, &cookie);
+    }
+
+    HMODULE hModule = LoadLibraryW_dll(fileName);
+
+    if (hModule != NULL)
+    {
+        PostLoadLibrary(hModule);
+    }
+
+    if (LdrLockLoaderLock_dll != NULL &&
+        LdrUnlockLoaderLock_dll != NULL)
+    {
+        LdrUnlockLoaderLock_dll(0, cookie);
+    }
+
+    return hModule;
+
+}
+
 void FinishLoadingLua(unsigned long api, bool stdcall)
 {
 
@@ -2128,6 +2231,7 @@ void FinishLoadingLua(unsigned long api, bool stdcall)
         SET_STDCALL(lua_newuserdata);
         SET_STDCALL(lua_pushthread);
         SET_STDCALL(lua_checkstack);
+		SET_STDCALL(lua_rotate);
     }
         
     g_interfaces[api].finishedLoading = true;
@@ -3155,12 +3259,12 @@ std::string GetApplicationDirectory()
 
 }
 
-bool LoadLuaFunctions(const stdext::hash_map<std::string, DWORD64>& symbols, HANDLE hProcess)
+bool LoadLuaFunctions(const std::unordered_map<std::string, DWORD64>& symbols, HANDLE hProcess)
 {
 
     #define GET_FUNCTION_OPTIONAL(function)                                                                                     \
         {                                                                                                                       \
-            stdext::hash_map<std::string, DWORD64>::const_iterator iterator = symbols.find(#function);                          \
+            std::unordered_map<std::string, DWORD64>::const_iterator iterator = symbols.find(#function);                          \
             if (iterator != symbols.end())                                                                                      \
             {                                                                                                                   \
                 luaInterface.function##_dll_cdecl = reinterpret_cast<function##_cdecl_t>(iterator->second);                     \
@@ -3212,7 +3316,18 @@ bool LoadLuaFunctions(const stdext::hash_map<std::string, DWORD64>& symbols, HAN
             luaInterface.version        = 500;
             luaInterface.registryIndex  = -10000;
             luaInterface.globalsIndex   = -10001;
-        }
+		}
+		else if (symbols.find("lua_rotate") != symbols.end())
+		{
+			luaInterface.version = 530;
+			// LUA_REGISTRYINDEX == LUAI_FIRSTPSEUDOIDX with LUAI_FIRSTPSEUDOIDX == (-LUAI_MAXSTACK - 1000) with LUAI_MAXSTACK == 15000 (for 32 bits build...)
+			luaInterface.registryIndex = -1001000;
+			// starting with Lua 5.2, there is no longer a LUA_GLOBALSINDEX pseudo-index. Instead the global table is stored in the registry at LUA_RIDX_GLOBALS
+			luaInterface.globalsIndex = 2;
+			// Lua5.3 has LUA_HOOKTAILCALL, but no LUA_HOOKTAILRET. It will cause that the count of return hook is not same as the count of call hook when there is a tail call or more.
+			// luaInterface.hookTailCall = LUA_HOOKTAILCALL;
+			DebugBackend::Get().Message("this is a lua 5.3 application", MessageType_Warning);
+		}
         else if (symbols.find("lua_callk") != symbols.end())
         {
             luaInterface.version        = 520;
@@ -3251,7 +3366,7 @@ bool LoadLuaFunctions(const stdext::hash_map<std::string, DWORD64>& symbols, HAN
     GET_FUNCTION_OPTIONAL(lua_absindex); // Only present in Lua 5.2+
     GET_FUNCTION(lua_sethook);
     GET_FUNCTION(lua_getinfo);
-    GET_FUNCTION(lua_remove);
+	GET_FUNCTION_OPTIONAL(lua_remove);
     GET_FUNCTION(lua_settable);
     GET_FUNCTION(lua_gettable);
     GET_FUNCTION(lua_rawget);
@@ -3266,7 +3381,6 @@ bool LoadLuaFunctions(const stdext::hash_map<std::string, DWORD64>& symbols, HAN
     GET_FUNCTION(lua_getlocal);
     GET_FUNCTION(lua_setlocal);
     GET_FUNCTION(lua_getstack);
-    GET_FUNCTION(lua_insert);
     GET_FUNCTION(lua_pushnil);
     GET_FUNCTION(lua_pushvalue);
     GET_FUNCTION(lua_pushcclosure);
@@ -3274,6 +3388,9 @@ bool LoadLuaFunctions(const stdext::hash_map<std::string, DWORD64>& symbols, HAN
     GET_FUNCTION(lua_pushlightuserdata);
     GET_FUNCTION(lua_checkstack);
     GET_FUNCTION(lua_gethookmask);
+	// Only present in Lua 5.3+
+	GET_FUNCTION_OPTIONAL(lua_insert);
+	GET_FUNCTION_OPTIONAL(lua_rotate);
 
     // Only present in Lua 5.2+
     GET_FUNCTION_OPTIONAL(lua_getglobal);
@@ -3578,7 +3695,7 @@ bool LocateSymbolFile(const IMAGEHLP_MODULE64& moduleInfo, char fileName[_MAX_PA
 BOOL CALLBACK GatherSymbolsCallback(PSYMBOL_INFO pSymInfo, ULONG SymbolSize, PVOID UserContext)
 {
     
-    stdext::hash_map<std::string, DWORD64>* symbols = reinterpret_cast<stdext::hash_map<std::string, DWORD64>*>(UserContext);
+	std::unordered_map<std::string, DWORD64>* symbols = reinterpret_cast<std::unordered_map<std::string, DWORD64>*>(UserContext);
 
     if (pSymInfo != NULL && pSymInfo->Name != NULL)
     {
@@ -3625,7 +3742,7 @@ bool ScanForSignature(DWORD64 start, DWORD64 length, const char* signature)
 
 }
 
-void LoadSymbolsRecursively(std::set<std::string>& loadedModules, stdext::hash_map<std::string, DWORD64>& symbols, HANDLE hProcess, HMODULE hModule)
+void LoadSymbolsRecursively(std::set<std::string>& loadedModules, std::unordered_map<std::string, DWORD64>& symbols, HANDLE hProcess, HMODULE hModule)
 {
 
     assert(hModule != NULL);
@@ -3663,19 +3780,28 @@ void LoadSymbolsRecursively(std::set<std::string>& loadedModules, stdext::hash_m
 
         BOOL result = SymGetModuleInfo64_dll(hProcess, base, &module);
 
-        if (result && module.SymType == SymNone)
+        // try this first
+        if (base != 0 && module.SymType != SymNone)
+        {
+            // SymFromName is really slow, so we gather up our own list of the symbols that we
+            // can index much faster.
+            SymEnumSymbols_dll(hProcess, base, "lua*", GatherSymbolsCallback, reinterpret_cast<PVOID>(&symbols));
+        }
+
+        // if the Symbol Type is None or despite a type like Export we got no symbols
+        if (result && (module.SymType == SymNone || symbols.empty()))
         {
 
             // No symbols were found. Check to see if the module file name + ".pdb"
             // exists, since the symbol file and/or module names may have been renamed.
-            
+
             char pdbFileName[_MAX_PATH];
             strcpy(pdbFileName, moduleFileName);
             ReplaceExtension(pdbFileName, "pdb");
-            
+
             if (GetFileExists(pdbFileName))
             {
-                
+
                 SymUnloadModule64_dll(hProcess, base);
                 base = SymLoadModule64_dll(hProcess, NULL, pdbFileName, moduleName, (DWORD64)moduleInfo.lpBaseOfDll, moduleInfo.SizeOfImage);
 
@@ -3692,7 +3818,14 @@ void LoadSymbolsRecursively(std::set<std::string>& loadedModules, stdext::hash_m
 
         }
 
-        if (result)
+        if (base != 0 && module.SymType == SymPdb && symbols.empty())
+        {
+            // SymFromName is really slow, so we gather up our own list of the symbols that we
+            // can index much faster.
+            SymEnumSymbols_dll(hProcess, base, "lua*", GatherSymbolsCallback, reinterpret_cast<PVOID>(&symbols));
+        }
+
+        if (!result)
         {
 
             // Check to see if we've already warned about this module.
@@ -3716,13 +3849,6 @@ void LoadSymbolsRecursively(std::set<std::string>& loadedModules, stdext::hash_m
                 }
             }
 
-        }
-           
-        if (base != 0)
-        {
-            // SymFromName is really slow, so we gather up our own list of the symbols that we
-            // can index much faster.
-            SymEnumSymbols_dll(hProcess, base, "lua*", GatherSymbolsCallback, reinterpret_cast<PVOID>(&symbols));
         }
 
         // Check to see if the module contains the Lua signature but we didn't find any Lua functions.
@@ -3767,7 +3893,7 @@ void LoadSymbolsRecursively(std::set<std::string>& loadedModules, stdext::hash_m
         std::vector<std::string> imports;
         GetModuleImports(hProcess, hModule, imports);
 
-        for (unsigned int i = 0; i < imports.size(); ++i)
+        /*for (unsigned int i = 0; i < imports.size(); ++i)
         {
 
             HMODULE hImportModule = GetModuleHandle(imports[i].c_str());
@@ -3779,7 +3905,7 @@ void LoadSymbolsRecursively(std::set<std::string>& loadedModules, stdext::hash_m
                 LoadSymbolsRecursively(loadedModules, symbols, hProcess, hImportModule);
             }
 
-        }
+        }*/
 
     }
 
@@ -3812,7 +3938,7 @@ void PostLoadLibrary(HMODULE hModule)
 
     char moduleName[_MAX_PATH];
     GetModuleBaseName(hProcess, hModule, moduleName, _MAX_PATH);
-
+    
     CriticalSectionLock lock(g_loadedModulesCriticalSection);
 
     if (g_loadedModules.find(moduleName) == g_loadedModules.end())
@@ -3821,7 +3947,7 @@ void PostLoadLibrary(HMODULE hModule)
         // Record that we've loaded this module so that we don't
         // try to load it again.
         g_loadedModules.insert(moduleName);
-
+        
         if (!g_initializedDebugHelp)
         {
             if (!SymInitialize_dll(hProcess, g_symbolsDirectory.c_str(), FALSE))
@@ -3834,7 +3960,7 @@ void PostLoadLibrary(HMODULE hModule)
         //SymSetOptions(SYMOPT_DEBUG);
 
         std::set<std::string> loadedModules;
-        stdext::hash_map<std::string, DWORD64> symbols;
+		std::unordered_map<std::string, DWORD64> symbols;
 
         LoadSymbolsRecursively(loadedModules, symbols, hProcess, hModule);
 
@@ -3857,6 +3983,8 @@ void HookLoadLibrary()
         // LoadLibraryExW is called by the other LoadLibrary functions, so we
         // only need to hook it.
         LoadLibraryExW_dll = (LoadLibraryExW_t) HookFunction( GetProcAddress(hModuleKernel, "LoadLibraryExW"), LoadLibraryExW_intercept);
+		LoadLibraryA_dll = (LoadLibraryA_t)HookFunction(GetProcAddress(hModuleKernel, "LoadLibraryA"), LoadLibraryA_intercept);
+		LoadLibraryW_dll = (LoadLibraryW_t)HookFunction(GetProcAddress(hModuleKernel, "LoadLibraryW"), LoadLibraryW_intercept);
     }
 
     // These NTDLL functions are undocumented and don't exist in Windows 2000.
@@ -3932,9 +4060,19 @@ bool InstallLuaHooker(HINSTANCE hInstance, const char* symbolsDirectory)
 
     BOOL moreModules = Module32First(hSnapshot, &module);
 
+	HANDLE hProcess = GetCurrentProcess();
     while (moreModules)
     {
-        PostLoadLibrary(module.hModule);
+		char moduleName[_MAX_PATH];
+		GetModuleBaseName(hProcess, module.hModule, moduleName, _MAX_PATH);
+
+		std::string moduleString = moduleName;
+		transform(moduleString.begin(), moduleString.end(), moduleString.begin(), tolower);
+		//if (moduleString.compare("cos.dll") == 0)
+		//{
+			PostLoadLibrary(module.hModule);
+			//break;
+		//}
         moreModules = Module32Next(hSnapshot, &module);
     }
 

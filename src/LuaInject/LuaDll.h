@@ -88,6 +88,7 @@ int             luaL_loadbufferx_dll    (unsigned long api, lua_State*, const ch
 int             luaL_ref_dll            (unsigned long api, lua_State *L, int t);
 void            luaL_unref_dll          (unsigned long api, lua_State *L, int t, int ref);
 int             luaL_newmetatable_dll   (unsigned long api, lua_State *L, const char *tname);
+void            lua_rotate_dll          (unsigned long api, lua_State* L, int index, int n);
 const char *    lua_getupvalue_dll      (unsigned long api, lua_State *L, int funcindex, int n);
 const char *    lua_setupvalue_dll      (unsigned long api, lua_State *L, int funcindex, int n);
 void            lua_getfenv_dll         (unsigned long api, lua_State *L, int index);
