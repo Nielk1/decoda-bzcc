@@ -242,7 +242,7 @@ bool wxRichTextCtrl::Create( wxWindow* parent, wxWindowID id, const wxString& va
                              const wxValidator& validator, const wxString& name)
 {
     style |= wxVSCROLL;
-    
+
     // If read-only, the programmer probably wants to retain dialog keyboard navigation.
     // If you don't, then pass wxWANTS_CHARS explicitly.
     if ((style & wxTE_READONLY) == 0)
@@ -283,7 +283,7 @@ bool wxRichTextCtrl::Create( wxWindow* parent, wxWindowID id, const wxString& va
     SetDefaultStyle(defaultAttributes);
 
     SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    SetBackgroundStyle(wxBG_STYLE_CUSTOM);
+    SetBackgroundStyle(wxBG_STYLE_PAINT);
 
     GetBuffer().Reset();
     GetBuffer().SetRichTextCtrl(this);
@@ -312,6 +312,7 @@ bool wxRichTextCtrl::Create( wxWindow* parent, wxWindowID id, const wxString& va
 
     GetBuffer().AddEventHandler(this);
 
+#if wxUSE_ACCEL
     // Accelerators
     wxAcceleratorEntry entries[6];
 
@@ -324,6 +325,7 @@ bool wxRichTextCtrl::Create( wxWindow* parent, wxWindowID id, const wxString& va
 
     wxAcceleratorTable accel(6, entries);
     SetAcceleratorTable(accel);
+#endif // wxUSE_ACCEL
 
     m_contextMenu = new wxMenu;
     m_contextMenu->Append(wxID_UNDO, _("&Undo"));
@@ -341,7 +343,7 @@ bool wxRichTextCtrl::Create( wxWindow* parent, wxWindowID id, const wxString& va
 #if wxUSE_DRAG_AND_DROP
     SetDropTarget(new wxRichTextDropTarget(this));
 #endif
-
+    SetModified( false );
     return true;
 }
 
@@ -738,7 +740,9 @@ void wxRichTextCtrl::OnLeftUp(wxMouseEvent& event)
         }
 #endif
 
-        if ((hit != wxRICHTEXT_HITTEST_NONE) && !(hit & wxRICHTEXT_HITTEST_OUTSIDE))
+        // Don't process left click if there was a selection, which implies that a selection may just have been
+        // extended
+        if ((hit != wxRICHTEXT_HITTEST_NONE) && !(hit & wxRICHTEXT_HITTEST_OUTSIDE) && !HasSelection())
         {
             wxRichTextEvent cmdEvent(
                 wxEVT_RICHTEXT_LEFT_CLICK,
@@ -868,11 +872,13 @@ void wxRichTextCtrl::OnMoveMouse(wxMouseEvent& event)
 
                 case wxDragError:
                     wxLogError(wxT("An error occurred during drag and drop operation"));
+                    wxFALLTHROUGH;
                 case wxDragNone:
                 case wxDragCancel:
                     Refresh(); // This is needed in wxMSW, otherwise resetting the position doesn't 'take'
                     SetCaretPosition(oldPos);
                     SetFocusObject(oldFocus, false);
+                    wxFALLTHROUGH;
                 default: break;
             }
             EndBatchUndo();
@@ -1008,7 +1014,7 @@ void wxRichTextCtrl::OnMoveMouse(wxMouseEvent& event)
         && (distance > 4)
 #endif
         // Don't select to the end of the container when going outside the window
-        // For analysis, see http://trac.wxwidgets.org/ticket/15714
+        // For analysis, see https://trac.wxwidgets.org/ticket/15714
         && (! (hitObj == (& m_buffer) && ((hit & wxRICHTEXT_HITTEST_OUTSIDE) != 0)))
         )
     {
@@ -2175,7 +2181,7 @@ bool wxRichTextCtrl::MoveRight(int noPositions, int flags)
                 SetFocusObject(actualContainer, false /* don't set caret position yet */);
                 bool caretLineStart = true;
                 long caretPosition = FindCaretPositionForCharacterPosition(newPos, hitTest, actualContainer, caretLineStart);
- 
+
                 SelectNone();
 
                 SetCaretPosition(caretPosition, caretLineStart);
@@ -2506,7 +2512,7 @@ bool wxRichTextCtrl::StartCellSelection(wxRichTextTable* table, wxRichTextParagr
         SetFocusObject(newCell, false /* don't set caret and clear selection */);
     MoveCaret(-1, false);
     SetDefaultStyleToCursorStyle();
-    
+
     return true;
 }
 
@@ -2731,7 +2737,7 @@ long wxRichTextCtrl::FindNextWordPosition(int direction) const
 
             if (text.empty()) // End of paragraph, or maybe an image
                 return wxMax(-1, i - 1);
-            else if (wxRichTextCtrlIsWhitespace(text) || text.empty())
+            else if (wxRichTextCtrlIsWhitespace(text))
                 i += direction;
             else
             {
@@ -2996,7 +3002,7 @@ void wxRichTextCtrl::SetupScrollbars(bool atTop, bool fromOnPaint)
                 doSetScrollbars = false;
         }
     }
-    
+
     m_lastWindowSize = windowSize;
     m_setupScrollbarsCount ++;
     if (m_setupScrollbarsCount > 32000)
@@ -3040,7 +3046,7 @@ bool wxRichTextCtrl::RecreateBuffer(const wxSize& size)
         return false;
 
     if (!m_bufferBitmap.IsOk() || m_bufferBitmap.GetWidth() < sz.x || m_bufferBitmap.GetHeight() < sz.y)
-        // As per http://trac.wxwidgets.org/ticket/14403, prevent very inefficient fix to alpha bits of
+        // As per https://trac.wxwidgets.org/ticket/14403, prevent very inefficient fix to alpha bits of
         // destination by making the backing bitmap 24-bit. Note that using 24-bit depth breaks painting of
         // scrolled areas on wxWidgets 2.8.
 #if defined(__WXMSW__) && wxCHECK_VERSION(3,0,0)
@@ -3233,8 +3239,8 @@ wxTextCtrlHitTestResult
 wxRichTextCtrl::HitTest(const wxPoint& pt,
                         long * pos) const
 {
-    wxClientDC dc((wxRichTextCtrl*) this);
-    ((wxRichTextCtrl*)this)->PrepareDC(dc);
+    wxClientDC dc(const_cast<wxRichTextCtrl*>(this));
+    const_cast<wxRichTextCtrl*>(this)->PrepareDC(dc);
 
     // Buffer uses logical position (relative to start of buffer)
     // so convert
@@ -3242,8 +3248,8 @@ wxRichTextCtrl::HitTest(const wxPoint& pt,
 
     wxRichTextObject* hitObj = NULL;
     wxRichTextObject* contextObj = NULL;
-    wxRichTextDrawingContext context((wxRichTextBuffer*) & GetBuffer());
-    int hit = ((wxRichTextCtrl*)this)->GetFocusObject()->HitTest(dc, context, pt2, *pos, & hitObj, & contextObj, wxRICHTEXT_HITTEST_NO_NESTED_OBJECTS);
+    wxRichTextDrawingContext context(const_cast<wxRichTextBuffer*>(&GetBuffer()));
+    int hit = const_cast<wxRichTextCtrl*>(this)->GetFocusObject()->HitTest(dc, context, pt2, *pos, &hitObj, &contextObj, wxRICHTEXT_HITTEST_NO_NESTED_OBJECTS);
 
     if ((hit & wxRICHTEXT_HITTEST_BEFORE) && (hit & wxRICHTEXT_HITTEST_OUTSIDE))
         return wxTE_HT_BEFORE;
@@ -3802,7 +3808,7 @@ void wxRichTextCtrl::OnDropFiles(wxDropFilesEvent& event)
 
 wxSize wxRichTextCtrl::DoGetBestSize() const
 {
-    return wxSize(10, 10);
+    return FromDIP(wxSize(10, 10));
 }
 
 // ----------------------------------------------------------------------------
@@ -5016,6 +5022,26 @@ bool wxRichTextCtrl::SetFocusObject(wxRichTextParagraphLayoutBox* obj, bool setC
 }
 
 #if wxUSE_DRAG_AND_DROP
+// Helper function for OnDrop. Returns true if the target is contained within source,
+// and if it is, also returns the position relative to the source so we can properly check if it's
+// within the current selection.
+static bool wxRichTextCtrlIsContainedIn(wxRichTextParagraphLayoutBox* source, wxRichTextParagraphLayoutBox* target,
+                                        long& position)
+{
+    wxRichTextObject* t = target;
+    while (t)
+    {
+        if (t->GetParent() == source)
+        {
+            position = t->GetRange().GetStart();
+            return true;
+        }
+
+        t = t->GetParent();
+    }
+    return false;
+}
+
 void wxRichTextCtrl::OnDrop(wxCoord WXUNUSED(x), wxCoord WXUNUSED(y), wxDragResult def, wxDataObject* DataObj)
 {
     m_preDrag = false;
@@ -5037,16 +5063,23 @@ void wxRichTextCtrl::OnDrop(wxCoord WXUNUSED(x), wxCoord WXUNUSED(y), wxDragResu
     if (richTextBuffer)
     {
         long position = GetCaretPosition();
+        long positionRelativeToSource = position;
         wxRichTextRange selectionrange = GetInternalSelectionRange();
-        if (selectionrange.Contains(position) && (def == wxDragMove))
+        if (def == wxDragMove)
         {
-            // It doesn't make sense to move onto itself
-            return;
+            // Are the containers the same, or is one contained within the other?
+            if (((originContainer == destContainer) ||
+                 wxRichTextCtrlIsContainedIn(originContainer, destContainer, positionRelativeToSource)) &&
+                selectionrange.Contains(positionRelativeToSource))
+            {
+                // It doesn't make sense to move onto itself
+                return;
+            }
         }
 
         // If we're moving, and the data is being moved forward, we need to drop first, then delete the selection
         // If moving backwards, we need to delete then drop. If we're copying (or doing nothing) we don't delete anyway
-        bool DeleteAfter = (def == wxDragMove) && (position > selectionrange.GetEnd());
+        bool DeleteAfter = (def == wxDragMove) && (positionRelativeToSource > selectionrange.GetEnd());
         if ((def == wxDragMove) && !DeleteAfter)
         {
             // We can't use e.g. DeleteSelectedContent() as it uses the focus container
@@ -5374,10 +5407,7 @@ void wxRichTextCaret::DoSize()
     {
         m_countVisible = 0;
         DoHide();
-    }
 
-    if (countVisible > 0)
-    {
         m_countVisible = countVisible;
         DoShow();
     }

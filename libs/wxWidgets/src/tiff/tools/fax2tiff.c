@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 1990-1997 Sam Leffler
  * Copyright (c) 1991-1997 Silicon Graphics, Inc.
@@ -71,11 +70,22 @@ uint32	badfaxlines;
 int	copyFaxFile(TIFF* tifin, TIFF* tifout);
 static	void usage(void);
 
+/*
+  Struct to carry client data.  Note that it does not appear that the client
+  data is actually used in this program.
+*/
+typedef union _FAX_Client_Data
+{
+	thandle_t fh; /* Operating system file handle */
+	int fd;      /* Integer file descriptor */
+} FAX_Client_Data;
+
 int
 main(int argc, char* argv[])
 {
 	FILE *in;
 	TIFF *out = NULL;
+	FAX_Client_Data client_data;
 	TIFFErrorHandler whandler = NULL;
 	int compression_in = COMPRESSION_CCITTFAX3;
 	int compression_out = COMPRESSION_CCITTFAX3;
@@ -94,11 +104,13 @@ main(int argc, char* argv[])
 	int c;
 	int pn, npages;
 	float resY = 196.0;
+
+#if !HAVE_DECL_OPTARG
 	extern int optind;
 	extern char* optarg;
+#endif
 
-
-	while ((c = getopt(argc, argv, "R:X:o:1234ABLMPUW5678abcflmprsuvwz?")) != -1)
+	while ((c = getopt(argc, argv, "R:X:o:r:1234ABLMPUW5678abcflmprsuvwz?")) != -1)
 		switch (c) {
 			/* input-related options */
 		case '3':		/* input is g3-encoded */
@@ -264,10 +276,11 @@ main(int argc, char* argv[])
 			continue;
 		}
 #if defined(_WIN32) && defined(USE_WIN32_FILEIO)
-                TIFFSetClientdata(faxTIFF, (thandle_t)_get_osfhandle(fileno(in)));
+		client_data.fh = (thandle_t)_get_osfhandle(fileno(in));
 #else
-                TIFFSetClientdata(faxTIFF, (thandle_t)fileno(in));
+		client_data.fd = fileno(in);
 #endif
+		TIFFSetClientdata(faxTIFF, client_data.fh);
 		TIFFSetFileName(faxTIFF, (const char*)argv[optind]);
 		TIFFSetField(out, TIFFTAG_IMAGEWIDTH, xsize);
 		TIFFSetField(out, TIFFTAG_BITSPERSAMPLE, 1);
@@ -351,6 +364,10 @@ copyFaxFile(TIFF* tifin, TIFF* tifout)
 	int ok;
 
 	tifin->tif_rawdatasize = (tmsize_t)TIFFGetFileSize(tifin);
+	if (tifin->tif_rawdatasize == 0) {
+		TIFFError(tifin->tif_name, "Empty input file");
+		return (0);
+	}
 	tifin->tif_rawdata = _TIFFmalloc(tifin->tif_rawdatasize);
 	if (tifin->tif_rawdata == NULL) {
 		TIFFError(tifin->tif_name, "Not enough memory");

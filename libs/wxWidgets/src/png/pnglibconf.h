@@ -1,8 +1,9 @@
 /* pnglibconf.h - library build configuration */
 
-/* libpng version 1.6.21, January 15, 2016 */
+/* libpng version 1.6.37 */
 
-/* Copyright (c) 1998-2016 Glenn Randers-Pehrson */
+/* Copyright (c) 2018-2019 Cosmin Truta */
+/* Copyright (c) 1998-2002,2004,2006-2018 Glenn Randers-Pehrson */
 
 /* This code is released under the libpng license. */
 /* For conditions of distribution and use, see the disclaimer */
@@ -42,6 +43,8 @@
 #define PNG_IO_STATE_SUPPORTED
 #define PNG_MNG_FEATURES_SUPPORTED
 #define PNG_POINTER_INDEXING_SUPPORTED
+/*#undef PNG_POWERPC_VSX_API_SUPPORTED*/
+/*#undef PNG_POWERPC_VSX_CHECK_SUPPORTED*/
 #define PNG_PROGRESSIVE_READ_SUPPORTED
 #define PNG_READ_16BIT_SUPPORTED
 #define PNG_READ_ALPHA_MODE_SUPPORTED
@@ -80,6 +83,7 @@
 #define PNG_READ_USER_TRANSFORM_SUPPORTED
 #define PNG_READ_bKGD_SUPPORTED
 #define PNG_READ_cHRM_SUPPORTED
+#define PNG_READ_eXIf_SUPPORTED
 #define PNG_READ_gAMA_SUPPORTED
 #define PNG_READ_hIST_SUPPORTED
 #define PNG_READ_iCCP_SUPPORTED
@@ -107,6 +111,7 @@
 #define PNG_SIMPLIFIED_READ_SUPPORTED
 #define PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED
 #define PNG_SIMPLIFIED_WRITE_BGR_SUPPORTED
+#define PNG_SIMPLIFIED_WRITE_STDIO_SUPPORTED
 #define PNG_SIMPLIFIED_WRITE_SUPPORTED
 #define PNG_STDIO_SUPPORTED
 #define PNG_STORE_UNKNOWN_CHUNKS_SUPPORTED
@@ -148,6 +153,7 @@
 #define PNG_WRITE_WEIGHTED_FILTER_SUPPORTED
 #define PNG_WRITE_bKGD_SUPPORTED
 #define PNG_WRITE_cHRM_SUPPORTED
+#define PNG_WRITE_eXIf_SUPPORTED
 #define PNG_WRITE_gAMA_SUPPORTED
 #define PNG_WRITE_hIST_SUPPORTED
 #define PNG_WRITE_iCCP_SUPPORTED
@@ -165,6 +171,7 @@
 #define PNG_WRITE_zTXt_SUPPORTED
 #define PNG_bKGD_SUPPORTED
 #define PNG_cHRM_SUPPORTED
+#define PNG_eXIf_SUPPORTED
 #define PNG_gAMA_SUPPORTED
 #define PNG_hIST_SUPPORTED
 #define PNG_iCCP_SUPPORTED
@@ -251,6 +258,8 @@
 #define png_get_copyright wx_png_get_copyright
 #define png_get_current_pass_number wx_png_get_current_pass_number
 #define png_get_current_row_number wx_png_get_current_row_number
+#define png_get_eXIf wx_png_get_eXIf
+#define png_get_eXIf_1 wx_png_get_eXIf_1
 #define png_get_error_ptr wx_png_get_error_ptr
 #define png_get_filter_type wx_png_get_filter_type
 #define png_get_gAMA wx_png_get_gAMA
@@ -319,6 +328,7 @@
 #define png_image_finish_read wx_png_image_finish_read
 #define png_image_free wx_png_image_free
 #define png_image_write_to_file wx_png_image_write_to_file
+#define png_image_write_to_memory wx_png_image_write_to_memory
 #define png_image_write_to_stdio wx_png_image_write_to_stdio
 #define png_info_init_3 wx_png_info_init_3
 #define png_init_io wx_png_init_io
@@ -366,6 +376,8 @@
 #define png_set_compression_strategy wx_png_set_compression_strategy
 #define png_set_compression_window_bits wx_png_set_compression_window_bits
 #define png_set_crc_action wx_png_set_crc_action
+#define png_set_eXIf wx_png_set_eXIf
+#define png_set_eXIf_1 wx_png_set_eXIf_1
 #define png_set_error_fn wx_png_set_error_fn
 #define png_set_expand wx_png_set_expand
 #define png_set_expand_16 wx_png_set_expand_16

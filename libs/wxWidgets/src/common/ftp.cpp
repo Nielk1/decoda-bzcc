@@ -237,7 +237,7 @@ char wxFTP::SendCommand(const wxString& command)
 
     wxString tmp_str = command + wxT("\r\n");
     const wxWX2MBbuf tmp_buf = tmp_str.mb_str();
-    if ( Write(wxMBSTRINGCAST tmp_buf, strlen(tmp_buf)).Error())
+    if ( Write(static_cast<const char *>(tmp_buf), strlen(tmp_buf)).Error())
     {
         m_lastError = wxPROTO_NETERR;
         return 0;
@@ -459,20 +459,21 @@ wxString wxFTP::Pwd()
     {
         // the result is at least that long if CheckCommand() succeeded
         wxString::const_iterator p = m_lastResult.begin() + LEN_CODE + 1;
-        if ( *p != wxT('"') )
+        const wxString::const_iterator end = m_lastResult.end();
+        if ( p == end || *p != wxT('"') )
         {
             wxLogDebug(wxT("Missing starting quote in reply for PWD: %s"),
-                       wxString(p, m_lastResult.end()));
+                       wxString(p, end));
         }
         else
         {
-            for ( ++p; *p; ++p )
+            for ( ++p; p != end; ++p )
             {
                 if ( *p == wxT('"') )
                 {
                     // check if the quote is doubled
                     ++p;
-                    if ( !*p || *p != wxT('"') )
+                    if ( p == end || *p != wxT('"') )
                     {
                         // no, this is the end
                         break;
@@ -484,7 +485,7 @@ wxString wxFTP::Pwd()
                 path += *p;
             }
 
-            if ( !*p )
+            if ( p != end )
             {
                 wxLogDebug(wxT("Missing ending quote in reply for PWD: %s"),
                            m_lastResult.c_str() + LEN_CODE + 1);
@@ -581,7 +582,13 @@ wxSocketBase *wxFTP::GetActivePort()
     addrNew.AnyAddress();
     addrNew.Service(0); // pick an open port number.
 
-    wxSocketServer *sockSrv = new wxSocketServer(addrNew);
+    wxSocketServer* const
+        sockSrv = new wxSocketServer
+                      (
+                        addrNew,
+                        wxSocketServer::GetBlockingFlagIfNeeded()
+                      );
+
     if (!sockSrv->IsOk())
     {
         // We use IsOk() here to see if everything is ok
@@ -646,7 +653,11 @@ wxSocketBase *wxFTP::GetPassivePort()
     addr.Hostname(hostaddr);
     addr.Service(port);
 
-    wxSocketClient *client = new wxSocketClient();
+    // If we're used from a worker thread or can't dispatch events even though
+    // we're in the main one, we can't use non-blocking sockets.
+    wxSocketClient* const
+        client = new wxSocketClient(wxSocketClient::GetBlockingFlagIfNeeded());
+
     if ( !client->Connect(addr) )
     {
         m_lastError = wxPROTO_CONNERR;
@@ -721,7 +732,7 @@ public:
     {
     }
 
-    virtual ~wxOutputFTPStream(void)
+    virtual ~wxOutputFTPStream()
     {
         if ( IsOk() )
         {

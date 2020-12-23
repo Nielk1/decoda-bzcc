@@ -35,6 +35,7 @@
 #define png_write_sBIT wx_png_write_sBIT
 #define png_write_cHRM_fixed wx_png_write_cHRM_fixed
 #define png_write_sRGB wx_png_write_sRGB
+#define png_write_eXIf wx_png_write_eXIf
 #define png_write_iCCP wx_png_write_iCCP
 #define png_write_sPLT wx_png_write_sPLT
 #define png_write_tRNS wx_png_write_tRNS
@@ -55,18 +56,12 @@
 #define png_do_read_interlace wx_png_do_read_interlace
 #define png_do_write_interlace wx_png_do_write_interlace
 #define png_read_filter_row wx_png_read_filter_row
-#define png_read_filter_row_up_neon wx_png_read_filter_row_up_neon
-#define png_read_filter_row_sub3_neon wx_png_read_filter_row_sub3_neon
-#define png_read_filter_row_sub4_neon wx_png_read_filter_row_sub4_neon
-#define png_read_filter_row_avg3_neon wx_png_read_filter_row_avg3_neon
-#define png_read_filter_row_avg4_neon wx_png_read_filter_row_avg4_neon
-#define png_read_filter_row_paeth3_neon wx_png_read_filter_row_paeth3_neon
-#define png_read_filter_row_paeth4_neon wx_png_read_filter_row_paeth4_neon
 #define png_write_find_filter wx_png_write_find_filter
 #define png_read_IDAT_data wx_png_read_IDAT_data
 #define png_read_finish_IDAT wx_png_read_finish_IDAT
 #define png_read_finish_row wx_png_read_finish_row
 #define png_read_start_row wx_png_read_start_row
+#define png_zlib_inflate wx_png_zlib_inflate
 #define png_read_transform_info wx_png_read_transform_info
 #define png_do_strip_channel wx_png_do_strip_channel
 #define png_do_swap wx_png_do_swap
@@ -78,6 +73,7 @@
 #define png_handle_IEND wx_png_handle_IEND
 #define png_handle_bKGD wx_png_handle_bKGD
 #define png_handle_cHRM wx_png_handle_cHRM
+#define png_handle_eXIf wx_png_handle_eXIf
 #define png_handle_gAMA wx_png_handle_gAMA
 #define png_handle_hIST wx_png_handle_hIST
 #define png_handle_iCCP wx_png_handle_iCCP
@@ -94,6 +90,7 @@
 #define png_handle_tRNS wx_png_handle_tRNS
 #define png_handle_zTXt wx_png_handle_zTXt
 #define png_check_chunk_name wx_png_check_chunk_name
+#define png_check_chunk_length wx_png_check_chunk_length
 #define png_handle_unknown wx_png_handle_unknown
 #define png_chunk_unknown_handling wx_png_chunk_unknown_handling
 #define png_do_read_transformations wx_png_do_read_transformations
@@ -162,5 +159,4 @@
 #define png_safe_warning wx_png_safe_warning
 #define png_safe_execute wx_png_safe_execute
 #define png_image_error wx_png_image_error
-#define png_init_filter_functions_neon wx_png_init_filter_functions_neon
 #define png_check_keyword wx_png_check_keyword

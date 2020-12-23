@@ -1,0 +1,4 @@
+	if not exist vc14x_mswudll_x64 mkdir vc14x_mswudll_x64
+	cl /c /nologo /TP /Fovc14x_mswudll_x64\wxrc_wxrc.obj /MD /DWIN32  /Zi /Fdvc14x_mswudll_x64\wxrc.pdb   /O2 /D_CRT_SECURE_NO_DEPRECATE=1  /D_CRT_NON_CONFORMING_SWPRINTFS=1 /D_SCL_SECURE_NO_WARNINGS=1  /D__NO_VC_CRTDBG__  /D__WXMSW__    /DNDEBUG      /D_UNICODE /I.\..\..\lib\vc14x_x64_dll\mswu /I.\..\..\include   /W4 /I. /DWXUSINGDLL /D_CONSOLE  /DwxUSE_GUI=0 /GR /EHsc    .\wxrc.cpp
+wxrc.cpp
+	link /NOLOGO /OUT:vc14x_mswudll_x64\wxrc.exe  /DEBUG /pdb:"vc14x_mswudll_x64\wxrc.pdb" /opt:ref /opt:icf  /MANIFEST:EMBED  /MANIFESTINPUT:./../../include/wx/msw/amd64_dpi_aware_pmv2.manifest /MACHINE:X64 /LIBPATH:.\..\..\lib\vc14x_x64_dll /SUBSYSTEM:CONSOLE   @C:\Users\Nielk1\AppData\Local\Temp\nm32B7.tmp

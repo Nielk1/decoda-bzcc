@@ -71,7 +71,13 @@ bool wxTextEntryDialog::Create(wxWindow *parent,
                                      long style,
                                      const wxPoint& pos)
 {
-    if ( !wxDialog::Create(GetParentForModalDialog(parent, style),
+    // Do not pass style to GetParentForModalDialog() as wxDIALOG_NO_PARENT
+    // has the same numeric value as wxTE_MULTILINE and so attempting to create
+    // a dialog for editing multiline text would also prevent it from having a
+    // parent which is undesirable. As it is, we can't create a text entry
+    // dialog without a parent which is not ideal neither but is a much less
+    // important problem.
+    if ( !wxDialog::Create(GetParentForModalDialog(parent, 0),
                            wxID_ANY, caption,
                            pos, wxDefaultSize,
                            wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER) )
@@ -120,9 +126,6 @@ bool wxTextEntryDialog::Create(wxWindow *parent,
     if ( style & wxCENTRE )
         Centre( wxBOTH );
 
-    m_textctrl->SelectAll();
-    m_textctrl->SetFocus();
-
     wxEndBusyCursor();
 
     return true;
@@ -133,6 +136,7 @@ bool wxTextEntryDialog::TransferDataToWindow()
     if ( m_textctrl )
     {
         m_textctrl->SetValue(m_value);
+        m_textctrl->SetFocus();
     }
 
     return wxDialog::TransferDataToWindow();
