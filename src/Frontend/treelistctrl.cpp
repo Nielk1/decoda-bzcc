@@ -45,6 +45,10 @@
     #include "wx/mac/private.h"
 #endif
 
+#if wxVERSION_NUMBER > 3100
+    // The 'Tree' of wxTreeItemAttr no longer exists
+    #define wxTreeItemAttr wxItemAttr
+#endif
 
 // ---------------------------------------------------------------------------
 // array types
