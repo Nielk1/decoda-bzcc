@@ -54,7 +54,7 @@ wxDEFINE_EVENT( wxEVT_TOGGLEBUTTON, wxCommandEvent );
 // wxBitmapToggleButton
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapToggleButton, wxToggleButton);
+IMPLEMENT_DYNAMIC_CLASS(wxBitmapToggleButton, wxToggleButton)
 
 bool wxBitmapToggleButton::Create( wxWindow *parent, wxWindowID id,
                 const wxBitmap& label,const wxPoint& pos, const wxSize& size, long style,
@@ -83,7 +83,7 @@ bool wxBitmapToggleButton::Create( wxWindow *parent, wxWindowID id,
 // wxToggleButton
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxToggleButton, wxControl);
+IMPLEMENT_DYNAMIC_CLASS(wxToggleButton, wxControl)
 
 void wxToggleButton::Init()
 {
@@ -135,11 +135,6 @@ WXDWORD wxToggleButton::MSWGetStyle(long style, WXDWORD *exstyle) const
     return msStyle;
 }
 
-bool wxToggleButton::MSWIsPushed() const
-{
-    return GetValue();
-}
-
 void wxToggleButton::SetValue(bool val)
 {
     m_state = val;
@@ -149,7 +144,7 @@ void wxToggleButton::SetValue(bool val)
     }
     else
     {
-        ::SendMessage(GetHwnd(), BM_SETCHECK, val ? BST_CHECKED : BST_UNCHECKED, 0);
+        ::SendMessage(GetHwnd(), BM_SETCHECK, val, 0);
     }
 }
 
@@ -188,6 +183,14 @@ bool wxToggleButton::MSWCommand(WXUINT param, WXWORD WXUNUSED(id))
     event.SetEventObject(this);
     ProcessCommand(event);
     return true;
+}
+
+wxAnyButton::State wxToggleButton::GetNormalState() const
+{
+    if ( GetValue() )
+        return State_Pressed;
+    else
+        return State_Normal;
 }
 
 #endif // wxUSE_TOGGLEBTN

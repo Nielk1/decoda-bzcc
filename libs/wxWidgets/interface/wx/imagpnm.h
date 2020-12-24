@@ -1,16 +1,16 @@
-/////////////////////////////////////////////////////////////////////////////
-// Name:        imagpnm.h
-// Purpose:     interface of wxPNMHandler
-// Author:      Samuel Dunn
-// Licence:     wxWindows licence
-////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////// 
+// Name:        imagpnm.h 
+// Purpose:     interface of wxPNMHandler 
+// Author:      Samuel Dunn 
+// Licence:     wxWindows licence 
+//////////////////////////////////////////////////////////////////////////// 
 
-/**
+/** 
     @class wxPNMHandler
 
     This is the image handler for the PNM format.
 
-    @library{wxcore}
+    @library{core}
     @category{gdi}
 
     @see wxImage, wxImageHandler, wxInitAllImageHandlers()

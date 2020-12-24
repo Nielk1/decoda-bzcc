@@ -1,4 +1,5 @@
 /******************************************************************************
+ *
  * Project:  GeoTIFF Overview Builder
  * Purpose:  Mainline for building overviews in a TIFF file.
  * Author:   Frank Warmerdam, warmerdam@pobox.com
@@ -26,10 +27,6 @@
  ******************************************************************************
  *
  * $Log: addtiffo.c,v $
- * Revision 1.8  2015-05-30 20:30:27  bfriesen
- * * contrib/addtiffo/addtiffo.c (main): Possibly address Coverity
- * 1024226 "Untrusted value as argument".
- *
  * Revision 1.7  2010-06-08 18:55:15  bfriesen
  * * contrib: Add an emacs formatting mode footer to all source files
  * so that emacs can be effectively used.
@@ -122,8 +119,7 @@ int main( int argc, char ** argv )
     while( nOverviewCount < argc - 2 && nOverviewCount < 100 )
     {
         anOverviews[nOverviewCount] = atoi(argv[nOverviewCount+2]);
-        if( (anOverviews[nOverviewCount] <= 0) ||
-            ((anOverviews[nOverviewCount] > 1024)))
+        if( anOverviews[nOverviewCount] <= 0)
         {
             fprintf( stderr, "Incorrect parameters\n" );
             return(1);
@@ -173,7 +169,7 @@ int main( int argc, char ** argv )
 /*
  * Local Variables:
  * mode: c
- * c-basic-offset: 4
+ * c-basic-offset: 8
  * fill-column: 78
  * End:
  */

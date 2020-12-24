@@ -38,7 +38,7 @@
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxIcon, wxGDIObject);
+IMPLEMENT_DYNAMIC_CLASS(wxIcon, wxGDIObject)
 
 // ============================================================================
 // implementation
@@ -52,7 +52,9 @@ void wxIconRefData::Free()
 {
     if ( m_hIcon )
     {
+#ifndef __WXMICROWIN__
         ::DestroyIcon((HICON) m_hIcon);
+#endif
 
         m_hIcon = 0;
     }
@@ -111,6 +113,7 @@ wxObjectRefData *wxIcon::CloneRefData(const wxObjectRefData *dataOrig) const
 
 void wxIcon::CopyFromBitmap(const wxBitmap& bmp)
 {
+#ifndef __WXMICROWIN__
     HICON hicon = wxBitmapToHICON(bmp);
     if ( !hicon )
     {
@@ -118,8 +121,10 @@ void wxIcon::CopyFromBitmap(const wxBitmap& bmp)
     }
     else
     {
-        InitFromHICON((WXHICON)hicon, bmp.GetWidth(), bmp.GetHeight());
+        SetHICON((WXHICON)hicon);
+        SetSize(bmp.GetWidth(), bmp.GetHeight());
     }
+#endif // __WXMICROWIN__
 }
 
 void wxIcon::CreateIconFromXpm(const char* const* data)
@@ -153,26 +158,11 @@ bool wxIcon::LoadFile(const wxString& filename,
 
 bool wxIcon::CreateFromHICON(WXHICON icon)
 {
-    wxSize size = wxGetHiconSize(icon);
-    return InitFromHICON(icon, size.GetWidth(), size.GetHeight());
-}
+    SetHICON(icon);
+    if ( !IsOk() )
+        return false;
 
-bool wxIcon::InitFromHICON(WXHICON icon, int width, int height)
-{
-#if wxDEBUG_LEVEL >= 2
-    if ( icon != NULL )
-    {
-        wxSize size = wxGetHiconSize(icon);
-        wxASSERT_MSG(size.GetWidth() == width && size.GetHeight() == height,
-                     wxS("Inconsistent icon parameters"));
-    }
-#endif // wxDEBUG_LEVEL >= 2
+    SetSize(wxGetHiconSize(icon));
 
-    AllocExclusive();
-
-    GetGDIImageData()->m_handle = (WXHANDLE)icon;
-    GetGDIImageData()->m_width = width;
-    GetGDIImageData()->m_height = height;
-
-    return IsOk();
+    return true;
 }

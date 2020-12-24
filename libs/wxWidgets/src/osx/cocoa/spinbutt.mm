@@ -41,55 +41,25 @@ public :
         wxWidgetCocoaImpl(peer, w)
     {
         m_formerValue = 0;
-        m_trackValue = false;
     }
 
     ~wxSpinButtonCocoaImpl()
     {
     }
 
-    virtual void SetValue(wxInt32 v) wxOVERRIDE;
-    virtual void SetMinimum(wxInt32 v) wxOVERRIDE;
-    virtual void SetMaximum(wxInt32 v) wxOVERRIDE;
-    virtual void controlAction(WXWidget slf, void* _cmd, void *sender) wxOVERRIDE;
-    virtual void mouseEvent(WX_NSEvent event, WXWidget slf, void* _cmd) wxOVERRIDE;
+    virtual void controlAction(WXWidget slf, void* _cmd, void *sender);
+    virtual void mouseEvent(WX_NSEvent event, WXWidget slf, void* _cmd);
 private:
     int m_formerValue;
-    bool m_trackValue;
 };
-
-void wxSpinButtonCocoaImpl::SetValue(wxInt32 v)
-{
-    [(NSStepper*)m_osxView setIntValue:v];
-    if ( m_trackValue )
-        m_formerValue = [(NSStepper*)m_osxView intValue];
-}
-
-void wxSpinButtonCocoaImpl::SetMinimum(wxInt32 v)
-{
-    [(NSStepper*)m_osxView setMinValue:(double)v];
-    // Current value might be adjusted.
-    if ( m_trackValue )
-        m_formerValue = [(NSStepper*)m_osxView intValue];
-}
-
-void wxSpinButtonCocoaImpl::SetMaximum(wxInt32 v)
-{
-    [(NSStepper*)m_osxView setMaxValue:(double)v];
-    // Current value might be adjusted.
-    if ( m_trackValue )
-        m_formerValue = [(NSStepper*)m_osxView intValue];
-}
 
 void wxSpinButtonCocoaImpl::mouseEvent(WX_NSEvent event, WXWidget slf, void *_cmd)
 {
 
-    // Save and track the current value which may be changed
-    // in the mouse event handler
+    // send a release event in case we've been tracking the thumb
     if ( strcmp( sel_getName((SEL) _cmd) , "mouseDown:") == 0 )
     {
         m_formerValue = [(NSStepper*)m_osxView intValue];
-        m_trackValue = true;
     }
 
     wxWidgetCocoaImpl::mouseEvent(event, slf, _cmd);
@@ -119,7 +89,6 @@ void wxSpinButtonCocoaImpl::controlAction( WXWidget WXUNUSED(slf), void *WXUNUSE
             wxpeer->TriggerScrollEvent(wxEVT_SCROLL_LINEDOWN);
 
         m_formerValue = [(NSStepper*)m_osxView intValue];
-        m_trackValue = false;
     }
 }
 

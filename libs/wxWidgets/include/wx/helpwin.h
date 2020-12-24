@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Name:        wx/helpwin.h
-// Purpose:     Includes Windows help
+// Purpose:     Includes Windows or OS/2 help
 // Author:      Julian Smart
 // Modified by:
 // Created:
@@ -13,6 +13,8 @@
 
 #if defined(__WXMSW__)
 #include "wx/msw/helpwin.h"
+#elif defined(__WXPM__)
+#include "wx/os2/helpwin.h"
 #endif
 
 #endif

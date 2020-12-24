@@ -64,11 +64,7 @@
 // ----------------------------------------------------------------------------
 
 #if defined(__WXGTK__)
-    #ifdef __WXGTK20__
-        #include "wx/gtk/private/wrapgtk.h"
-    #else // GTK+ 1.x
-        #include <gtk/gtk.h>
-    #endif
+    #include <gtk/gtk.h>
     #include <gdk/gdkx.h>
     #define GetDisplay()        GDK_DISPLAY()
     #define GetXWindow(wxwin)   GDK_WINDOW_XWINDOW((wxwin)->m_widget->window)
@@ -104,15 +100,15 @@ protected:
     wxPoint        m_pos;
     wxBitmap       m_bmp;
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
 };
 
-wxBEGIN_EVENT_TABLE(wxTaskBarIconArea, wxTaskBarIconAreaBase)
+BEGIN_EVENT_TABLE(wxTaskBarIconArea, wxTaskBarIconAreaBase)
     EVT_SIZE(wxTaskBarIconArea::OnSizeChange)
     EVT_MOUSE_EVENTS(wxTaskBarIconArea::OnMouseEvent)
     EVT_MENU(wxID_ANY, wxTaskBarIconArea::OnMenuEvent)
     EVT_PAINT(wxTaskBarIconArea::OnPaint)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxTaskBarIconArea::wxTaskBarIconArea(wxTaskBarIcon *icon, const wxBitmap &bmp)
     : wxTaskBarIconAreaBase(), m_icon(icon), m_bmp(bmp)
@@ -250,7 +246,7 @@ bool wxTaskBarIconBase::IsAvailable()
 // wxTaskBarIcon class:
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTaskBarIcon, wxEvtHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxTaskBarIcon, wxEvtHandler)
 
 wxTaskBarIcon::wxTaskBarIcon() : m_iconWnd(NULL)
 {
@@ -260,7 +256,8 @@ wxTaskBarIcon::~wxTaskBarIcon()
 {
     if (m_iconWnd)
     {
-        m_iconWnd->Unbind(wxEVT_DESTROY, &wxTaskBarIcon::OnDestroy, this);
+        m_iconWnd->Disconnect(wxEVT_DESTROY,
+            wxWindowDestroyEventHandler(wxTaskBarIcon::OnDestroy), NULL, this);
         RemoveIcon();
     }
 }
@@ -293,7 +290,9 @@ bool wxTaskBarIcon::SetIcon(const wxIcon& icon, const wxString& tooltip)
         m_iconWnd = new wxTaskBarIconArea(this, bmp);
         if (m_iconWnd->IsOk())
         {
-            m_iconWnd->Bind(wxEVT_DESTROY, &wxTaskBarIcon::OnDestroy, this);
+            m_iconWnd->Connect(wxEVT_DESTROY,
+                wxWindowDestroyEventHandler(wxTaskBarIcon::OnDestroy),
+                NULL, this);
             m_iconWnd->Show();
         }
         else

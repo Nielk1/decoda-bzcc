@@ -84,7 +84,7 @@ enum wxTipKind
     The images below show some examples of rich tooltips on different
     platforms, with various customizations applied.
 
-    @library{wxcore}
+    @library{wxadv}
     @category{miscwnd}
     @appearance{richtooltip}
 

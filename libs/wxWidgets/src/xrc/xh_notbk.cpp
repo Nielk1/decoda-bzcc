@@ -26,7 +26,7 @@
 #include "wx/notebook.h"
 #include "wx/imaglist.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxNotebookXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxNotebookXmlHandler, wxXmlResourceHandler)
 
 wxNotebookXmlHandler::wxNotebookXmlHandler()
                      :wxXmlResourceHandler(),

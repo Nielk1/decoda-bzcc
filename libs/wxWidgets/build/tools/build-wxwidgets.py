@@ -16,6 +16,8 @@ import shutil
 import types
 import subprocess
 
+PY3 = sys.version_info[0] == 3
+
 # builder object
 wxBuilder = None
 
@@ -201,6 +203,7 @@ def main(scriptName, args):
         "jobs"          : (defJobs, "Number of jobs to run at one time in make. Default: %s" % defJobs),
         "install"       : (False, "Install the toolkit to the installdir directory, or the default dir."),
         "installdir"    : ("", "Directory where built wxWidgets will be installed"),
+        "gtk3"          : (False, "On Linux build for gtk3 (default gtk2)"),
         "mac_distdir"   : (None, "If set on Mac, will create an installer package in the specified dir."),
         "mac_universal_binary" 
                         : ("", "Comma separated list of architectures to include in the Mac universal binary"),
@@ -213,8 +216,8 @@ def main(scriptName, args):
         "rebake"        : (False, "Regenerate Bakefile and autoconf files"),
         "unicode"       : (False, "Build the library with unicode support"),
         "wxpython"      : (False, "Build the wxWidgets library with all options needed by wxPython"),
-        "cocoa"         : (False, "Build the old Mac Cocoa port."),
-        "osx_cocoa"     : (False, "Build the new Cocoa port"),
+        "osx_cocoa"     : (False, "Build the Cocoa port"),
+        "osx_carbon"    : (False, "Build the Carbon port"),
         "shared"        : (False, "Build wx as a dynamic library"),
         "extra_make"    : ("", "Extra args to pass on [n]make's command line."),
         "features"      : ("", "A comma-separated list of wxUSE_XYZ defines on Win, or a list of configure flags on unix."),
@@ -258,11 +261,13 @@ def main(scriptName, args):
         if options.debug:
             configure_opts.append("--enable-debug")
             
-        if options.cocoa:
-            configure_opts.append("--with-old_cocoa")
-            
         if options.osx_cocoa:
             configure_opts.append("--with-osx_cocoa")
+        elif options.osx_carbon:
+            configure_opts.append("--with-osx_carbon")
+            
+        if options.gtk3:
+            configure_opts.append("--with-gtk=3")
 
         wxpy_configure_opts = [
                             "--with-opengl",
@@ -289,14 +294,10 @@ def main(scriptName, args):
         # TODO: there should be a command line option to set the SDK...
         if sys.platform.startswith("darwin"):
             for xcodePath in getXcodePaths():
-                sdks = [
-                    xcodePath+"/SDKs/MacOSX10.5.sdk",
-                    xcodePath+"/SDKs/MacOSX10.6.sdk",
-                    xcodePath+"/SDKs/MacOSX10.7.sdk",
-                    xcodePath+"/SDKs/MacOSX10.8.sdk",
-                    ]
+                sdks = [ xcodePath+"/SDKs/MacOSX10.{}.sdk".format(n) 
+                         for n in range(5, 15) ]
             
-                # use the lowest available sdk
+                # use the lowest available sdk on the build machine
                 for sdk in sdks:
                     if os.path.exists(sdk):
                         wxpy_configure_opts.append(
@@ -375,6 +376,8 @@ def main(scriptName, args):
         print("creating wx/msw/setup.h from setup0.h")
         if options.unicode:
             flags["wxUSE_UNICODE"] = "1"
+            if VERSION < (2,9):
+                flags["wxUSE_UNICODE_MSLU"] = "1"
     
         if options.cairo:
             if not os.environ.get("CAIRO_ROOT"):
@@ -405,23 +408,30 @@ def main(scriptName, args):
     
         mswIncludeDir = os.path.join(wxRootDir, "include", "wx", "msw")
         setup0File = os.path.join(mswIncludeDir, "setup0.h")
-        setupText = open(setup0File, "rb").read()
-        
+        with open(setup0File, "rb") as f:
+            setupText = f.read()
+            if PY3:
+                setupText = setupText.decode('utf-8')
+            
         for flag in flags:
             setupText, subsMade = re.subn(flag + "\s+?\d", "%s %s" % (flag, flags[flag]), setupText)
             if subsMade == 0:
                 print("Flag %s wasn't found in setup0.h!" % flag)
                 sys.exit(1)
-    
-        setupFile = open(os.path.join(mswIncludeDir, "setup.h"), "wb")
-        setupFile.write(setupText)
-        setupFile.close()
+                
+        with open(os.path.join(mswIncludeDir, "setup.h"), "wb") as f:
+            if PY3:
+                setupText = setupText.encode('utf-8')
+            f.write(setupText)
+
         args = []
         if toolkit == "msvc":
             print("setting build options...")
             args.append("-f makefile.vc")
             if options.unicode:
                 args.append("UNICODE=1")
+                if VERSION < (2,9):
+                    args.append("MSLU=1")
     
             if options.wxpython:
                 args.append("OFFICIAL_BUILD=1")

@@ -126,7 +126,7 @@ public:
 private:
     void HandleDisconnect(wxTCPConnection *connection);
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
     wxDECLARE_NO_COPY_CLASS(wxTCPEventHandler);
 };
 
@@ -155,17 +155,17 @@ public:
     }
 
     // as ms_handler is initialized on demand, don't do anything in OnInit()
-    virtual bool OnInit() wxOVERRIDE { return true; }
-    virtual void OnExit() wxOVERRIDE { wxDELETE(ms_handler); }
+    virtual bool OnInit() { return true; }
+    virtual void OnExit() { wxDELETE(ms_handler); }
 
 private:
     static wxTCPEventHandler *ms_handler;
 
-    wxDECLARE_DYNAMIC_CLASS(wxTCPEventHandlerModule);
+    DECLARE_DYNAMIC_CLASS(wxTCPEventHandlerModule)
     wxDECLARE_NO_COPY_CLASS(wxTCPEventHandlerModule);
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTCPEventHandlerModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxTCPEventHandlerModule, wxModule)
 
 wxTCPEventHandler *wxTCPEventHandlerModule::ms_handler = NULL;
 
@@ -349,9 +349,9 @@ private:
 // implementation
 // ==========================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTCPServer, wxServerBase);
-wxIMPLEMENT_DYNAMIC_CLASS(wxTCPClient, wxClientBase);
-wxIMPLEMENT_CLASS(wxTCPConnection, wxConnectionBase);
+IMPLEMENT_DYNAMIC_CLASS(wxTCPServer, wxServerBase)
+IMPLEMENT_DYNAMIC_CLASS(wxTCPClient, wxClientBase)
+IMPLEMENT_CLASS(wxTCPConnection, wxConnectionBase)
 
 // --------------------------------------------------------------------------
 // wxTCPClient
@@ -683,10 +683,10 @@ bool wxTCPConnection::DoAdvise(const wxString& item,
 // wxTCPEventHandler (private class)
 // --------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxTCPEventHandler, wxEvtHandler)
+BEGIN_EVENT_TABLE(wxTCPEventHandler, wxEvtHandler)
     EVT_SOCKET(_CLIENT_ONREQUEST_ID, wxTCPEventHandler::Client_OnRequest)
     EVT_SOCKET(_SERVER_ONREQUEST_ID, wxTCPEventHandler::Server_OnRequest)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 void wxTCPEventHandler::HandleDisconnect(wxTCPConnection *connection)
 {

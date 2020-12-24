@@ -17,8 +17,8 @@
 
 #include "wx/archive.h"
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxArchiveEntry, wxObject);
-wxIMPLEMENT_ABSTRACT_CLASS(wxArchiveClassFactory, wxFilterClassFactoryBase);
+IMPLEMENT_ABSTRACT_CLASS(wxArchiveEntry, wxObject)
+IMPLEMENT_ABSTRACT_CLASS(wxArchiveClassFactory, wxFilterClassFactoryBase)
 
 
 /////////////////////////////////////////////////////////////////////////////

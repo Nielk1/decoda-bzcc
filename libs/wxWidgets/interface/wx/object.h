@@ -41,7 +41,7 @@
         virtual wxObjectRefData *CreateRefData() const;
         virtual wxObjectRefData *CloneRefData(const wxObjectRefData *data) const;
 
-        wxDECLARE_DYNAMIC_CLASS(MyCar);
+        wxDECLARE_DYNAMIC_CLASS(MyCar)
     };
 
 
@@ -609,23 +609,8 @@ public:
     void reset(T *ptr);
 
     /**
-        Release the owned pointer, making caller responsible for decrementing
-        its reference count.
-
-        This method should be used only for interoperating with the existing
-        code working with raw pointers, typically when returning a raw pointer
-        from a function.
-
-        After calling this function, this object becomes invalid, i.e. it
-        doesn't hold any valid pointer value any more.
-
-        @since 3.1.4
-    */
-    T* release();
-
-    /**
         Conversion to a boolean expression (in a variant which is not
-        convertible to anything but a boolean expression).
+        convertable to anything but a boolean expression).
 
         If this class contains a valid pointer it will return @true, if it contains
         a @NULL pointer it will return @false.
@@ -733,7 +718,7 @@ public:
 /**
     Used in a C++ implementation file to complete the declaration of a class
     that has run-time type information.
-
+    
     @header{wx/object.h}
 
     Example:
@@ -741,7 +726,7 @@ public:
     @code
     wxIMPLEMENT_ABSTRACT_CLASS(wxCommand, wxObject);
 
-    wxCommand::wxCommand()
+    wxCommand::wxCommand(void)
     {
         ...
     }
@@ -751,7 +736,7 @@ public:
 
 /**
     Used in a C++ implementation file to complete the declaration of a class
-    that has run-time type information and two base classes.
+    that has run-time type information and two base classes. 
 
     @header{wx/object.h}
 */
@@ -769,7 +754,7 @@ public:
     @code
     wxIMPLEMENT_DYNAMIC_CLASS(wxFrame, wxWindow);
 
-    wxFrame::wxFrame()
+    wxFrame::wxFrame(void)
     {
         ...
     }
@@ -807,6 +792,39 @@ public:
 #define wxIMPLEMENT_CLASS2( className, baseClassName1, baseClassName2 )
 
 /**
+    Same as @c const_cast<T>(x) if the compiler supports const cast or @c (T)x for
+    old compilers. Unlike wxConstCast(), the cast it to the type @c T and not to
+    <tt>T *</tt> and also the order of arguments is the same as for the standard cast.
+
+    @header{wx/defs.h}
+
+    @see wx_reinterpret_cast(), wx_static_cast()
+*/
+#define wx_const_cast(T, x)
+
+/**
+    Same as @c reinterpret_cast<T>(x) if the compiler supports reinterpret cast or
+    @c (T)x for old compilers.
+
+    @header{wx/defs.h}
+
+    @see wx_const_cast(), wx_static_cast()
+*/
+#define wx_reinterpret_cast(T, x)
+
+/**
+    Same as @c static_cast<T>(x) if the compiler supports static cast or @c (T)x for
+    old compilers. Unlike wxStaticCast(), there are no checks being done and
+    the meaning of the macro arguments is exactly the same as for the standard
+    static cast, i.e. @a T is the full type name and star is not appended to it.
+
+    @header{wx/defs.h}
+
+    @see wx_const_cast(), wx_reinterpret_cast(), wx_truncate_cast()
+*/
+#define wx_static_cast(T, x)
+
+/**
     This case doesn’t correspond to any standard cast but exists solely to make
     casts which possibly result in a truncation of an integer value more
     readable.
@@ -821,7 +839,7 @@ public:
 
     @header{wx/defs.h}
 
-    @see wxDynamicCast(), wxStaticCast()
+    @see wx_const_cast(), wxDynamicCast(), wxStaticCast()
 */
 #define wxConstCast( ptr, classname )
 
@@ -873,7 +891,7 @@ public:
 
     @header{wx/object.h}
 
-    @see wxDynamicCast(), wxConstCast()
+    @see wx_static_cast(), wxDynamicCast(), wxConstCast()
 */
 #define wxStaticCast( ptr, classname )
 

@@ -39,11 +39,8 @@ const char wxColourPickerWidgetNameStr[] = "colourpickerwidget";
 // ============================================================================
 
 wxDEFINE_EVENT(wxEVT_COLOURPICKER_CHANGED, wxColourPickerEvent);
-wxDEFINE_EVENT(wxEVT_COLOURPICKER_CURRENT_CHANGED, wxColourPickerEvent);
-wxDEFINE_EVENT(wxEVT_COLOURPICKER_DIALOG_CANCELLED, wxColourPickerEvent);
-
-wxIMPLEMENT_DYNAMIC_CLASS(wxColourPickerCtrl, wxPickerBase);
-wxIMPLEMENT_DYNAMIC_CLASS(wxColourPickerEvent, wxEvent);
+IMPLEMENT_DYNAMIC_CLASS(wxColourPickerCtrl, wxPickerBase)
+IMPLEMENT_DYNAMIC_CLASS(wxColourPickerEvent, wxEvent)
 
 // ----------------------------------------------------------------------------
 // wxColourPickerCtrl
@@ -70,8 +67,9 @@ bool wxColourPickerCtrl::Create( wxWindow *parent, wxWindowID id,
     // complete sizer creation
     wxPickerBase::PostCreation();
 
-    m_picker->Bind(wxEVT_COLOURPICKER_CHANGED,
-            &wxColourPickerCtrl::OnColourChange, this);
+    m_picker->Connect(wxEVT_COLOURPICKER_CHANGED,
+            wxColourPickerEventHandler(wxColourPickerCtrl::OnColourChange),
+            NULL, this);
 
     return true;
 }
@@ -132,7 +130,10 @@ void wxColourPickerCtrl::OnColourChange(wxColourPickerEvent &ev)
 {
     UpdateTextCtrlFromPicker();
 
-    ev.Skip();
+    // the wxColourPickerWidget sent us a colour-change notification.
+    // forward this event to our parent
+    wxColourPickerEvent event(this, GetId(), ev.GetColour());
+    GetEventHandler()->ProcessEvent(event);
 }
 
 #endif  // wxUSE_COLOURPICKERCTRL

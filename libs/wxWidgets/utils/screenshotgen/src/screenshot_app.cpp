@@ -27,7 +27,7 @@
 // ScreenshotApp
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_APP(ScreenshotApp);
+IMPLEMENT_APP(ScreenshotApp);
 
 bool ScreenshotApp::OnInit()
 {

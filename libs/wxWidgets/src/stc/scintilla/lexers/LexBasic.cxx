@@ -49,18 +49,17 @@ using namespace Scintilla;
  * 8  - decimal digit
  * 16 - hex digit
  * 32 - bin digit
- * 64 - letter
  */
 static int character_classification[128] =
 {
-		0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  0,  0,  1,  0,  0,
-		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-		1,  2,  0,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  10, 2,
-	 60, 60, 28, 28, 28, 28, 28, 28, 28, 28,  2,  2,  2,  2,  2,  2,
-		2, 84, 84, 84, 84, 84, 84, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-	 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68,  2,  2,  2,  2, 68,
-		2, 84, 84, 84, 84, 84, 84, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-	 68, 68, 68, 68, 68, 68, 68, 68, 68, 68, 68,  2,  2,  2,  2,  0
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  0,  0,  1,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    1,  2,  0,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  10, 2,
+    60, 60, 28, 28, 28, 28, 28, 28, 28, 28, 2,  2,  2,  2,  2,  2,
+    2,  20, 20, 20, 20, 20, 20, 4,  4,  4,  4,  4,  4,  4,  4,  4,
+    4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  2,  2,  2,  2,  4,
+    2,  20, 20, 20, 20, 20, 20, 4,  4,  4,  4,  4,  4,  4,  4,  4,
+    4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  2,  2,  2,  2,  0
 };
 
 static bool IsSpace(int c) {
@@ -85,10 +84,6 @@ static bool IsHexDigit(int c) {
 
 static bool IsBinDigit(int c) {
 	return c < 128 && (character_classification[c] & 32);
-}
-
-static bool IsLetter(int c) {
-	return c < 128 && (character_classification[c] & 64);
 }
 
 static int LowerCase(int c)
@@ -131,23 +126,13 @@ static int CheckPureFoldPoint(char const *token, int &level) {
 static int CheckFreeFoldPoint(char const *token, int &level) {
 	if (!strcmp(token, "function") ||
 		!strcmp(token, "sub") ||
-		!strcmp(token, "enum") ||
-		!strcmp(token, "type") ||
-		!strcmp(token, "union") ||
-		!strcmp(token, "property") ||
-		!strcmp(token, "destructor") ||
-		!strcmp(token, "constructor")) {
+		!strcmp(token, "type")) {
 		level |= SC_FOLDLEVELHEADERFLAG;
 		return 1;
 	}
 	if (!strcmp(token, "end function") ||
 		!strcmp(token, "end sub") ||
-		!strcmp(token, "end enum") ||
-		!strcmp(token, "end type") ||
-		!strcmp(token, "end union") ||
-		!strcmp(token, "end property") ||
-		!strcmp(token, "end destructor") ||
-		!strcmp(token, "end constructor")) {
+		!strcmp(token, "end type")) {
 		return -1;
 	}
 	return 0;
@@ -234,9 +219,9 @@ class LexerBasic : public ILexer {
 	OptionSetBasic osBasic;
 public:
 	LexerBasic(char comment_char_, int (*CheckFoldPoint_)(char const *, int &), const char * const wordListDescriptions[]) :
-						 comment_char(comment_char_),
-						 CheckFoldPoint(CheckFoldPoint_),
-						 osBasic(wordListDescriptions) {
+	           comment_char(comment_char_),
+	           CheckFoldPoint(CheckFoldPoint_),
+	           osBasic(wordListDescriptions) {
 	}
 	virtual ~LexerBasic() {
 	}
@@ -255,13 +240,13 @@ public:
 	const char * SCI_METHOD DescribeProperty(const char *name) {
 		return osBasic.DescribeProperty(name);
 	}
-	Sci_Position SCI_METHOD PropertySet(const char *key, const char *val);
+	int SCI_METHOD PropertySet(const char *key, const char *val);
 	const char * SCI_METHOD DescribeWordListSets() {
 		return osBasic.DescribeWordListSets();
 	}
-	Sci_Position SCI_METHOD WordListSet(int n, const char *wl);
-	void SCI_METHOD Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, IDocument *pAccess);
-	void SCI_METHOD Fold(Sci_PositionU startPos, Sci_Position length, int initStyle, IDocument *pAccess);
+	int SCI_METHOD WordListSet(int n, const char *wl);
+	void SCI_METHOD Lex(unsigned int startPos, int length, int initStyle, IDocument *pAccess);
+	void SCI_METHOD Fold(unsigned int startPos, int length, int initStyle, IDocument *pAccess);
 
 	void * SCI_METHOD PrivateCall(int, void *) {
 		return 0;
@@ -277,14 +262,14 @@ public:
 	}
 };
 
-Sci_Position SCI_METHOD LexerBasic::PropertySet(const char *key, const char *val) {
+int SCI_METHOD LexerBasic::PropertySet(const char *key, const char *val) {
 	if (osBasic.PropertySet(&options, key, val)) {
 		return 0;
 	}
 	return -1;
 }
 
-Sci_Position SCI_METHOD LexerBasic::WordListSet(int n, const char *wl) {
+int SCI_METHOD LexerBasic::WordListSet(int n, const char *wl) {
 	WordList *wordListN = 0;
 	switch (n) {
 	case 0:
@@ -300,7 +285,7 @@ Sci_Position SCI_METHOD LexerBasic::WordListSet(int n, const char *wl) {
 		wordListN = &keywordlists[3];
 		break;
 	}
-	Sci_Position firstModification = -1;
+	int firstModification = -1;
 	if (wordListN) {
 		WordList wlNew;
 		wlNew.Set(wl);
@@ -312,12 +297,11 @@ Sci_Position SCI_METHOD LexerBasic::WordListSet(int n, const char *wl) {
 	return firstModification;
 }
 
-void SCI_METHOD LexerBasic::Lex(Sci_PositionU startPos, Sci_Position length, int initStyle, IDocument *pAccess) {
+void SCI_METHOD LexerBasic::Lex(unsigned int startPos, int length, int initStyle, IDocument *pAccess) {
 	LexAccessor styler(pAccess);
 
 	bool wasfirst = true, isfirst = true; // true if first token in a line
 	styler.StartAt(startPos);
-	int styleBeforeKeyword = SCE_B_DEFAULT;
 
 	StyleContext sc(startPos, length, initStyle, styler);
 
@@ -383,44 +367,14 @@ void SCI_METHOD LexerBasic::Lex(Sci_PositionU startPos, Sci_Position length, int
 			if (sc.atLineEnd) {
 				sc.SetState(SCE_B_DEFAULT);
 			}
-		} else if (sc.state == SCE_B_DOCLINE) {
-			if (sc.atLineEnd) {
-				sc.SetState(SCE_B_DEFAULT);
-			} else if (sc.ch == '\\' || sc.ch == '@') {
-				if (IsLetter(sc.chNext) && sc.chPrev != '\\') {
-					styleBeforeKeyword = sc.state;
-					sc.SetState(SCE_B_DOCKEYWORD);
-				};
-			}
-		} else if (sc.state == SCE_B_DOCKEYWORD) {
-			if (IsSpace(sc.ch)) {
-				sc.SetState(styleBeforeKeyword);
-			}	else if (sc.atLineEnd && styleBeforeKeyword == SCE_B_DOCLINE) {
-				sc.SetState(SCE_B_DEFAULT);
-			}
-		} else if (sc.state == SCE_B_COMMENTBLOCK) {
-			if (sc.Match("\'/")) {
-				sc.Forward();
-				sc.ForwardSetState(SCE_B_DEFAULT);
-			}
-		} else if (sc.state == SCE_B_DOCBLOCK) {
-			if (sc.Match("\'/")) {
-				sc.Forward();
-				sc.ForwardSetState(SCE_B_DEFAULT);
-			} else if (sc.ch == '\\' || sc.ch == '@') {
-				if (IsLetter(sc.chNext) && sc.chPrev != '\\') {
-					styleBeforeKeyword = sc.state;
-					sc.SetState(SCE_B_DOCKEYWORD);
-				};
-			}
 		}
 
 		if (sc.atLineStart)
 			isfirst = true;
 
 		if (sc.state == SCE_B_DEFAULT || sc.state == SCE_B_ERROR) {
-			if (isfirst && sc.Match('.') && comment_char != '\'') {
-					sc.SetState(SCE_B_LABEL);
+			if (isfirst && sc.Match('.')) {
+				sc.SetState(SCE_B_LABEL);
 			} else if (isfirst && sc.Match('#')) {
 				wasfirst = isfirst;
 				sc.SetState(SCE_B_IDENTIFIER);
@@ -429,25 +383,15 @@ void SCI_METHOD LexerBasic::Lex(Sci_PositionU startPos, Sci_Position length, int
 				// up in freebasic with SCE_B_PREPROCESSOR.
 				if (comment_char == '\'' && sc.Match(comment_char, '$'))
 					sc.SetState(SCE_B_PREPROCESSOR);
-				else if (sc.Match("\'*") || sc.Match("\'!")) {
-					sc.SetState(SCE_B_DOCLINE);
-				} else {
+				else
 					sc.SetState(SCE_B_COMMENT);
-				}
-			} else if (sc.Match("/\'")) {
-				if (sc.Match("/\'*") || sc.Match("/\'!")) {	// Support of gtk-doc/Doxygen doc. style
-					sc.SetState(SCE_B_DOCBLOCK);
-				} else {
-					sc.SetState(SCE_B_COMMENTBLOCK);
-				}
-				sc.Forward();	// Eat the ' so it isn't used for the end of the comment
 			} else if (sc.Match('"')) {
 				sc.SetState(SCE_B_STRING);
 			} else if (IsDigit(sc.ch)) {
 				sc.SetState(SCE_B_NUMBER);
-			} else if (sc.Match('$') || sc.Match("&h") || sc.Match("&H") || sc.Match("&o") || sc.Match("&O")) {
+			} else if (sc.Match('$')) {
 				sc.SetState(SCE_B_HEXNUMBER);
-			} else if (sc.Match('%') || sc.Match("&b") || sc.Match("&B")) {
+			} else if (sc.Match('%')) {
 				sc.SetState(SCE_B_BINNUMBER);
 			} else if (sc.Match('#')) {
 				sc.SetState(SCE_B_CONSTANT);
@@ -471,17 +415,17 @@ void SCI_METHOD LexerBasic::Lex(Sci_PositionU startPos, Sci_Position length, int
 }
 
 
-void SCI_METHOD LexerBasic::Fold(Sci_PositionU startPos, Sci_Position length, int /* initStyle */, IDocument *pAccess) {
+void SCI_METHOD LexerBasic::Fold(unsigned int startPos, int length, int /* initStyle */, IDocument *pAccess) {
 
 	if (!options.fold)
 		return;
 
 	LexAccessor styler(pAccess);
 
-	Sci_Position line = styler.GetLine(startPos);
+	int line = styler.GetLine(startPos);
 	int level = styler.LevelAt(line);
 	int go = 0, done = 0;
-	Sci_Position endPos = startPos + length;
+	int endPos = startPos + length;
 	char word[256];
 	int wordlen = 0;
 	const bool userDefinedFoldMarkers = !options.foldExplicitStart.empty() && !options.foldExplicitEnd.empty();
@@ -489,7 +433,7 @@ void SCI_METHOD LexerBasic::Fold(Sci_PositionU startPos, Sci_Position length, in
 
 	// Scan for tokens at the start of the line (they may include
 	// whitespace, for tokens like "End Function"
-	for (Sci_Position i = startPos; i < endPos; i++) {
+	for (int i = startPos; i < endPos; i++) {
 		int c = cNext;
 		cNext = styler.SafeGetCharAt(i + 1);
 		bool atEOL = (c == '\r' && cNext != '\n') || (c == '\n');

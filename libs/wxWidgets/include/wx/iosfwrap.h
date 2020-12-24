@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Name:        wx/iosfwrap.h
-// Purpose:     This file is obsolete, include <iosfwd> directly instead
+// Purpose:     includes the correct stream-related forward declarations
 // Author:      Jan van Dijk <jan@etpmod.phys.tue.nl>
 // Modified by:
 // Created:     18.12.2002
@@ -10,7 +10,12 @@
 
 #if wxUSE_STD_IOSTREAM
 
-#include <iosfwd>
+#if wxUSE_IOSTREAMH
+    // There is no pre-ANSI iosfwd header so we include the full declarations.
+#   include <iostream.h>
+#else
+#   include <iosfwd>
+#endif
 
 #ifdef __WINDOWS__
 #   include "wx/msw/winundef.h"

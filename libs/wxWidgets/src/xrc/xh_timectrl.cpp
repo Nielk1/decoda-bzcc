@@ -19,7 +19,7 @@
 #include "wx/xrc/xh_timectrl.h"
 #include "wx/timectrl.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTimeCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxTimeCtrlXmlHandler, wxXmlResourceHandler)
 
 wxTimeCtrlXmlHandler::wxTimeCtrlXmlHandler()
 {

@@ -45,6 +45,7 @@
 // meaningless if LEFT_MARGIN_CAN_BE_SET set to 1 in combocmn.cpp
 #define TEXTCTRLXADJUST                 0
 
+#define TEXTXADJUST                     0 // how much is read-only text's x adjusted
 #define DEFAULT_DROPBUTTON_WIDTH        19
 
 #elif defined(__WXMSW__)
@@ -53,6 +54,7 @@
 // meaningless if LEFT_MARGIN_CAN_BE_SET set to 1 in combocmn.cpp
 #define TEXTCTRLXADJUST                 2
 
+#define TEXTXADJUST                     0 // how much is read-only text's x adjusted
 #define DEFAULT_DROPBUTTON_WIDTH        17
 
 #elif defined(__WXGTK__)
@@ -61,6 +63,7 @@
 // meaningless if LEFT_MARGIN_CAN_BE_SET set to 1 in combocmn.cpp
 #define TEXTCTRLXADJUST                 -1
 
+#define TEXTXADJUST                     1 // how much is read-only text's x adjusted
 #define DEFAULT_DROPBUTTON_WIDTH        23
 
 #elif defined(__WXMAC__)
@@ -69,6 +72,7 @@
 // meaningless if LEFT_MARGIN_CAN_BE_SET set to 1 in combocmn.cpp
 #define TEXTCTRLXADJUST                 0
 
+#define TEXTXADJUST                     0 // how much is read-only text's x adjusted
 #define DEFAULT_DROPBUTTON_WIDTH        22
 
 #else
@@ -77,6 +81,7 @@
 // meaningless if LEFT_MARGIN_CAN_BE_SET set to 1 in combocmn.cpp
 #define TEXTCTRLXADJUST                 0
 
+#define TEXTXADJUST                     0 // how much is read-only text's x adjusted
 #define DEFAULT_DROPBUTTON_WIDTH        19
 
 #endif
@@ -94,13 +99,13 @@
 // wxGenericComboCtrl
 // ----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxGenericComboCtrl, wxComboCtrlBase)
+BEGIN_EVENT_TABLE(wxGenericComboCtrl, wxComboCtrlBase)
     EVT_PAINT(wxGenericComboCtrl::OnPaintEvent)
     EVT_MOUSE_EVENTS(wxGenericComboCtrl::OnMouseEvent)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGenericComboCtrl, wxComboCtrlBase);
+IMPLEMENT_DYNAMIC_CLASS(wxGenericComboCtrl, wxComboCtrlBase)
 
 void wxGenericComboCtrl::Init()
 {
@@ -125,7 +130,14 @@ bool wxGenericComboCtrl::Create(wxWindow *parent,
         border = wxBORDER_SIMPLE;
 #elif defined(__WXMSW__)
     if ( !border )
-        border = wxBORDER_SUNKEN;
+        // For XP, have 1-width custom border, for older version use sunken
+        /*if ( wxUxThemeEngine::GetIfActive() )
+        {
+            border = wxBORDER_NONE;
+            m_widthCustomBorder = 1;
+        }
+        else*/
+            border = wxBORDER_SUNKEN;
 #else
 
     //
@@ -198,20 +210,6 @@ wxGenericComboCtrl::~wxGenericComboCtrl()
 {
 }
 
-bool wxGenericComboCtrl::HasTransparentBackground()
-{
-#if wxALWAYS_NATIVE_DOUBLE_BUFFER
-  #ifdef __WXGTK__
-    // Sanity check for GTK+
-    return IsDoubleBuffered();
-  #else
-    return true;
-  #endif
-#else
-    return false;
-#endif
-}
-
 void wxGenericComboCtrl::OnResize()
 {
 
@@ -259,7 +257,7 @@ void wxGenericComboCtrl::OnPaintEvent( wxPaintEvent& WXUNUSED(event) )
 #ifdef __WXMAC__
         wxPen pen1( wxColour(133,133,133),
                     customBorder,
-                    wxPENSTYLE_SOLID );
+                    wxSOLID );
 #else
         wxPen pen1( wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT),
                     customBorder,
@@ -458,13 +456,6 @@ bool wxGenericComboCtrl::IsKeyPopupToggle(const wxKeyEvent& event) const
     return false;
 }
 
-#if defined(__WXOSX__)
-wxTextWidgetImpl * wxGenericComboCtrl::GetTextPeer() const
-{
-    return m_text ? m_text->GetTextPeer() : NULL;
-}
-#endif
-
 #ifdef __WXUNIVERSAL__
 
 bool wxGenericComboCtrl::PerformAction(const wxControlAction& action,
@@ -505,7 +496,7 @@ bool wxGenericComboCtrl::PerformAction(const wxControlAction& action,
 // If native wxComboCtrl was not defined, then prepare a simple
 // front-end so that wxRTTI works as expected.
 #ifndef _WX_COMBOCONTROL_H_
-wxIMPLEMENT_DYNAMIC_CLASS(wxComboCtrl, wxGenericComboCtrl);
+IMPLEMENT_DYNAMIC_CLASS(wxComboCtrl, wxGenericComboCtrl)
 #endif
 
 #endif // !wxCOMBOCONTROL_FULLY_FEATURED

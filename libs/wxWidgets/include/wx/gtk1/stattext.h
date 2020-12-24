@@ -23,7 +23,7 @@ public:
                  const wxPoint &pos = wxDefaultPosition,
                  const wxSize &size = wxDefaultSize,
                  long style = 0,
-                 const wxString &name = wxASCII_STR(wxStaticTextNameStr) );
+                 const wxString &name = wxStaticTextNameStr );
 
     bool Create(wxWindow *parent,
                 wxWindowID id,
@@ -31,7 +31,7 @@ public:
                 const wxPoint &pos = wxDefaultPosition,
                 const wxSize &size = wxDefaultSize,
                 long style = 0,
-                const wxString &name = wxASCII_STR(wxStaticTextNameStr) );
+                const wxString &name = wxStaticTextNameStr );
 
     virtual wxString GetLabel() const;
     virtual void SetLabel( const wxString &label );
@@ -48,10 +48,8 @@ protected:
                            int sizeFlags = wxSIZE_AUTO);
 
     virtual wxSize DoGetBestSize() const;
-    virtual wxString WXGetVisibleLabel() const wxOVERRIDE;
-    virtual void WXSetVisibleLabel(const wxString& str) wxOVERRIDE;
 
-    wxDECLARE_DYNAMIC_CLASS(wxStaticText);
+    DECLARE_DYNAMIC_CLASS(wxStaticText)
 };
 
 #endif // __GTKSTATICTEXTH__

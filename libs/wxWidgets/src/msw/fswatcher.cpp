@@ -39,12 +39,12 @@ public:
     void SendEvent(wxFileSystemWatcherEvent& evt);
 
 protected:
-    bool Init() wxOVERRIDE;
+    bool Init();
 
     // adds watch to be monitored for file system changes
-    virtual bool DoAdd(wxSharedPtr<wxFSWatchEntryMSW> watch) wxOVERRIDE;
+    virtual bool DoAdd(wxSharedPtr<wxFSWatchEntryMSW> watch);
 
-    virtual bool DoRemove(wxSharedPtr<wxFSWatchEntryMSW> watch) wxOVERRIDE;
+    virtual bool DoRemove(wxSharedPtr<wxFSWatchEntryMSW> watch);
 
 private:
     bool DoSetUpWatch(wxFSWatchEntryMSW& watch);

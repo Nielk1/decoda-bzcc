@@ -28,15 +28,15 @@ public:
     wxWindowDCImpl( wxDC *owner, wxWindow *window );
     virtual ~wxWindowDCImpl();
 
-    virtual void DoGetSize( int *width, int *height ) const wxOVERRIDE;
-    virtual wxBitmap DoGetAsBitmap(const wxRect *subrect) const wxOVERRIDE;
+    virtual void DoGetSize( int *width, int *height ) const;
+    virtual wxBitmap DoGetAsBitmap(const wxRect *subrect) const;
 
 protected:
     bool m_release;
     int m_width;
     int m_height;
 
-    wxDECLARE_CLASS(wxWindowDCImpl);
+    DECLARE_CLASS(wxWindowDCImpl)
     wxDECLARE_NO_COPY_CLASS(wxWindowDCImpl);
 };
 
@@ -49,7 +49,7 @@ public:
     virtual ~wxClientDCImpl();
 
 private:
-    wxDECLARE_CLASS(wxClientDCImpl);
+    DECLARE_CLASS(wxClientDCImpl)
     wxDECLARE_NO_COPY_CLASS(wxClientDCImpl);
 };
 
@@ -62,7 +62,7 @@ public:
     virtual ~wxPaintDCImpl();
 
 protected:
-    wxDECLARE_CLASS(wxPaintDCImpl);
+    DECLARE_CLASS(wxPaintDCImpl)
     wxDECLARE_NO_COPY_CLASS(wxPaintDCImpl);
 };
 

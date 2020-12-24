@@ -46,7 +46,7 @@
 //---------------------------------------------------------------------------
 
 // Register with wxWindows' dynamic class subsystem.
-wxIMPLEMENT_DYNAMIC_CLASS(wxHyperlinkCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxHyperlinkCtrlXmlHandler, wxXmlResourceHandler)
 
 wxHyperlinkCtrlXmlHandler::wxHyperlinkCtrlXmlHandler()
 {

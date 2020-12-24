@@ -44,10 +44,6 @@
     #define DateTime_SetSystemtime DateTime_SetSystemTime
 #endif
 
-#ifndef DTM_GETIDEALSIZE
-    #define DTM_GETIDEALSIZE 0x100f
-#endif
-
 // ============================================================================
 // wxDateTimePickerCtrl implementation
 // ============================================================================
@@ -116,7 +112,7 @@ wxSize wxDateTimePickerCtrl::DoGetBestSize() const
 
     // Use the same native format as the underlying native control.
 #if wxUSE_INTL
-    wxString s = wxDateTime::Now().Format(wxLocale::GetOSInfo(MSWGetFormat()));
+    wxString s = wxDateTime::Now().Format(wxLocale::GetInfo(MSWGetFormat()));
 #else // !wxUSE_INTL
     wxString s("XXX-YYY-ZZZZ");
 #endif // wxUSE_INTL/!wxUSE_INTL
@@ -125,43 +121,21 @@ wxSize wxDateTimePickerCtrl::DoGetBestSize() const
     // representation of the current value because the control must accommodate
     // any date and while the widths of all digits are usually about the same,
     // the width of the month string varies a lot, so try to account for it
-    s += wxS("W");
+    s += wxT("WW");
 
-    wxSize size = dc.GetTextExtent(s);
+    int x, y;
+    dc.GetTextExtent(s, &x, &y);
 
-    // We can ask the control itself to compute its ideal size, but we only use
-    // it for the horizontal component: the vertical size is not computed
-    // correctly after the DPI of the window has changed because for every DPI
-    // change, the returned size is 4 pixels higher, even if the DPI is
-    // lowered, so we always need to compute it ourselves below.
-    //
-    // Also work around https://bugs.winehq.org/show_bug.cgi?id=44680 by
-    // checking for the return value: even if all "real" MSW systems do support
-    // this message, Wine does not, even when it's configured to return Vista
-    // or later version to the application, and returns FALSE for it.
-    SIZE idealSize;
-    if ( wxGetWinVersion() >= wxWinVersion_Vista
-            && ::SendMessage(m_hWnd, DTM_GETIDEALSIZE, 0, (LPARAM)&idealSize) )
-    {
-        size.x = idealSize.cx;
-    }
-    else // Adjust the size ourselves.
-    {
-        // Account for the drop-down arrow or spin arrows.
-        size.x += wxSystemSettings::GetMetric(wxSYS_HSCROLL_ARROW_X, m_parent);
+    // account for the drop-down arrow or spin arrows
+    x += wxSystemSettings::GetMetric(wxSYS_HSCROLL_ARROW_X);
 
-        // We need to account for the checkbox, if we have one.
-        if ( MSWAllowsNone() )
-            size.x += 3 * GetCharWidth();
-    }
+    // and for the checkbox if we have it
+    if ( MSWAllowsNone() )
+        x += 3*GetCharWidth();
 
-    int scrollY = wxSystemSettings::GetMetric(wxSYS_HSCROLL_ARROW_Y, m_parent);
-    size.y = wxMax(size.y, scrollY);
-
-    // In any case, adjust the height to be the same as for the text controls.
-    size.y = EDIT_HEIGHT_FROM_CHAR_HEIGHT(size.y);
-
-    return size;
+    wxSize best(x, EDIT_HEIGHT_FROM_CHAR_HEIGHT(y));
+    CacheBestSize(best);
+    return best;
 }
 
 bool

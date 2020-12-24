@@ -26,13 +26,16 @@
 
 #include "wx/xml/xml.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxSplitterWindowXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxSplitterWindowXmlHandler, wxXmlResourceHandler)
 
 wxSplitterWindowXmlHandler::wxSplitterWindowXmlHandler() : wxXmlResourceHandler()
 {
     XRC_ADD_STYLE(wxSP_3D);
     XRC_ADD_STYLE(wxSP_3DSASH);
     XRC_ADD_STYLE(wxSP_3DBORDER);
+#if WXWIN_COMPATIBILITY_2_6
+    XRC_ADD_STYLE(wxSP_FULLSASH);
+#endif // WXWIN_COMPATIBILITY_2_6
     XRC_ADD_STYLE(wxSP_BORDER);
     XRC_ADD_STYLE(wxSP_NOBORDER);
     XRC_ADD_STYLE(wxSP_PERMIT_UNSPLIT);
@@ -43,7 +46,7 @@ wxSplitterWindowXmlHandler::wxSplitterWindowXmlHandler() : wxXmlResourceHandler(
 
 wxObject *wxSplitterWindowXmlHandler::DoCreateResource()
 {
-    XRC_MAKE_INSTANCE(splitter, wxSplitterWindow)
+    XRC_MAKE_INSTANCE(splitter, wxSplitterWindow);
 
     splitter->Create(m_parentAsWindow,
                      GetID(),

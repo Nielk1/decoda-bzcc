@@ -44,8 +44,6 @@
 #include "wx/stockitem.h"
 #include "wx/msw/private/button.h"
 #include "wx/msw/private/dc.h"
-#include "wx/msw/private/winstyle.h"
-#include "wx/msw/uxtheme.h"
 #include "wx/private/window.h"
 
 #if wxUSE_MARKUP
@@ -55,6 +53,21 @@
 using namespace wxMSWImpl;
 
 #if wxUSE_UXTHEME
+    #include "wx/msw/uxtheme.h"
+
+    // no need to include tmschema.h
+    #ifndef BP_PUSHBUTTON
+        #define BP_PUSHBUTTON 1
+
+        #define PBS_NORMAL    1
+        #define PBS_HOT       2
+        #define PBS_PRESSED   3
+        #define PBS_DISABLED  4
+        #define PBS_DEFAULTED 5
+
+        #define TMT_CONTENTMARGINS 3602
+    #endif
+
     // provide the necessary declarations ourselves if they're missing from
     // headers
     #ifndef BCM_SETIMAGELIST
@@ -77,6 +90,10 @@ using namespace wxMSWImpl;
         };
     #endif
 #endif // wxUSE_UXTHEME
+
+#ifndef WM_THEMECHANGED
+    #define WM_THEMECHANGED     0x031A
+#endif
 
 #ifndef ODS_NOACCEL
     #define ODS_NOACCEL         0x0100
@@ -142,32 +159,32 @@ public:
         }
     }
 
-    virtual wxBitmap GetBitmap(wxAnyButton::State which) const wxOVERRIDE
+    virtual wxBitmap GetBitmap(wxAnyButton::State which) const
     {
         return m_bitmaps[which];
     }
 
-    virtual void SetBitmap(const wxBitmap& bitmap, wxAnyButton::State which) wxOVERRIDE
+    virtual void SetBitmap(const wxBitmap& bitmap, wxAnyButton::State which)
     {
         m_bitmaps[which] = bitmap;
     }
 
-    virtual wxSize GetBitmapMargins() const wxOVERRIDE
+    virtual wxSize GetBitmapMargins() const
     {
         return m_margin;
     }
 
-    virtual void SetBitmapMargins(wxCoord x, wxCoord y) wxOVERRIDE
+    virtual void SetBitmapMargins(wxCoord x, wxCoord y)
     {
         m_margin = wxSize(x, y);
     }
 
-    virtual wxDirection GetBitmapPosition() const wxOVERRIDE
+    virtual wxDirection GetBitmapPosition() const
     {
         return m_dir;
     }
 
-    virtual void SetBitmapPosition(wxDirection dir) wxOVERRIDE
+    virtual void SetBitmapPosition(wxDirection dir)
     {
         m_dir = dir;
     }
@@ -238,12 +255,12 @@ public:
         UpdateImageInfo();
     }
 
-    virtual wxBitmap GetBitmap(wxAnyButton::State which) const wxOVERRIDE
+    virtual wxBitmap GetBitmap(wxAnyButton::State which) const
     {
         return m_iml.GetBitmap(which);
     }
 
-    virtual void SetBitmap(const wxBitmap& bitmap, wxAnyButton::State which) wxOVERRIDE
+    virtual void SetBitmap(const wxBitmap& bitmap, wxAnyButton::State which)
     {
         m_iml.Replace(which, bitmap);
 
@@ -255,12 +272,12 @@ public:
         UpdateImageInfo();
     }
 
-    virtual wxSize GetBitmapMargins() const wxOVERRIDE
+    virtual wxSize GetBitmapMargins() const
     {
         return wxSize(m_data.margin.left, m_data.margin.top);
     }
 
-    virtual void SetBitmapMargins(wxCoord x, wxCoord y) wxOVERRIDE
+    virtual void SetBitmapMargins(wxCoord x, wxCoord y)
     {
         RECT& margin = m_data.margin;
         margin.left =
@@ -274,13 +291,13 @@ public:
         }
     }
 
-    virtual wxDirection GetBitmapPosition() const wxOVERRIDE
+    virtual wxDirection GetBitmapPosition() const
     {
         switch ( m_data.uAlign )
         {
             default:
                 wxFAIL_MSG( "invalid image alignment" );
-                wxFALLTHROUGH;
+                // fall through
 
             case BUTTON_IMAGELIST_ALIGN_LEFT:
                 return wxLEFT;
@@ -296,14 +313,14 @@ public:
         }
     }
 
-    virtual void SetBitmapPosition(wxDirection dir) wxOVERRIDE
+    virtual void SetBitmapPosition(wxDirection dir)
     {
         UINT alignNew;
         switch ( dir )
         {
             default:
                 wxFAIL_MSG( "invalid direction" );
-                wxFALLTHROUGH;
+                // fall through
 
             case wxLEFT:
                 alignNew = BUTTON_IMAGELIST_ALIGN_LEFT;
@@ -375,11 +392,15 @@ void wxMSWButton::UpdateMultilineStyle(HWND hwnd, const wxString& label)
     // have to set it whenever the label becomes multi line as otherwise it
     // wouldn't be shown correctly as we don't use BS_MULTILINE when creating
     // the control unless it already has new lines in its label)
-    wxMSWWinStyleUpdater updateStyle(hwnd);
+    long styleOld = ::GetWindowLong(hwnd, GWL_STYLE),
+         styleNew;
     if ( label.find(wxT('\n')) != wxString::npos )
-        updateStyle.TurnOn(BS_MULTILINE);
+        styleNew = styleOld | BS_MULTILINE;
     else
-        updateStyle.TurnOff(BS_MULTILINE);
+        styleNew = styleOld & ~BS_MULTILINE;
+
+    if ( styleNew != styleOld )
+        ::SetWindowLong(hwnd, GWL_STYLE, styleNew);
 }
 
 wxSize wxMSWButton::GetFittingSize(wxWindow *win,
@@ -394,16 +415,17 @@ wxSize wxMSWButton::GetFittingSize(wxWindow *win,
     {
         // We still need some margin or the text would be overwritten, just
         // make it as small as possible.
-        sizeBtn.x += 2*win->GetCharWidth();
+        sizeBtn.x += (3*win->GetCharWidth());
     }
     else
     {
         sizeBtn.x += 3*win->GetCharWidth();
+        sizeBtn.y += win->GetCharHeight()/2;
     }
 
     // account for the shield UAC icon if we have it
     if ( flags & Size_AuthNeeded )
-        sizeBtn.x += wxSystemSettings::GetMetric(wxSYS_SMALLICON_X, win);
+        sizeBtn.x += wxSystemSettings::GetMetric(wxSYS_SMALLICON_X);
 
     return sizeBtn;
 }
@@ -422,31 +444,31 @@ wxSize wxMSWButton::IncreaseToStdSizeAndCache(wxControl *btn, const wxSize& size
 {
     wxSize sizeBtn(size);
 
-    // By default all buttons have at least the standard size.
-    if ( !btn->HasFlag(wxBU_EXACTFIT) )
-    {
-        // The "Recommended sizing and spacing" section of MSDN layout article
-        // documents the default button size as being 50*14 dialog units or
-        // 75*23 relative pixels (what we call DIPs). As dialog units don't
-        // scale well in high DPI because of rounding errors, just DIPs here.
-        //
-        // Moreover, it looks like the extra 2px borders around the visible
-        // part of the button are not scaled correctly in higher than normal
-        // DPI, so add them without scaling.
-        const wxSize sizeDef = btn->FromDIP(wxSize(73, 21)) + wxSize(2, 2);
+    // The 50x14 button size is documented in the "Recommended sizing and
+    // spacing" section of MSDN layout article.
+    //
+    // Note that we intentionally don't use GetDefaultSize() here, because
+    // it's inexact -- dialog units depend on this dialog's font.
+    const wxSize sizeDef = btn->ConvertDialogToPixels(wxSize(50, 14));
 
-        sizeBtn.IncTo(sizeDef);
+    // All buttons should have at least the standard size, unless the user
+    // explicitly wants them to be as small as possible and used wxBU_EXACTFIT
+    // style to indicate this.
+    const bool incToStdSize = !btn->HasFlag(wxBU_EXACTFIT);
+    if ( incToStdSize )
+    {
+        if ( sizeBtn.x < sizeDef.x )
+            sizeBtn.x = sizeDef.x;
     }
 
-    // wxBU_EXACTFIT is typically used alongside a text control or similar,
-    // so make them as high as it.
-    // The standard height is generally higher than this, but if not (e.g. when
-    // using a larger font) increase the button height as well.
-    int yText;
-    wxGetCharSize(GetHwndOf(btn), NULL, &yText, btn->GetFont());
-    yText = wxGetEditHeightFromCharHeight(yText, btn);
-
-    sizeBtn.IncTo(wxSize(-1, yText));
+    // Notice that we really want to make all buttons with text label equally
+    // high, otherwise they look ugly and the existing code using wxBU_EXACTFIT
+    // only uses it to control width and not height.
+    if ( incToStdSize || !btn->GetLabel().empty() )
+    {
+        if ( sizeBtn.y < sizeDef.y )
+            sizeBtn.y = sizeDef.y;
+    }
 
     btn->CacheBestSize(sizeBtn);
 
@@ -522,14 +544,12 @@ void wxAnyButton::AdjustForBitmapSize(wxSize &size) const
         int marginH = 0,
             marginV = 0;
 #if wxUSE_UXTHEME
-        if ( wxUxThemeIsActive() )
+        if ( wxUxThemeEngine::GetIfActive() )
         {
             wxUxThemeHandle theme(const_cast<wxAnyButton *>(this), L"BUTTON");
 
-            // Initialize margins with the default values (at least under
-            // Windows 7) in case GetThemeMargins() fails.
-            MARGINS margins = {3, 3, 3, 3};
-            ::GetThemeMargins(theme, NULL,
+            MARGINS margins;
+            wxUxThemeEngine::Get()->GetThemeMargins(theme, NULL,
                                                     BP_PUSHBUTTON,
                                                     PBS_NORMAL,
                                                     TMT_CONTENTMARGINS,
@@ -623,7 +643,10 @@ WXLRESULT wxAnyButton::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lPar
     {
         if (
                 IsEnabled() &&
-                ( wxUxThemeIsActive() ||
+                (
+#if wxUSE_UXTHEME
+                wxUxThemeEngine::GetIfActive() ||
+#endif // wxUSE_UXTHEME
                  (m_imageData && m_imageData->GetBitmap(State_Current).IsOk())
                 )
            )
@@ -684,7 +707,7 @@ void wxAnyButton::DoSetBitmap(const wxBitmap& bitmap, State which)
                       "Must set normal bitmap with the new size first" );
 
 #if wxUSE_UXTHEME
-        if ( ShowsLabel() && wxUxThemeIsActive() )
+        if ( ShowsLabel() && wxUxThemeEngine::GetIfActive() )
         {
             // We can't change the size of the images stored in wxImageList
             // in wxXPButtonImageData::m_iml so force recreating it below but
@@ -704,7 +727,7 @@ void wxAnyButton::DoSetBitmap(const wxBitmap& bitmap, State which)
         // (even if we use BUTTON_IMAGELIST_ALIGN_CENTER alignment and
         // BS_BITMAP style), at least under Windows 2003 so use owner drawn
         // strategy for bitmap-only buttons
-        if ( ShowsLabel() && wxUxThemeIsActive() )
+        if ( ShowsLabel() && wxUxThemeEngine::GetIfActive() )
         {
             m_imageData = new wxXPButtonImageData(this, bitmap);
 
@@ -732,19 +755,6 @@ void wxAnyButton::DoSetBitmap(const wxBitmap& bitmap, State which)
     else
     {
         m_imageData->SetBitmap(bitmap, which);
-
-        // if the focus bitmap is specified but current one isn't, use
-        // the focus bitmap for hovering as well if this is consistent
-        // with the current Windows version look and feel.
-        //
-        // rationale: this is compatible with the old wxGTK behaviour
-        // and also makes it much easier to do "the right thing" for
-        // all platforms (some of them, such as Windows, have "hot"
-        // buttons while others don't)
-        if ( which == State_Focused && !m_imageData->GetBitmap(State_Current).IsOk() )
-        {
-            m_imageData->SetBitmap(bitmap, State_Current);
-        }
     }
 
     // it should be enough to only invalidate the best size when the normal
@@ -846,13 +856,7 @@ void DrawButtonText(HDC hdc,
 
     // To get a native look for owner-drawn button in disabled state (without
     // theming) we must use DrawState() to draw the text label.
-    //
-    // Notice that we use the enabled state at MSW, not wx, level because we
-    // don't want to grey it out when it's disabled just because its parent is
-    // disabled by MSW as it happens when showing a modal dialog, but we do
-    // want to grey it out if either it or its parent are explicitly disabled
-    // at wx level, see #18011.
-    if ( !wxUxThemeIsActive() && !::IsWindowEnabled(GetHwndOf(btn)) )
+    if ( !wxUxThemeEngine::GetIfActive() && !btn->IsEnabled() )
     {
         // However using DrawState() has some drawbacks:
         // 1. It generally doesn't support alignment flags (except right
@@ -1014,12 +1018,12 @@ void DrawButtonText(HDC hdc,
     }
 }
 
-void DrawRect(HDC hdc, const RECT& r, COLORREF color)
+void DrawRect(HDC hdc, const RECT& r)
 {
-    wxDrawHVLine(hdc, r.left, r.top, r.right, r.top, color, 1);
-    wxDrawHVLine(hdc, r.right, r.top, r.right, r.bottom, color, 1);
-    wxDrawHVLine(hdc, r.right, r.bottom, r.left, r.bottom, color, 1);
-    wxDrawHVLine(hdc, r.left, r.bottom, r.left, r.top, color, 1);
+    wxDrawLine(hdc, r.left, r.top, r.right, r.top);
+    wxDrawLine(hdc, r.right, r.top, r.right, r.bottom);
+    wxDrawLine(hdc, r.right, r.bottom, r.left, r.bottom);
+    wxDrawLine(hdc, r.left, r.bottom, r.left, r.top);
 }
 
 /*
@@ -1061,44 +1065,50 @@ void DrawButtonFrame(HDC hdc, RECT& rectBtn,
                      bool selected, bool pushed)
 {
     RECT r;
-    ::CopyRect(&r, &rectBtn);
+    CopyRect(&r, &rectBtn);
 
-    COLORREF clrBlack = ::GetSysColor(COLOR_3DDKSHADOW),
-             clrGrey = ::GetSysColor(COLOR_3DSHADOW),
-             clrLightGr = ::GetSysColor(COLOR_3DLIGHT),
-             clrWhite = ::GetSysColor(COLOR_3DHILIGHT);
+    AutoHPEN hpenBlack(GetSysColor(COLOR_3DDKSHADOW)),
+             hpenGrey(GetSysColor(COLOR_3DSHADOW)),
+             hpenLightGr(GetSysColor(COLOR_3DLIGHT)),
+             hpenWhite(GetSysColor(COLOR_3DHILIGHT));
+
+    SelectInHDC selectPen(hdc, hpenBlack);
 
     r.right--;
     r.bottom--;
 
     if ( pushed )
     {
-        DrawRect(hdc, r, clrBlack);
+        DrawRect(hdc, r);
 
+        (void)SelectObject(hdc, hpenGrey);
         ::InflateRect(&r, -1, -1);
 
-        DrawRect(hdc, r, clrGrey);
+        DrawRect(hdc, r);
     }
     else // !pushed
     {
         if ( selected )
         {
-            DrawRect(hdc, r, clrBlack);
+            DrawRect(hdc, r);
 
             ::InflateRect(&r, -1, -1);
         }
 
-        wxDrawHVLine(hdc, r.left, r.bottom, r.right, r.bottom, clrBlack, 1);
-        wxDrawHVLine(hdc, r.right, r.bottom, r.right, r.top - 1, clrBlack, 1);
+        wxDrawLine(hdc, r.left, r.bottom, r.right, r.bottom);
+        wxDrawLine(hdc, r.right, r.bottom, r.right, r.top - 1);
 
-        wxDrawHVLine(hdc, r.left, r.bottom - 1, r.left, r.top, clrWhite, 1);
-        wxDrawHVLine(hdc, r.left, r.top, r.right, r.top, clrWhite, 1);
+        (void)SelectObject(hdc, hpenWhite);
+        wxDrawLine(hdc, r.left, r.bottom - 1, r.left, r.top);
+        wxDrawLine(hdc, r.left, r.top, r.right, r.top);
 
-        wxDrawHVLine(hdc, r.left + 1, r.bottom - 2, r.left + 1, r.top + 1, clrLightGr, 1);
-        wxDrawHVLine(hdc, r.left + 1, r.top + 1, r.right - 1, r.top + 1, clrLightGr, 1);
+        (void)SelectObject(hdc, hpenLightGr);
+        wxDrawLine(hdc, r.left + 1, r.bottom - 2, r.left + 1, r.top + 1);
+        wxDrawLine(hdc, r.left + 1, r.top + 1, r.right - 1, r.top + 1);
 
-        wxDrawHVLine(hdc, r.left + 1, r.bottom - 1, r.right - 1, r.bottom - 1, clrGrey, 1);
-        wxDrawHVLine(hdc, r.right - 1, r.bottom - 1, r.right - 1, r.top, clrGrey, 1);
+        (void)SelectObject(hdc, hpenGrey);
+        wxDrawLine(hdc, r.left + 1, r.bottom - 1, r.right - 1, r.bottom - 1);
+        wxDrawLine(hdc, r.right - 1, r.bottom - 1, r.right - 1, r.top);
     }
 
     InflateRect(&rectBtn, -OD_BUTTON_MARGIN, -OD_BUTTON_MARGIN);
@@ -1118,8 +1128,10 @@ void DrawXPBackground(wxAnyButton *button, HDC hdc, RECT& rectBtn, UINT state)
 
     int iState = uxStates[GetButtonState(button, state)];
 
+    wxUxThemeEngine * const engine = wxUxThemeEngine::Get();
+
     // draw parent background if needed
-    if ( ::IsThemeBackgroundPartiallyTransparent
+    if ( engine->IsThemeBackgroundPartiallyTransparent
                  (
                     theme,
                     BP_PUSHBUTTON,
@@ -1137,31 +1149,33 @@ void DrawXPBackground(wxAnyButton *button, HDC hdc, RECT& rectBtn, UINT state)
         // being the perfect solution.
         wxWindowBeingErased = button;
 
-        ::DrawThemeParentBackground(GetHwndOf(button), hdc, &rectBtn);
+        engine->DrawThemeParentBackground(GetHwndOf(button), hdc, &rectBtn);
 
         wxWindowBeingErased = NULL;
     }
 
     // draw background
-    ::DrawThemeBackground(theme, hdc, BP_PUSHBUTTON, iState,
+    engine->DrawThemeBackground(theme, hdc, BP_PUSHBUTTON, iState,
                                 &rectBtn, NULL);
 
-    // calculate content area margins, using the defaults in case we fail to
-    // retrieve the current theme margins
-    MARGINS margins = {3, 3, 3, 3};
-    ::GetThemeMargins(theme, hdc, BP_PUSHBUTTON, iState,
+    // calculate content area margins
+    MARGINS margins;
+    engine->GetThemeMargins(theme, hdc, BP_PUSHBUTTON, iState,
                             TMT_CONTENTMARGINS, &rectBtn, &margins);
     ::InflateRect(&rectBtn, -margins.cxLeftWidth, -margins.cyTopHeight);
+    ::InflateRect(&rectBtn, -XP_BUTTON_EXTRA_MARGIN, -XP_BUTTON_EXTRA_MARGIN);
 
-    if ( button->UseBgCol() && iState != PBS_HOT )
+    if ( button->UseBgCol() )
     {
         COLORREF colBg = wxColourToRGB(button->GetBackgroundColour());
         AutoHBRUSH hbrushBackground(colBg);
 
-        FillRect(hdc, &rectBtn, hbrushBackground);
+        // don't overwrite the focus rect
+        RECT rectClient;
+        ::CopyRect(&rectClient, &rectBtn);
+        ::InflateRect(&rectClient, -1, -1);
+        FillRect(hdc, &rectClient, hbrushBackground);
     }
-
-    ::InflateRect(&rectBtn, -XP_BUTTON_EXTRA_MARGIN, -XP_BUTTON_EXTRA_MARGIN);
 }
 #endif // wxUSE_UXTHEME
 
@@ -1176,7 +1190,11 @@ void wxAnyButton::MakeOwnerDrawn()
     if ( !IsOwnerDrawn() )
     {
         // make it so
-        wxMSWWinStyleUpdater(GetHwnd()).TurnOff(BS_TYPEMASK).TurnOn(BS_OWNERDRAW);
+        // note that BS_OWNERDRAW is not independent from other style bits
+        long style = GetWindowLong(GetHwnd(), GWL_STYLE);
+        style &= ~(BS_3STATE | BS_AUTO3STATE | BS_AUTOCHECKBOX | BS_AUTORADIOBUTTON | BS_CHECKBOX | BS_DEFPUSHBUTTON | BS_GROUPBOX | BS_PUSHBUTTON | BS_RADIOBUTTON | BS_PUSHLIKE);
+        style |= BS_OWNERDRAW;
+        SetWindowLong(GetHwnd(), GWL_STYLE, style);
     }
 }
 
@@ -1216,34 +1234,10 @@ bool wxAnyButton::SetForegroundColour(const wxColour &colour)
     return true;
 }
 
-bool wxAnyButton::MSWIsPushed() const
-{
-    return (SendMessage(GetHwnd(), BM_GETSTATE, 0, 0) & BST_PUSHED) != 0;
-}
-
-#ifdef __WXDEBUG__
-static inline bool IsNonTransformedDC(HDC hdc)
-{
-    if ( ::GetGraphicsMode(hdc) == GM_ADVANCED )
-        return false;
-
-    SIZE devExt;
-    ::GetViewportExtEx(hdc, &devExt);
-    SIZE logExt;
-    ::GetWindowExtEx(hdc, &logExt);
-    return (devExt.cx == logExt.cx && devExt.cy == logExt.cy);
-}
-#endif // __WXDEBUG__
-
 bool wxAnyButton::MSWOnDraw(WXDRAWITEMSTRUCT *wxdis)
 {
     LPDRAWITEMSTRUCT lpDIS = (LPDRAWITEMSTRUCT)wxdis;
     HDC hdc = lpDIS->hDC;
-    // We expect here a DC with default settings (in GM_COMPATIBLE mode
-    // with non-scaled coordinates system) but will check this because
-    // our line drawing function wxDrawHVLine() works effectively only
-    // on a non-transformed DC.
-    wxASSERT(IsNonTransformedDC(hdc));
 
     UINT state = lpDIS->itemState;
     switch ( GetButtonState(this, state) )
@@ -1261,7 +1255,7 @@ bool wxAnyButton::MSWOnDraw(WXDRAWITEMSTRUCT *wxdis)
             break;
     }
 
-    bool pushed = MSWIsPushed();
+    bool pushed = (SendMessage(GetHwnd(), BM_GETSTATE, 0, 0) & BST_PUSHED) != 0;
 
     RECT rectBtn;
     CopyRect(&rectBtn, &lpDIS->rcItem);
@@ -1270,7 +1264,7 @@ bool wxAnyButton::MSWOnDraw(WXDRAWITEMSTRUCT *wxdis)
     if ( !HasFlag(wxBORDER_NONE) )
     {
 #if wxUSE_UXTHEME
-        if ( wxUxThemeIsActive() )
+        if ( wxUxThemeEngine::GetIfActive() )
         {
             DrawXPBackground(this, hdc, rectBtn, state);
         }
@@ -1304,7 +1298,7 @@ bool wxAnyButton::MSWOnDraw(WXDRAWITEMSTRUCT *wxdis)
             DrawFocusRect(hdc, &rectBtn);
 
 #if wxUSE_UXTHEME
-            if ( !wxUxThemeIsActive() )
+            if ( !wxUxThemeEngine::GetIfActive() )
 #endif // wxUSE_UXTHEME
             {
                 if ( pushed )
@@ -1315,13 +1309,7 @@ bool wxAnyButton::MSWOnDraw(WXDRAWITEMSTRUCT *wxdis)
             }
         }
     }
-    else
-    {
-        // clear the background (and erase any previous bitmap)
-        COLORREF colBg = wxColourToRGB(GetBackgroundColour());
-        AutoHBRUSH hbrushBackground(colBg);
-        FillRect(hdc, &rectBtn, hbrushBackground);
-    }
+
 
     // draw the image, if any
     if ( m_imageData )
@@ -1346,7 +1334,7 @@ bool wxAnyButton::MSWOnDraw(WXDRAWITEMSTRUCT *wxdis)
             {
                 default:
                     wxFAIL_MSG( "invalid direction" );
-                    wxFALLTHROUGH;
+                    // fall through
 
                 case wxLEFT:
                     rectBitmap.x = rectButton.x + margin.x;

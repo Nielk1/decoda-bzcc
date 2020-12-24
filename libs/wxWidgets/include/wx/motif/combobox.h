@@ -29,7 +29,7 @@ public:
         int n = 0, const wxString choices[] = NULL,
         long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxComboBoxNameStr))
+        const wxString& name = wxComboBoxNameStr)
     {
         m_inSetSelection = false;
         Create(parent, id, value, pos, size, n, choices,
@@ -43,7 +43,7 @@ public:
         const wxArrayString& choices,
         long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxComboBoxNameStr))
+        const wxString& name = wxComboBoxNameStr)
     {
         m_inSetSelection = false;
         Create(parent, id, value, pos, size, choices,
@@ -57,7 +57,7 @@ public:
         int n = 0, const wxString choices[] = NULL,
         long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxComboBoxNameStr));
+        const wxString& name = wxComboBoxNameStr);
 
     bool Create(wxWindow *parent, wxWindowID id,
         const wxString& value,
@@ -66,7 +66,7 @@ public:
         const wxArrayString& choices,
         long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxComboBoxNameStr));
+        const wxString& name = wxComboBoxNameStr);
 
     // See wxComboBoxBase discussion of IsEmpty().
     bool IsListEmpty() const { return wxItemContainer::IsEmpty(); }
@@ -108,8 +108,6 @@ public:
     virtual void Popup() { wxFAIL_MSG( wxT("Not implemented") ); }
     virtual void Dismiss() { wxFAIL_MSG( wxT("Not implemented") ); }
 
-    virtual const wxTextEntry* WXGetTextEntry() const { return this; }
-
 protected:
     virtual wxSize DoGetBestSize() const;
     virtual void DoSetSize(int x, int y,
@@ -128,7 +126,7 @@ private:
 public:
     bool m_inSetSelection;
 
-    wxDECLARE_DYNAMIC_CLASS(wxComboBox);
+    DECLARE_DYNAMIC_CLASS(wxComboBox)
 };
 
 #endif // _WX_COMBOBOX_H_

@@ -254,17 +254,6 @@ public:
         /// Create a time zone with the given offset in seconds.
         static TimeZone Make(long offset);
 
-        /**
-            Return true if this is the local time zone.
-
-            This method can be useful for distinguishing between UTC time zone
-            and local time zone in Great Britain, which use the same offset as
-            UTC (i.e. 0), but do use DST.
-
-            @since 3.1.1
-         */
-        bool IsLocal() const;
-
         /// Return the offset of this time zone from UTC, in seconds.
         long GetOffset() const;
     };
@@ -325,7 +314,7 @@ public:
        Copy constructor.
     */
     wxDateTime(const wxDateTime& date);
-
+    
     /**
         Same as Set().
     */
@@ -387,7 +376,7 @@ public:
        @a wxDateTime::Tm structure.
     */
     wxDateTime& Set(const Tm& tm);
-
+    
     /**
         Sets the date from the so-called Julian Day Number.
 
@@ -489,7 +478,7 @@ public:
 
         Here are the trivial accessors. Other functions, which might have to
         perform some more complicated calculations to find the answer are under
-        the "Date Arithmetic" section.
+        the "Date Arithmetics" section.
     */
     //@{
 
@@ -572,28 +561,10 @@ public:
     /**
         Returns the number of seconds since Jan 1, 1970 UTC.
 
-        This function is provided solely for interoperability with the standard
-        C library and other libraries using @c time_t values. If you just need
-        to get the value represented by this object as a number, use GetValue()
-        instead, which doesn't lose precision and covers the entire supported
-        range of dates, unlike this one which is limited to the range of
-        positive 32 bit values, i.e. from Jan 1, 1970 to around Jan 19, 2038
-        and returns @c -1 for the dates outside of it.
-
-        Additionally, this method must be called on an initialized date object
-        and an assertion failure occurs if it is called on an object for which
-        IsValid() is false.
+        An assert failure will occur if the date is not in the range covered by
+        @c time_t type, use GetValue() if you work with dates outside of it.
     */
     time_t GetTicks() const;
-
-    /**
-        Returns the number of milliseconds since Jan 1, 1970 UTC.
-
-        Directly returns the internal representation of wxDateTime object as
-        the number of milliseconds (positive or negative) since the Unix/C
-        epoch.
-     */
-    wxLongLong GetValue() const;
 
     /**
         Returns broken down representation of the date and time.
@@ -604,25 +575,6 @@ public:
         Returns the week day in the given timezone (local one by default).
     */
     WeekDay GetWeekDay(const TimeZone& tz = Local) const;
-
-    /**
-        Returns the year to which the week containing this date belongs.
-
-        The value returned by this function is the same as the year, except,
-        possibly, for a few days at the very beginning and very end of the year
-        if they belong to a week which is mostly (i.e. at least 4 days) is in
-        another year in which case that other (previous or next) year is
-        returned.
-
-        For example, January 1 in 2015 belongs to the first year of 2015, hence
-        GetWeekOfYear() for it returns 1 and this function returns 2015.
-        However January 1 in 2016 belongs to the last week of 2015 according to
-        ISO 8601 standard rules and so GetWeekOfYear() returns 53 and this
-        function returns 2015, although GetYear() returns 2016.
-
-        @since 3.1.0
-    */
-    int GetWeekBasedYear(const TimeZone& tz) const;
 
     /**
         Returns the ordinal number of the week in the month (in 1-5 range).
@@ -645,8 +597,6 @@ public:
         The function depends on the week start convention specified by the @a flags
         argument but its results for @c Sunday_First are not well-defined as the
         ISO definition quoted above applies to the weeks starting on Monday only.
-
-        @see GetWeekBasedYear()
     */
     wxDateTime_t GetWeekOfYear(WeekFlags flags = Monday_First,
                                const TimeZone& tz = Local) const;
@@ -674,14 +624,7 @@ public:
         @name Date Comparison
 
         There are several functions to allow date comparison. To supplement
-        them, the usual comparison operators taking wxDateTime are defined as
-        well.
-
-        Notice that an invalid wxDateTime object can only be compared for
-        exact equality, i.e. using @c operator==(), @c operator!=() or
-        IsEqualTo(), but comparisons involving an invalid wxDateTime object
-        using any other operators or IsEarlierThan() or IsLaterThan() functions
-        would result in an assert because their result is not well-defined.
+        them, a few global operators, etc taking wxDateTime are defined.
     */
     //@{
 
@@ -738,10 +681,10 @@ public:
 
 
     /**
-        @name Date Arithmetic
+        @name Date Arithmetics
 
         These functions carry out
-        @ref overview_datetime_arithmetics "arithmetic" on the wxDateTime
+        @ref overview_datetime_arithmetics "arithmetics" on the wxDateTime
         objects. As explained in the overview, either wxTimeSpan or wxDateSpan
         may be added to wxDateTime, hence all functions are overloaded to
         accept both arguments.
@@ -1161,14 +1104,10 @@ public:
         @a n may be either positive (counting from the beginning of the month)
         or negative (counting from the end of it).
 
-        For example, SetToWeekDay(wxDateTime::Wed, 2) will set the date to the
+        For example, SetToWeekDay(2, wxDateTime::Wed) will set the date to the
         second Wednesday in the current month and
-        SetToWeekDay(wxDateTime::Sun, -1) will set the date to the last Sunday
+        SetToWeekDay(-1, wxDateTime::Sun) will set the date to the last Sunday
         in the current month.
-
-        Note that leaving the month or year parameters as their default values
-        will result in the current month or year being substituted, overwriting
-        any previous values in the wxDateTime object.
 
         @return @true if the date was modified successfully, @false otherwise
                  meaning that the specified date doesn't exist.
@@ -1256,10 +1195,6 @@ public:
         for more information about time zones. Normally, these functions should
         be rarely used.
 
-        Note that all functions in this section always use the current offset
-        for the specified time zone and don't take into account its possibly
-        different historical value at the given date.
-
         Related functions in other groups: GetBeginDST(), GetEndDST()
     */
     //@{
@@ -1269,7 +1204,10 @@ public:
 
         If @a noDST is @true, no DST adjustments will be made.
 
-        If @a tz parameter is wxDateTime::Local, no adjustment is performed.
+        Notice using wxDateTime::Local for @a tz parameter doesn't really make
+        sense and may result in unexpected results as it will return a
+        different object when DST is in use and @a noDST has its default value
+        of @false.
 
         @return The date adjusted by the different between the given and the
         local time zones.
@@ -1306,7 +1244,9 @@ public:
 
         If @a noDST is @true, no DST adjustments will be made.
 
-        If @a tz parameter is wxDateTime::Local, no adjustment is performed.
+        Notice that, as with FromTimezone(), using wxDateTime::Local as @a tz
+        doesn't really make sense and may return a different object when DST is
+        in effect and @a noDST is @false.
 
         @return The date adjusted by the different between the local and the
         given time zones.
@@ -1502,18 +1442,6 @@ public:
                                   Country country = Country_Default);
 
     /**
-         Acquires the first weekday of a week based on locale and/or OS settings.
-         If the information was not available, returns @c Sun.
-         @param firstDay
-             The address of a WeekDay variable to which the first weekday will be
-             assigned to.
-         @return If the first day could not be determined, returns false,
-             and @a firstDay is set to a fallback value.
-         @since 3.1.1
-    */
-    static bool GetFirstWeekDay(WeekDay *firstDay);
-
-    /**
         Returns @true if the @a year is a leap one in the specified calendar.
         This functions supports Gregorian and Julian calendars.
     */
@@ -1527,7 +1455,7 @@ public:
     static bool IsWestEuropeanCountry(Country country = Country_Default);
 
     /**
-        Returns the object corresponding to the current time in local time zone.
+        Returns the object corresponding to the current time.
 
         Example:
 
@@ -1572,11 +1500,11 @@ public:
     static wxDateTime Today();
 
     /**
-        Returns the object corresponding to the current time including the
+        Returns the object corresponding to the current UTC time including the
         milliseconds.
 
-        Like Now(), this method creates the wxDateTime object corresponding to
-        the current moment in local time.
+        Notice that unlike Now(), this method creates a wxDateTime object
+        corresponding to UTC, not local, time.
 
         @see Now(), wxGetUTCTimeMillis()
     */

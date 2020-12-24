@@ -26,10 +26,10 @@
 
 #include "wx/osx/private.h"
 
-wxBEGIN_EVENT_TABLE(wxSearchCtrl, wxSearchCtrlBase)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxSearchCtrl, wxSearchCtrlBase)
+END_EVENT_TABLE()
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxSearchCtrl, wxSearchCtrlBase);
+IMPLEMENT_DYNAMIC_CLASS(wxSearchCtrl, wxSearchCtrlBase)
 
 
 #endif // wxUSE_NATIVE_SEARCH_CONTROL
@@ -62,9 +62,7 @@ wxSearchCtrl::wxSearchCtrl(wxWindow *parent, wxWindowID id,
 
 void wxSearchCtrl::Init()
 {
-#if wxUSE_MENUS
     m_menu = 0;
-#endif
 }
 
 wxSearchWidgetImpl* wxSearchCtrl::GetSearchPeer() const
@@ -74,9 +72,7 @@ wxSearchWidgetImpl* wxSearchCtrl::GetSearchPeer() const
 
 wxSearchCtrl::~wxSearchCtrl()
 {
-#if wxUSE_MENUS
     delete m_menu;
-#endif
 }
 
 wxSize wxSearchCtrl::DoGetBestSize() const
@@ -89,7 +85,6 @@ wxSize wxSearchCtrl::DoGetBestSize() const
     return size;
 }
 
-#if wxUSE_MENUS
 
 // search control specific interfaces
 // wxSearchCtrl owns menu after this call
@@ -121,8 +116,6 @@ wxMenu* wxSearchCtrl::GetMenu()
 {
     return m_menu;
 }
-
-#endif  // wxUSE_MENUS
 
 void wxSearchCtrl::ShowSearchButton( bool show )
 {
@@ -209,7 +202,7 @@ bool wxSearchCtrl::Create(wxWindow *parent, wxWindowID id,
 
 bool wxSearchCtrl::HandleSearchFieldSearchHit()
 {
-    wxCommandEvent event(wxEVT_SEARCH, m_windowId );
+    wxCommandEvent event(wxEVT_SEARCHCTRL_SEARCH_BTN, m_windowId );
     event.SetEventObject(this);
 
     // provide the string to search for directly in the event, this is more
@@ -221,7 +214,7 @@ bool wxSearchCtrl::HandleSearchFieldSearchHit()
 
 bool wxSearchCtrl::HandleSearchFieldCancelHit()
 {
-    wxCommandEvent event(wxEVT_SEARCH_CANCEL, m_windowId );
+    wxCommandEvent event(wxEVT_SEARCHCTRL_CANCEL_BTN, m_windowId );
     event.SetEventObject(this);
     return ProcessCommand(event);
 }

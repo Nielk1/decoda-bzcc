@@ -36,10 +36,12 @@
 // default type is the native one
 
 const wxTextFileType wxTextBuffer::typeDefault =
-#if defined(__WINDOWS__)
+#if defined(__WINDOWS__) || defined(__DOS__)
   wxTextFileType_Dos;
 #elif defined(__UNIX__)
   wxTextFileType_Unix;
+#elif defined(__OS2__)
+  wxTextFileType_Os2;
 #else
   wxTextFileType_None;
   #error  "wxTextBuffer: unsupported platform."
@@ -50,7 +52,7 @@ const wxChar *wxTextBuffer::GetEOL(wxTextFileType type)
     switch ( type ) {
         default:
             wxFAIL_MSG(wxT("bad buffer type in wxTextBuffer::GetEOL."));
-            wxFALLTHROUGH; // fall through nevertheless - we must return something...
+            // fall through nevertheless - we must return something...
 
         case wxTextFileType_None: return wxEmptyString;
         case wxTextFileType_Unix: return wxT("\n");
@@ -242,6 +244,7 @@ wxTextFileType wxTextBuffer::GuessType() const
                                                     ? wxTextFileType_##t1   \
                                                     : wxTextFileType_##t2
 
+#if !defined(__WATCOMC__) || wxCHECK_WATCOM_VERSION(1,4)
         if ( nDos > nUnix )
             return GREATER_OF(Dos, Mac);
         else if ( nDos < nUnix )
@@ -250,6 +253,7 @@ wxTextFileType wxTextBuffer::GuessType() const
             // nDos == nUnix
             return nMac > nDos ? wxTextFileType_Mac : typeDefault;
         }
+#endif // __WATCOMC__
 
         #undef    GREATER_OF
     }

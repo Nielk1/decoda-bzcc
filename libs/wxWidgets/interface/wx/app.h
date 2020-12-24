@@ -222,18 +222,6 @@ public:
     //@}
 
 
-    /**
-        Yields control to pending messages in the event loop.
-
-        This method is a convenient wrapper for wxEvtLoopBase::Yield(). If the
-        main loop is currently running, it calls this method on it. Otherwise
-        it creates a temporary event loop and uses it instead, which can be
-        useful to process pending messages during the program startup, before
-        the main loop is created.
-
-        Use extreme caution when calling this function as, just as
-        wxEvtLoopBase::Yield(), it can result in unexpected reentrances.
-     */
     bool Yield(bool onlyIfNeeded = false);
 
     /**
@@ -311,7 +299,7 @@ public:
     virtual bool OnCmdLineError(wxCmdLineParser& parser);
 
     /**
-        Called when the help option (@c \--help) was specified on the command line.
+        Called when the help option (@c --help) was specified on the command line.
         The default behaviour is to show the program usage text and abort the program.
 
         Return @true to continue normal execution or @false to return
@@ -354,6 +342,23 @@ public:
         @see OnEventLoopEnter()
     */
     virtual void OnEventLoopExit(wxEventLoopBase* loop);
+
+    /**
+        This function is called if an unhandled exception occurs inside the main
+        application event loop. It can return @true to ignore the exception and to
+        continue running the loop or @false to exit the loop and terminate the
+        program. In the latter case it can also use C++ @c throw keyword to
+        rethrow the current exception.
+
+        The default behaviour of this function is the latter in all ports except under
+        Windows where a dialog is shown to the user which allows him to choose between
+        the different options. You may override this function in your class to do
+        something more appropriate.
+
+        Finally note that if the exception is rethrown from here, it can be caught in
+        OnUnhandledException().
+    */
+    virtual bool OnExceptionInMainLoop();
 
     /**
         Override this member function for any processing which needs to be
@@ -401,12 +406,6 @@ public:
         Called from OnInit() and may be used to initialize the parser with the
         command line options for this application. The base class versions adds
         support for a few standard options only.
-
-        Note that this method should just configure @a parser to accept the
-        desired command line options by calling wxCmdLineParser::AddOption(),
-        wxCmdLineParser::AddSwitch() and similar methods, but should @e not
-        call wxCmdLineParser::Parse() as this will be done by wxWidgets itself
-        slightly later.
     */
     virtual void OnInitCmdLine(wxCmdLineParser& parser);
 
@@ -421,66 +420,6 @@ public:
         should return 0 in case of successful termination.
     */
     virtual int OnRun();
-
-    //@}
-
-
-    /**
-        @name Exceptions support
-
-        Methods related to C++ exceptions handling.
-
-        @see overview_exceptions
-    */
-    //@{
-
-    /**
-        This function is called if an unhandled exception occurs inside the main
-        application event loop. It can return @true to ignore the exception and to
-        continue running the loop or @false to exit the loop and terminate the
-        program.
-
-        The default behaviour of this function is the latter in all ports except under
-        Windows where a dialog is shown to the user which allows him to choose between
-        the different options. You may override this function in your class to do
-        something more appropriate.
-
-        If this method rethrows the exception and if the exception can't be
-        stored for later processing using StoreCurrentException(), the program
-        will terminate after calling OnUnhandledException().
-
-        You should consider overriding this method to perform whichever last
-        resort exception handling that would be done in a typical C++ program
-        in a @c try/catch block around the entire @c main() function. As this
-        method is called during exception handling, you may use the C++ @c
-        throw keyword to rethrow the current exception to catch it again and
-        analyze it. For example:
-
-        @code
-        class MyApp : public wxApp {
-        public:
-            virtual bool OnExceptionInMainLoop()
-            {
-                wxString error;
-                try {
-                    throw; // Rethrow the current exception.
-                } catch (const MyException& e) {
-                    error = e.GetMyErrorMessage();
-                } catch (const std::exception& e) {
-                    error = e.what();
-                } catch ( ... ) {
-                    error = "unknown error.";
-                }
-
-                wxLogError("Unexpected exception has occurred: %s, the program will terminate.", error);
-
-                // Exit the main loop and thus terminate the program.
-                return false;
-            }
-        };
-        @endcode
-    */
-    virtual bool OnExceptionInMainLoop();
 
     /**
         This function is called when an unhandled C++ exception occurs in user
@@ -500,119 +439,6 @@ public:
         wxMessageOutputBest.
     */
     virtual void OnUnhandledException();
-
-    /**
-        Method to store exceptions not handled by OnExceptionInMainLoop().
-
-        @note The default implementation of this function when using C++98
-            compiler just returns false, as there is no generic way to store an
-            arbitrary exception in C++98 and each application must do it on its
-            own for the exceptions it uses in its overridden version. When
-            using C++11, the default implementation uses
-            std::current_exception() and returns true, so it's normally not
-            necessary to override this method when using C++11.
-
-        This function can be overridden to store the current exception, in view
-        of rethrowing it later when RethrowStoredException() is called. If the
-        exception was stored, return true. If the exception can't be stored,
-        i.e. if this function returns false, the program will abort after
-        calling OnUnhandledException().
-
-        It is necessary to override this function if OnExceptionInMainLoop()
-        doesn't catch all exceptions, but you still want to handle them using
-        explicit @c try/catch statements. Typical use could be to allow code
-        like the following to work:
-
-        @code
-        void MyFrame::SomeFunction()
-        {
-            try {
-                MyDialog dlg(this);
-                dlg.ShowModal();
-            } catch ( const MyExpectedException& e ) {
-                // Deal with the exceptions thrown from the dialog.
-            }
-        }
-        @endcode
-
-        By default, throwing an exception from an event handler called from the
-        dialog modal event loop would terminate the application as the
-        exception can't be safely propagated to the code in the catch clause
-        because of the presence of the native system functions (through which
-        C++ exceptions can't, generally speaking, propagate) in the call stack
-        between them.
-
-        Overriding this method allows the exception to be stored when it is
-        detected and rethrown using RethrowStoredException() when the native
-        system function dispatching the dialog events terminates, with the
-        result that the code above works as expected.
-
-        An example of implementing this method:
-        @code
-        class MyApp : public wxApp {
-        public:
-            virtual bool StoreCurrentException()
-            {
-                try {
-                    throw;
-                } catch ( const std::runtime_exception& e ) {
-                    if ( !m_runtimeError.empty() ) {
-                        // This is not supposed to happen, only one exception,
-                        // at most, should be stored.
-                        return false;
-                    }
-
-                    m_runtimeError = e.what();
-
-                    // Don't terminate, let our code handle this exception later.
-                    return true;
-                } catch ( ... ) {
-                    // This could be extended to store information about any
-                    // other exceptions too, but if we don't store them, we
-                    // should return false to let the program die.
-                }
-
-                return false;
-            }
-
-            virtual void RethrowStoredException()
-            {
-                if ( !m_runtimeError.empty() ) {
-                    std::runtime_exception e(m_runtimeError);
-                    m_runtimeError.clear();
-                    throw e;
-                }
-            }
-
-        private:
-            std::string m_runtimeError;
-        };
-        @endcode
-
-        @see OnExceptionInMainLoop(), RethrowStoredException()
-
-        @since 3.1.0
-    */
-    virtual bool StoreCurrentException();
-
-    /**
-        Method to rethrow exceptions stored by StoreCurrentException().
-
-        @note Just as with StoreCurrentException(), it is usually not necessary
-            to override this method when using C++11.
-
-        If StoreCurrentException() is overridden, this function should be
-        overridden as well to rethrow the exceptions stored by it when the
-        control gets back to our code, i.e. when it's safe to do it.
-
-        See StoreCurrentException() for an example of implementing this method.
-
-        The default version does nothing when using C++98 and uses
-        std::rethrow_exception() in C++11.
-
-        @since 3.1.0
-    */
-    virtual void RethrowStoredException();
 
     //@}
 
@@ -755,7 +581,8 @@ public:
             std::locale::global(std::locale(""));
         @endcode
         but be warned that locale support in C++ standard library can be poor
-        or worse under some platforms.
+        or worse under some platforms, e.g. the above line results in an
+        immediate crash under OS X up to the version 10.8.2.
 
         @since 2.9.5
      */
@@ -771,7 +598,7 @@ public:
 
         Under Windows and Linux/Unix, you should parse the command line
         arguments and check for files to be opened when starting your
-        application. Under macOS, you need to override MacOpenFiles()
+        application. Under OS X, you need to override MacOpenFiles()
         since command line arguments are used differently there.
 
         You may use the wxCmdLineParser to parse command line arguments.
@@ -1005,7 +832,8 @@ public:
     virtual void MacNewFile();
 
     /**
-        Called in response of an openFiles message.
+        Called in response of an openFiles message with Cocoa, or an
+        "open-document" Apple event with Carbon.
 
         You need to override this method in order to open one or more document
         files after the user double clicked on it or if the files and/or
@@ -1054,7 +882,7 @@ public:
 
     /**
         May be overridden to indicate that the application is not a foreground
-        GUI application under macOS.
+        GUI application under OS X.
 
         This method is called during the application startup and returns @true
         by default. In this case, wxWidgets ensures that the application is ran
@@ -1068,25 +896,10 @@ public:
         is specified in the @c Info.plist file.
 
         @onlyfor{wxosx}
-
+        
         @since 3.0.1
     */
     virtual bool OSXIsGUIApplication();
-
-    /**
-        Enable the automatic tabbing features of macOS.
-
-        This feature is native to the operating system. When it is enabled, macOS
-        will automatically place windows inside tabs and show a tab bar in the
-        application. Entries are also added to the View menu to show/hide the tab bar.
-
-        @onlyfor{wxosx}
-
-        @remarks Requires macOS 10.12+, does nothing under earlier OS versions.
-
-        @since 3.1.4
-    */
-    void OSXEnableAutomaticTabbing(bool enable);
 
     //@}
 
@@ -1224,12 +1037,11 @@ void wxUninitialize();
 void wxWakeUpIdle();
 
 /**
-    Calls wxAppConsole::Yield if there is an existing application object.
+    Calls wxAppConsole::Yield.
 
-    Does nothing if there is no application (which typically only happens early
-    during the program startup or late during its shutdown).
-
-    @see wxEvtLoopBase::Yield()
+    @deprecated
+    This function is kept only for backwards compatibility. Please use
+    the wxAppConsole::Yield method instead in any new code.
 
     @header{wx/app.h}
 */
@@ -1260,7 +1072,8 @@ int wxEntry(int& argc, wxChar** argv);
 /**
     See wxEntry(int&,wxChar**) for more info about this function.
 
-    Notice that the type of @a pCmdLine is @c char *, even in Unicode build.
+    Notice that under Windows CE platform, and only there, the type of @a pCmdLine
+    is @c wchar_t *, otherwise it is @c char *, even in Unicode build.
 
     @remarks To clean up wxWidgets, call wxApp::OnExit followed by the static
              function wxApp::CleanUp. For example, if exiting from an MFC application
@@ -1276,7 +1089,11 @@ int wxEntry(int& argc, wxChar** argv);
              }
              @endcode
 
+    @onlyfor{wxmsw}
+
     @header{wx/app.h}
+
+    @see wxMSWDisableSettingHighDPIAware()
 */
 int wxEntry(HINSTANCE hInstance,
             HINSTANCE hPrevInstance = NULL,

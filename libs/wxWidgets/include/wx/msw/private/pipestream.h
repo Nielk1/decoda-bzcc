@@ -13,17 +13,17 @@
 class wxPipeInputStream : public wxInputStream
 {
 public:
-    explicit wxPipeInputStream(HANDLE hInput);
+    wxEXPLICIT wxPipeInputStream(HANDLE hInput);
     virtual ~wxPipeInputStream();
 
     // returns true if the pipe is still opened
     bool IsOpened() const { return m_hInput != INVALID_HANDLE_VALUE; }
 
     // returns true if there is any data to be read from the pipe
-    virtual bool CanRead() const wxOVERRIDE;
+    virtual bool CanRead() const;
 
 protected:
-    virtual size_t OnSysRead(void *buffer, size_t len) wxOVERRIDE;
+    virtual size_t OnSysRead(void *buffer, size_t len);
 
 protected:
     HANDLE m_hInput;
@@ -34,12 +34,12 @@ protected:
 class wxPipeOutputStream: public wxOutputStream
 {
 public:
-    explicit wxPipeOutputStream(HANDLE hOutput);
+    wxEXPLICIT wxPipeOutputStream(HANDLE hOutput);
     virtual ~wxPipeOutputStream() { Close(); }
-    bool Close() wxOVERRIDE;
+    bool Close();
 
 protected:
-    size_t OnSysWrite(const void *buffer, size_t len) wxOVERRIDE;
+    size_t OnSysWrite(const void *buffer, size_t len);
 
 protected:
     HANDLE m_hOutput;

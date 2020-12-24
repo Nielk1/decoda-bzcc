@@ -58,8 +58,8 @@ public:
     */
     virtual bool InformFirstDirection(int direction, int size,
                                       int availableOtherDir);
-
-    virtual void RepositionChildren(const wxSize& minSize);
+    
+    virtual void RecalcSizes();
     virtual wxSize CalcMin();
 
 protected:

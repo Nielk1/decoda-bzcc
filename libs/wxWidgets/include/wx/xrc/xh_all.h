@@ -13,7 +13,6 @@
 
 // Existing handlers:
 
-#include "wx/xrc/xh_activityindicator.h"
 #include "wx/xrc/xh_animatctrl.h"
 #include "wx/xrc/xh_bannerwindow.h"
 #include "wx/xrc/xh_bmp.h"
@@ -30,7 +29,6 @@
 #include "wx/xrc/xh_collpane.h"
 #include "wx/xrc/xh_combo.h"
 #include "wx/xrc/xh_comboctrl.h"
-#include "wx/xrc/xh_dataview.h"
 #include "wx/xrc/xh_datectrl.h"
 #include "wx/xrc/xh_dirpicker.h"
 #include "wx/xrc/xh_dlg.h"
@@ -45,7 +43,6 @@
 #include "wx/xrc/xh_html.h"
 #include "wx/xrc/xh_htmllbox.h"
 #include "wx/xrc/xh_hyperlink.h"
-#include "wx/xrc/xh_infobar.h"
 #include "wx/xrc/xh_listb.h"
 #include "wx/xrc/xh_listc.h"
 #include "wx/xrc/xh_listbk.h"

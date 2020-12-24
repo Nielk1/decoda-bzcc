@@ -64,7 +64,9 @@ WXDWORD wxStaticLine::MSWGetStyle(long style, WXDWORD *exstyle) const
 
     // add our default styles
     msStyle |= SS_SUNKEN | SS_NOTIFY | WS_CLIPSIBLINGS;
+#ifndef __WXWINCE__
     msStyle |= SS_GRAYRECT ;
+#endif
 
     return msStyle ;
 }

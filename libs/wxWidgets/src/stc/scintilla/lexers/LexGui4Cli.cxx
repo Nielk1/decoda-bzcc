@@ -6,8 +6,8 @@ This is the Lexer for Gui4Cli, included in SciLexer.dll
 
 To add to SciLexer.dll:
 1. Add the values below to INCLUDE\Scintilla.iface
-2. Run the scripts/HFacer.py script
-3. Run the scripts/LexGen.py script
+2. Run the include/HFacer.py script
+3. Run the src/lexGen.py script
 
 val SCE_GC_DEFAULT=0
 val SCE_GC_COMMENTLINE=1
@@ -49,6 +49,10 @@ static inline bool IsAWordChar(const int ch) {
 	return (ch < 0x80) && (isalnum(ch) || ch == '.' || ch == '_' || ch =='\\');
 }
 
+static inline bool IsAWordStart(const int ch) {
+	return (ch < 0x80) && (isalnum(ch) || ch == '_' || ch == '.');
+}
+
 inline bool isGCOperator(int ch)
 {	if (isalnum(ch))
 		return false;
@@ -68,9 +72,9 @@ inline bool isGCOperator(int ch)
 #define isFoldPoint(x)  ((styler.LevelAt(x) & SC_FOLDLEVELNUMBERMASK) == 1024)
 
 static void colorFirstWord(WordList *keywordlists[], Accessor &styler,
-									StyleContext *sc, char *buff, Sci_Position length, int)
+									StyleContext *sc, char *buff, int length, int)
 {
-	Sci_Position c = 0;
+	int c = 0;
 	while (sc->More() && isSpaceOrNL(sc->ch))
 	{	sc->Forward();
 	}
@@ -119,13 +123,12 @@ static void colorFirstWord(WordList *keywordlists[], Accessor &styler,
 
 // Main colorizing function called by Scintilla
 static void
-ColouriseGui4CliDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
+ColouriseGui4CliDoc(unsigned int startPos, int length, int initStyle,
                     WordList *keywordlists[], Accessor &styler)
 {
 	styler.StartAt(startPos);
 
-	Sci_Position currentline = styler.GetLine(startPos);
-	int quotestart = 0, oldstate;
+	int quotestart = 0, oldstate, currentline = styler.GetLine(startPos);
 	styler.StartSegment(startPos);
 	bool noforward;
 	char buff[BUFFSIZE+1];	// buffer for command name
@@ -244,20 +247,20 @@ ColouriseGui4CliDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
 }
 
 // Main folding function called by Scintilla - (based on props (.ini) files function)
-static void FoldGui4Cli(Sci_PositionU startPos, Sci_Position length, int,
+static void FoldGui4Cli(unsigned int startPos, int length, int,
 								WordList *[], Accessor &styler)
 {
 	bool foldCompact = styler.GetPropertyInt("fold.compact", 1) != 0;
 
-	Sci_PositionU endPos = startPos + length;
+	unsigned int endPos = startPos + length;
 	int visibleChars = 0;
-	Sci_Position lineCurrent = styler.GetLine(startPos);
+	int lineCurrent = styler.GetLine(startPos);
 
 	char chNext = styler[startPos];
 	int styleNext = styler.StyleAt(startPos);
 	bool headerPoint = false;
 
-	for (Sci_PositionU i = startPos; i < endPos; i++)
+	for (unsigned int i = startPos; i < endPos; i++)
 	{
 		char ch = chNext;
 		chNext = styler[i+1];

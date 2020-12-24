@@ -25,7 +25,7 @@ public:
     {
     }
 
-    explicit wxCOMPtr(T* ptr)
+    wxEXPLICIT wxCOMPtr(T* ptr)
         : m_ptr(ptr)
     {
         if ( m_ptr )

@@ -38,22 +38,18 @@
 // implementation
 // ============================================================================
 
-#if defined(__WXGTK20__) && !defined(__WXUNIVERSAL__)
-    #define SetMinMaxPointSize(min, max)
-#else
-    #define SetMinMaxPointSize(min, max)  GetPickerWidget()->GetFontData()->SetRange((min), (max))
-#endif
-
 const char wxFontPickerCtrlNameStr[] = "fontpicker";
 const char wxFontPickerWidgetNameStr[] = "fontpickerwidget";
 
 wxDEFINE_EVENT(wxEVT_FONTPICKER_CHANGED, wxFontPickerEvent);
-wxIMPLEMENT_DYNAMIC_CLASS(wxFontPickerCtrl, wxPickerBase);
-wxIMPLEMENT_DYNAMIC_CLASS(wxFontPickerEvent, wxCommandEvent);
+IMPLEMENT_DYNAMIC_CLASS(wxFontPickerCtrl, wxPickerBase)
+IMPLEMENT_DYNAMIC_CLASS(wxFontPickerEvent, wxCommandEvent)
 
 // ----------------------------------------------------------------------------
 // wxFontPickerCtrl
 // ----------------------------------------------------------------------------
+
+#define M_PICKER     ((wxFontPickerWidget*)m_picker)
 
 bool wxFontPickerCtrl::Create( wxWindow *parent, wxWindowID id,
                         const wxFont &initial,
@@ -74,7 +70,9 @@ bool wxFontPickerCtrl::Create( wxWindow *parent, wxWindowID id,
     // complete sizer creation
     wxPickerBase::PostCreation();
 
-    m_picker->Bind(wxEVT_FONTPICKER_CHANGED, &wxFontPickerCtrl::OnFontChange, this);
+    m_picker->Connect(wxEVT_FONTPICKER_CHANGED,
+            wxFontPickerEventHandler(wxFontPickerCtrl::OnFontChange),
+            NULL, this);
 
     return true;
 }
@@ -118,7 +116,7 @@ wxFont wxFontPickerCtrl::String2Font(const wxString &s)
 
 void wxFontPickerCtrl::SetSelectedFont(const wxFont &f)
 {
-    GetPickerWidget()->SetSelectedFont(f);
+    M_PICKER->SetSelectedFont(f);
     UpdateTextCtrlFromPicker();
 }
 
@@ -134,9 +132,9 @@ void wxFontPickerCtrl::UpdatePickerFromTextCtrl()
     if (!f.IsOk())
         return;     // invalid user input
 
-    if (GetPickerWidget()->GetSelectedFont() != f)
+    if (M_PICKER->GetSelectedFont() != f)
     {
-        GetPickerWidget()->SetSelectedFont(f);
+        M_PICKER->SetSelectedFont(f);
 
         // fire an event
         wxFontPickerEvent event(this, GetId(), f);
@@ -151,20 +149,10 @@ void wxFontPickerCtrl::UpdateTextCtrlFromPicker()
 
     // Take care to use ChangeValue() here and not SetValue() to avoid
     // infinite recursion.
-    m_text->ChangeValue(Font2String(GetPickerWidget()->GetSelectedFont()));
+    m_text->ChangeValue(Font2String(M_PICKER->GetSelectedFont()));
 }
 
-void wxFontPickerCtrl::SetMinPointSize(unsigned int min)
-{
-    m_nMinPointSize = min;
-    SetMinMaxPointSize(m_nMinPointSize, m_nMaxPointSize);
-}
 
-void wxFontPickerCtrl::SetMaxPointSize(unsigned int max)
-{
-    m_nMaxPointSize = max;
-    SetMinMaxPointSize(m_nMinPointSize, m_nMaxPointSize);
-}
 
 // ----------------------------------------------------------------------------
 // wxFontPickerCtrl - event handlers

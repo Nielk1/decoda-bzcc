@@ -28,11 +28,16 @@
     #include "wx/tooltip.h"
 #endif
 
+#include <gtk/gtk.h>
 #include "wx/gtk/private.h"
-#include "wx/gtk/private/eventsdisabler.h"
+#include "wx/gtk/private/gtk2-compat.h"
 #include "wx/gtk/private/object.h"
 #include "wx/gtk/private/treeentry_gtk.h"
-#include "wx/gtk/private/treeview.h"
+
+#include <gdk/gdkkeysyms.h>
+#ifdef __WXGTK3__
+#include <gdk/gdkkeysyms-compat.h>
+#endif
 
 //-----------------------------------------------------------------------------
 // data
@@ -126,9 +131,9 @@ gtk_listbox_key_press_callback( GtkWidget *WXUNUSED(widget),
                                 GdkEventKey *gdk_event,
                                 wxListBox *listbox )
 {
-    if ((gdk_event->keyval == GDK_KEY_Return) ||
-        (gdk_event->keyval == GDK_KEY_ISO_Enter) ||
-        (gdk_event->keyval == GDK_KEY_KP_Enter))
+    if ((gdk_event->keyval == GDK_Return) ||
+        (gdk_event->keyval == GDK_ISO_Enter) ||
+        (gdk_event->keyval == GDK_KP_Enter))
     {
         int index = -1;
         if (!listbox->HasMultipleSelection())
@@ -472,13 +477,13 @@ void wxListBox::DoClear()
 {
     wxCHECK_RET( m_treeview != NULL, wxT("invalid listbox") );
 
-    {
-        wxGtkEventsDisabler<wxListBox> noEvents(this);
+    GTKDisableEvents(); // just in case
 
-        InvalidateBestSize();
+    InvalidateBestSize();
 
-        gtk_list_store_clear( m_liststore ); /* well, THAT was easy :) */
-    }
+    gtk_list_store_clear( m_liststore ); /* well, THAT was easy :) */
+
+    GTKEnableEvents();
 
     UpdateOldSelections();
 }
@@ -489,7 +494,7 @@ void wxListBox::DoDeleteOneItem(unsigned int n)
 
     InvalidateBestSize();
 
-    wxGtkEventsDisabler<wxListBox> noEvents(this);
+    GTKDisableEvents(); // just in case
 
     GtkTreeIter iter;
     wxCHECK_RET( GTKGetIteratorFor(n, &iter), wxT("wrong listbox index") );
@@ -498,24 +503,7 @@ void wxListBox::DoDeleteOneItem(unsigned int n)
     // since we don't use iter, we ignore the return value
     gtk_list_store_remove(m_liststore, &iter);
 
-#ifdef __WXGTK3__
-    // Invalidate selection in a single-selection control for consistency with
-    // MSW and GTK+ 2 where this happens automatically when deleting the
-    // selected item or any item before it.
-    if ( !HasMultipleSelection() )
-    {
-        const int sel = GetSelection();
-        if ( sel != wxNOT_FOUND && static_cast<unsigned>(sel) >= n )
-        {
-            // Don't call SetSelection() from here, it's not totally clear if
-            // it is safe to do, so just do this at GTK+ level.
-            gtk_tree_selection_unselect_all
-            (
-                gtk_tree_view_get_selection(m_treeview)
-            );
-        }
-    }
-#endif // __WXGTK3__
+    GTKEnableEvents();
 }
 
 // ----------------------------------------------------------------------------
@@ -536,14 +524,18 @@ bool wxListBox::GTKGetIteratorFor(unsigned pos, GtkTreeIter *iter) const
 
 int wxListBox::GTKGetIndexFor(GtkTreeIter& iter) const
 {
-    wxGtkTreePath path(
-        gtk_tree_model_get_path(GTK_TREE_MODEL(m_liststore), &iter));
+    GtkTreePath *path =
+        gtk_tree_model_get_path(GTK_TREE_MODEL(m_liststore), &iter);
 
     gint* pIntPath = gtk_tree_path_get_indices(path);
 
     wxCHECK_MSG( pIntPath, wxNOT_FOUND, wxT("failed to get iterator path") );
 
-    return pIntPath[0];
+    int idx = pIntPath[0];
+
+    gtk_tree_path_free( path );
+
+    return idx;
 }
 
 // get GtkTreeEntry from position (note: you need to g_unref it if valid)
@@ -593,8 +585,9 @@ void wxListBox::SetString(unsigned int n, const wxString& label)
 
     // signal row changed
     GtkTreeModel* tree_model = GTK_TREE_MODEL(m_liststore);
-    wxGtkTreePath path(gtk_tree_model_get_path(tree_model, &iter));
+    GtkTreePath* path = gtk_tree_model_get_path(tree_model, &iter);
     gtk_tree_model_row_changed(tree_model, path, &iter);
+    gtk_tree_path_free(path);
 }
 
 wxString wxListBox::GetString(unsigned int n) const
@@ -677,12 +670,12 @@ int wxListBox::GetSelections( wxArrayInt& aSelections ) const
 
     aSelections.Empty();
 
+    int i = 0;
     GtkTreeIter iter;
     GtkTreeSelection* selection = gtk_tree_view_get_selection(m_treeview);
 
     if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(m_liststore), &iter))
     { //gtk_tree_selection_get_selected_rows is GTK 2.2+ so iter instead
-        int i = 0;
         do
         {
             if (gtk_tree_selection_iter_is_selected(selection, &iter))
@@ -711,7 +704,7 @@ void wxListBox::DoSetSelection( int n, bool select )
 {
     wxCHECK_RET( m_treeview != NULL, wxT("invalid listbox") );
 
-    wxGtkEventsDisabler<wxListBox> noEvents(this);
+    GTKDisableEvents();
 
     GtkTreeSelection* selection = gtk_tree_view_get_selection(m_treeview);
 
@@ -719,6 +712,7 @@ void wxListBox::DoSetSelection( int n, bool select )
     if ( n == wxNOT_FOUND )
     {
         gtk_tree_selection_unselect_all(selection);
+        GTKEnableEvents();
         return;
     }
 
@@ -733,10 +727,14 @@ void wxListBox::DoSetSelection( int n, bool select )
     else
         gtk_tree_selection_unselect_iter(selection, &iter);
 
-    wxGtkTreePath path(
-            gtk_tree_model_get_path(GTK_TREE_MODEL(m_liststore), &iter));
+    GtkTreePath* path = gtk_tree_model_get_path(
+                        GTK_TREE_MODEL(m_liststore), &iter);
 
     gtk_tree_view_scroll_to_cell(m_treeview, path, NULL, FALSE, 0.0f, 0.0f);
+
+    gtk_tree_path_free(path);
+
+    GTKEnableEvents();
 }
 
 void wxListBox::DoScrollToCell(int n, float alignY, float alignX)
@@ -752,12 +750,14 @@ void wxListBox::DoScrollToCell(int n, float alignY, float alignX)
     if ( !GTKGetIteratorFor(n, &iter) )
         return;
 
-    wxGtkTreePath path(
-            gtk_tree_model_get_path(GTK_TREE_MODEL(m_liststore), &iter));
+    GtkTreePath* path = gtk_tree_model_get_path(
+                            GTK_TREE_MODEL(m_liststore), &iter);
 
     // Scroll to the desired cell (0.0 == topleft alignment)
     gtk_tree_view_scroll_to_cell(m_treeview, path, NULL,
                                  TRUE, alignY, alignX);
+
+    gtk_tree_path_free(path);
 }
 
 void wxListBox::DoSetFirstItem(int n)
@@ -768,57 +768,6 @@ void wxListBox::DoSetFirstItem(int n)
 void wxListBox::EnsureVisible(int n)
 {
     DoScrollToCell(n, 0.5, 0);
-}
-
-int wxListBox::GetTopItem() const
-{
-    int idx = wxNOT_FOUND;
-
-#if GTK_CHECK_VERSION(2,8,0)
-    wxGtkTreePath start;
-    if (
-        wx_is_at_least_gtk2(8) &&
-        gtk_tree_view_get_visible_range(m_treeview, start.ByRef(), NULL))
-    {
-        gint *ptr = gtk_tree_path_get_indices(start);
-
-        if ( ptr )
-            idx = *ptr;
-    }
-#endif
-
-    return idx;
-}
-
-int wxListBox::GetCountPerPage() const
-{
-    wxGtkTreePath path;
-    GtkTreeViewColumn *column;
-
-    if ( !gtk_tree_view_get_path_at_pos
-          (
-            m_treeview,
-            0,
-            0,
-            path.ByRef(),
-            &column,
-            NULL,
-            NULL
-          ) )
-    {
-        return -1;
-    }
-
-    GdkRectangle rect;
-    gtk_tree_view_get_cell_area(m_treeview, path, column, &rect);
-
-    if ( !rect.height )
-        return -1;
-
-    GdkRectangle vis;
-    gtk_tree_view_get_visible_rect(m_treeview, &vis);
-
-    return vis.height / rect.height;
 }
 
 // ----------------------------------------------------------------------------
@@ -837,13 +786,13 @@ int wxListBox::DoListHitTest(const wxPoint& point) const
     gdk_window_get_geometry(gtk_tree_view_get_bin_window(m_treeview),
                             &binx, &biny, NULL, NULL);
 
-    wxGtkTreePath path;
+    GtkTreePath* path;
     if ( !gtk_tree_view_get_path_at_pos
           (
             m_treeview,
             point.x - binx,
             point.y - biny,
-            path.ByRef(),
+            &path,
             NULL,   // [out] column (always 0 here)
             NULL,   // [out] x-coord relative to the cell (not interested)
             NULL    // [out] y-coord relative to the cell
@@ -852,7 +801,10 @@ int wxListBox::DoListHitTest(const wxPoint& point) const
         return wxNOT_FOUND;
     }
 
-    return gtk_tree_path_get_indices(path)[0];
+    int index = gtk_tree_path_get_indices(path)[0];
+    gtk_tree_path_free(path);
+
+    return index;
 }
 
 // ----------------------------------------------------------------------------
@@ -932,7 +884,9 @@ wxSize wxListBox::DoGetBestSize() const
     // Don't make the listbox too tall but don't make it too small neither
     lbHeight = (cy+4) * wxMin(wxMax(count, 3), 10);
 
-    return wxSize(lbWidth, lbHeight);
+    wxSize best(lbWidth, lbHeight);
+    CacheBestSize(best);
+    return best;
 }
 
 // static

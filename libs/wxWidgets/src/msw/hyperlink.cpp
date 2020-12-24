@@ -174,12 +174,7 @@ bool wxHyperlinkCtrl::MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result)
             case NM_RETURN:
                 SetVisited();
                 SendEvent();
-
-                // SendEvent() launches the browser by default, so we consider
-                // that the event was processed in any case, either by user
-                // code or by wx itself, hence we always return true to
-                // indicate that the default processing shouldn't take place.
-                return true;
+                return 0;
         }
     }
 

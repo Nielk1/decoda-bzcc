@@ -29,7 +29,7 @@
 #include "wx/motif/private.h"
 #include "wx/motif/dcscreen.h"
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxScreenDCImpl, wxWindowDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxScreenDCImpl, wxWindowDCImpl)
 
 WXWindow wxScreenDCImpl::sm_overlayWindow = 0;
 int wxScreenDCImpl::sm_overlayWindowX = 0;

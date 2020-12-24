@@ -61,9 +61,9 @@
 // macros
 // ----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxButton, wxButtonBase)
+BEGIN_EVENT_TABLE(wxButton, wxButtonBase)
     EVT_CHAR_HOOK(wxButton::OnCharHook)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // ============================================================================
 // implementation
@@ -82,21 +82,17 @@ bool wxButton::Create(wxWindow *parent,
                       const wxValidator& validator,
                       const wxString& name)
 {
-    wxString label;
-    if ( !(style & wxBU_NOTEXT) )
+    wxString label(lbl);
+    if (label.empty() && wxIsStockID(id))
     {
-        label = lbl;
-        if (label.empty() && wxIsStockID(id))
-        {
-            // On Windows, some buttons aren't supposed to have mnemonics
-            label = wxGetStockLabel
-                    (
-                        id,
-                        id == wxID_OK || id == wxID_CANCEL || id == wxID_CLOSE
-                            ? wxSTOCK_NOFLAGS
-                            : wxSTOCK_WITH_MNEMONIC
-                    );
-        }
+        // On Windows, some buttons aren't supposed to have mnemonics
+        label = wxGetStockLabel
+                (
+                    id,
+                    id == wxID_OK || id == wxID_CANCEL || id == wxID_CLOSE
+                        ? wxSTOCK_NOFLAGS
+                        : wxSTOCK_WITH_MNEMONIC
+                );
     }
 
     if ( !CreateControl(parent, id, pos, size, style, validator, name) )
@@ -152,33 +148,24 @@ WXDWORD wxButton::MSWGetStyle(long style, WXDWORD *exstyle) const
         msStyle |= BS_TOP;
     if ( style & wxBU_BOTTOM )
         msStyle |= BS_BOTTOM;
+#ifndef __WXWINCE__
     // flat 2d buttons
     if ( style & wxNO_BORDER )
         msStyle |= BS_FLAT;
+#endif // __WXWINCE__
 
     return msStyle;
 }
 
 /* static */
-wxSize wxButtonBase::GetDefaultSize(wxWindow* win)
+wxSize wxButtonBase::GetDefaultSize()
 {
-    static wxPrivate::DpiDependentValue<wxSize> s_sizeBtn;
+    static wxSize s_sizeBtn;
 
-    if ( s_sizeBtn.HasChanged(win) )
+    if ( s_sizeBtn.x == 0 )
     {
-        wxSize base;
-        if ( win )
-        {
-            wxClientDC dc(win);
-            dc.SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
-            base = wxPrivate::GetAverageASCIILetterSize(dc);
-        }
-        else
-        {
-            wxScreenDC dc;
-            dc.SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
-            base = wxPrivate::GetAverageASCIILetterSize(dc);
-        }
+        wxScreenDC dc;
+        dc.SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
 
         // The size of a standard button in the dialog units is 50x14,
         // translate this to pixels.
@@ -191,11 +178,12 @@ wxSize wxButtonBase::GetDefaultSize(wxWindow* win)
         //
         // NB: wxMulDivInt32() is used, because it correctly rounds the result
 
-        s_sizeBtn.SetAtNewDPI(wxSize(wxMulDivInt32(50, base.x, 4),
-                                     wxMulDivInt32(14, base.y, 8)));
+        const wxSize base = wxPrivate::GetAverageASCIILetterSize(dc);
+        s_sizeBtn.x = wxMulDivInt32(50, base.x, 4);
+        s_sizeBtn.y = wxMulDivInt32(14, base.y, 8);
     }
 
-    return s_sizeBtn.Get();
+    return s_sizeBtn;
 }
 
 // ----------------------------------------------------------------------------
@@ -280,8 +268,10 @@ static wxTopLevelWindow *GetTLWParentIfNotBeingDeleted(wxWindow *win)
 
     wxASSERT_MSG( win, wxT("button without top level parent?") );
 
-    // Note that this may still return null for a button inside wxPopupWindow.
-    return wxDynamicCast(win, wxTopLevelWindow);
+    wxTopLevelWindow * const tlw = wxDynamicCast(win, wxTopLevelWindow);
+    wxASSERT_MSG( tlw, wxT("logic error in GetTLWParentIfNotBeingDeleted()") );
+
+    return tlw;
 }
 
 // set this button as being currently default
@@ -292,19 +282,13 @@ void wxButton::SetTmpDefault()
         return;
 
     wxWindow *winOldDefault = tlw->GetDefaultItem();
-
     tlw->SetTmpDefaultItem(this);
 
     // Notice that the order of these statements is important, the old button
     // is not reset if we do it the other way round, probably because of
     // something done by the default DM_SETDEFID handler.
     SetDefaultStyle(this, true);
-    if ( winOldDefault != this )
-    {
-        // But we mustn't reset the default style on this button itself if it
-        // had already been the default.
-        SetDefaultStyle(wxDynamicCast(winOldDefault, wxButton), false);
-    }
+    SetDefaultStyle(wxDynamicCast(winOldDefault, wxButton), false);
 }
 
 // unset this button as currently default, it may still stay permanent default
@@ -320,10 +304,7 @@ void wxButton::UnsetTmpDefault()
 
     // Just as in SetTmpDefault() above, the order is important here.
     SetDefaultStyle(wxDynamicCast(winOldDefault, wxButton), true);
-    if ( winOldDefault != this )
-    {
-        SetDefaultStyle(this, false);
-    }
+    SetDefaultStyle(this, false);
 }
 
 /* static */
@@ -421,8 +402,12 @@ bool wxButton::MSWCommand(WXUINT param, WXWORD WXUNUSED(id))
     bool processed = false;
     switch ( param )
     {
-        // NOTE: Currently all versions of Windows send two BN_CLICKED messages
-        //       for all button types, so we don't catch BN_DOUBLECLICKED
+        // NOTE: Apparently older versions (NT 4?) of the common controls send
+        //       BN_DOUBLECLICKED but not a second BN_CLICKED for owner-drawn
+        //       buttons, so in order to send two EVT_BUTTON events we should
+        //       catch both types.  Currently (Feb 2003) up-to-date versions of
+        //       win98, win2k and winXP all send two BN_CLICKED messages for
+        //       all button types, so we don't catch BN_DOUBLECLICKED anymore
         //       in order to not get 3 EVT_BUTTON events.  If this is a problem
         //       then we need to figure out which version of the comctl32 changed
         //       this behaviour and test for it.

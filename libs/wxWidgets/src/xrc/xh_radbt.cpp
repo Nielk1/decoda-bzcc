@@ -22,7 +22,7 @@
     #include "wx/radiobut.h"
 #endif
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxRadioButtonXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxRadioButtonXmlHandler, wxXmlResourceHandler)
 
 wxRadioButtonXmlHandler::wxRadioButtonXmlHandler()
 : wxXmlResourceHandler()

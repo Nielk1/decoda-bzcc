@@ -106,7 +106,7 @@ bool wxStatusBarPane::PopText()
 // wxStatusBarBase implementation
 // ============================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxStatusBar, wxWindow);
+IMPLEMENT_DYNAMIC_CLASS(wxStatusBar, wxWindow)
 
 #include "wx/arrimpl.cpp" // This is a magic incantation which must be done!
 WX_DEFINE_EXPORTED_OBJARRAY(wxStatusBarPaneArray)

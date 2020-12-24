@@ -62,7 +62,6 @@ public:
 
 void wxCheckListBox::Init()
 {
-    m_inputHandlerType = wxINP_HANDLER_CHECKLISTBOX;
 }
 
 wxCheckListBox::wxCheckListBox(wxWindow *parent,
@@ -107,6 +106,8 @@ bool wxCheckListBox::Create(wxWindow *parent,
     if ( !wxListBox::Create(parent, id, pos, size,
                             n, choices, style, validator, name) )
         return false;
+
+    CreateInputHandler(wxINP_HANDLER_CHECKLISTBOX);
 
     return true;
 }
@@ -156,7 +157,6 @@ void wxCheckListBox::OnItemInserted(unsigned int pos)
 
 void wxCheckListBox::DoClear()
 {
-    wxListBox::DoClear();
     m_checks.Empty();
 }
 

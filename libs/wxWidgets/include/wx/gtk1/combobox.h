@@ -45,7 +45,7 @@ public:
            int n = 0, const wxString choices[] = (const wxString *) NULL,
            long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxASCII_STR(wxComboBoxNameStr))
+           const wxString& name = wxComboBoxNameStr)
     {
         Create(parent, id, value, pos, size, n, choices, style, validator, name);
     }
@@ -56,7 +56,7 @@ public:
            const wxArrayString& choices,
            long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxASCII_STR(wxComboBoxNameStr))
+           const wxString& name = wxComboBoxNameStr)
     {
         Create(parent, id, value, pos, size, choices, style, validator, name);
     }
@@ -70,7 +70,7 @@ public:
            int n = 0, const wxString choices[] = (const wxString *) NULL,
            long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxASCII_STR(wxComboBoxNameStr));
+           const wxString& name = wxComboBoxNameStr);
     bool Create(wxWindow *parent, wxWindowID id,
            const wxString& value,
            const wxPoint& pos,
@@ -78,7 +78,7 @@ public:
            const wxArrayString& choices,
            long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxASCII_STR(wxComboBoxNameStr));
+           const wxString& name = wxComboBoxNameStr);
 
     void DoClear();
     void DoDeleteOneItem(unsigned int n);
@@ -157,8 +157,6 @@ public:
     static wxVisualAttributes
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
 
-    virtual const wxTextEntry* WXGetTextEntry() const { return this; }
-
 protected:
     virtual int DoInsertItems(const wxArrayStringsAdapter& items,
                               unsigned int pos,
@@ -178,8 +176,8 @@ protected:
     virtual bool UseGTKStyleBase() const { return true; }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxComboBox);
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_DYNAMIC_CLASS_NO_COPY(wxComboBox)
+    DECLARE_EVENT_TABLE()
 };
 
 #endif

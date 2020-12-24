@@ -198,23 +198,6 @@ public:
 
                 switch ( *format )
                 {
-                    // MSVC doesn't support C99 'z' size modifier, but it uses
-                    // 'I' with exactly the same meaning.
-                    //
-                    // MinGW does support 'z' but only in ANSI stdio mode, and
-                    // we can't be sure that this is what is actually going to
-                    // be used, application code could explicitly define
-                    // __USE_MINGW_ANSI_STDIO=0 (e.g. because it needs legacy
-                    // behaviour for its own printf() calls), so we map it to
-                    // 'I' for it too.
-#if defined(__VISUALC__) || defined(__MINGW32__)
-                    case 'z':
-                        ChangeFmtChar('I');
-                        format++;
-                        size = Size_Default;
-                        break;
-#endif // __VISUALC__ || __MINGW32__
-
                     case 'h':
                         size = Size_Short;
                         format++;
@@ -228,7 +211,7 @@ public:
                             format++;
                             break;
                         }
-                        wxFALLTHROUGH;
+                        //else: fall through
 
                     default:
                         size = Size_Default;
@@ -358,18 +341,6 @@ private:
         *(m_fmtLast++) = ch;
     }
 
-    // change a character
-    void ChangeFmtChar(CharType ch)
-    {
-        if ( m_fmtOrig )
-        {
-            // so far we haven't translated anything yet
-            CopyAllBefore();
-        }
-
-        *m_fmtLast++ = ch;
-    }
-
     void CopyAllBefore()
     {
         wxASSERT_MSG( m_fmtOrig && m_fmt.data() == NULL, "logic error" );
@@ -416,15 +387,7 @@ private:
     size_t m_nCopied;
 };
 
-// Distinguish between the traditional Windows (and MSVC) behaviour and Cygwin
-// (which is always Unix-like) and MinGW. The last one is the most interesting
-// case as it can behave either as MSVC (__USE_MINGW_ANSI_STDIO=0) or as POSIX
-// (__USE_MINGW_ANSI_STDIO=1, which is explicitly set by including any standard
-// C++ header such as e.g. <string>). Luckily, "%ls" and "%lc" work in both
-// cases, at least for recent MinGW versions, so just use it always.
-#if defined(__WINDOWS__) && \
-    !defined(__CYGWIN__) && \
-    !defined(__MINGW32__)
+#if defined(__WINDOWS__) && !defined(__CYGWIN__)
 
 // on Windows, we should use %s and %c regardless of the build:
 class wxPrintfFormatConverterWchar : public wxFormatConverterBase<wchar_t>
@@ -455,7 +418,7 @@ class wxPrintfFormatConverterWchar : public wxFormatConverterBase<wchar_t>
 {
     virtual void HandleString(CharType WXUNUSED(conv),
                               SizeModifier WXUNUSED(size),
-                              CharType& outConv, SizeModifier& outSize) wxOVERRIDE
+                              CharType& outConv, SizeModifier& outSize)
     {
         outConv = 's';
         outSize = Size_Long;
@@ -463,7 +426,7 @@ class wxPrintfFormatConverterWchar : public wxFormatConverterBase<wchar_t>
 
     virtual void HandleChar(CharType WXUNUSED(conv),
                             SizeModifier WXUNUSED(size),
-                            CharType& outConv, SizeModifier& outSize) wxOVERRIDE
+                            CharType& outConv, SizeModifier& outSize)
     {
         outConv = 'c';
         outSize = Size_Long;
@@ -478,7 +441,7 @@ class wxPrintfFormatConverterUtf8 : public wxFormatConverterBase<char>
 {
     virtual void HandleString(CharType WXUNUSED(conv),
                               SizeModifier WXUNUSED(size),
-                              CharType& outConv, SizeModifier& outSize) wxOVERRIDE
+                              CharType& outConv, SizeModifier& outSize)
     {
         outConv = 's';
         outSize = Size_Default;
@@ -486,7 +449,7 @@ class wxPrintfFormatConverterUtf8 : public wxFormatConverterBase<char>
 
     virtual void HandleChar(CharType WXUNUSED(conv),
                             SizeModifier WXUNUSED(size),
-                            CharType& outConv, SizeModifier& outSize) wxOVERRIDE
+                            CharType& outConv, SizeModifier& outSize)
     {
         // chars are represented using wchar_t in both builds, so this is
         // the same as above
@@ -536,14 +499,14 @@ class wxPrintfFormatConverterANSI : public wxFormatConverterBase<char>
 class wxScanfFormatConverterWchar : public wxFormatConverterBase<wchar_t>
 {
     virtual void HandleString(CharType conv, SizeModifier size,
-                              CharType& outConv, SizeModifier& outSize) wxOVERRIDE
+                              CharType& outConv, SizeModifier& outSize)
     {
         outConv = 's';
         outSize = GetOutSize(conv == 'S', size);
     }
 
     virtual void HandleChar(CharType conv, SizeModifier size,
-                            CharType& outConv, SizeModifier& outSize) wxOVERRIDE
+                            CharType& outConv, SizeModifier& outSize)
     {
         outConv = 'c';
         outSize = GetOutSize(conv == 'C', size);

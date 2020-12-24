@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin, Stefan Csomor
 // Modified by:
 // Created:     2006-01-12
-// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -28,7 +28,6 @@
 #ifndef WX_PRECOMP
     #include "wx/app.h"
     #include "wx/nonownedwnd.h"
-    #include "wx/dialog.h"
 #endif // WX_PRECOMP
 
 #include "wx/log.h"
@@ -215,22 +214,19 @@ int wxGUIEventLoop::DoDispatchTimeout(unsigned long timeout)
         
         switch (response) 
         {
-            case NSModalResponseContinue:
+            case NSRunContinuesResponse:
             {
-                [[NSRunLoop currentRunLoop]
-                        runMode:NSDefaultRunLoopMode
-                        beforeDate:[NSDate dateWithTimeIntervalSinceNow: timeout/1000.0]];
                 if ( [[NSApplication sharedApplication]
                         nextEventMatchingMask: NSAnyEventMask
-                        untilDate: nil
+                        untilDate: [NSDate dateWithTimeIntervalSinceNow: timeout/1000.0]
                         inMode: NSDefaultRunLoopMode
                         dequeue: NO] != nil )
                     return 1;
                 
                 return -1;
             }
-            case NSModalResponseStop:
-            case NSModalResponseAbort:
+            case NSRunStoppedResponse:
+            case NSRunAbortedResponse:
                 return -1;
             default:
                 // nested native loops may return other codes here, just ignore them
@@ -449,13 +445,52 @@ void wxModalEventLoop::OSXDoRun()
 
 void wxModalEventLoop::OSXDoStop()
 {
-    [NSApp abortModal];
+        [NSApp abortModal];
+    }
+
+// we need our own version of ProcessIdle here in order to
+// avoid deletion of pending objects, because ProcessIdle is running
+// to soon and ends up in destroying the object too early, ie before
+// a stack allocated instance is removed resulting in double deletes
+bool wxModalEventLoop::ProcessIdle()
+{
+    bool needMore = false;
+    if ( wxTheApp )
+    {
+        // synthesize an idle event and check if more of them are needed
+        wxIdleEvent event;
+        event.SetEventObject(wxTheApp);
+        wxTheApp->ProcessEvent(event);
+        
+#if wxUSE_LOG
+        // flush the logged messages if any (do this after processing the events
+        // which could have logged new messages)
+        wxLog::FlushActive();
+#endif
+        needMore = event.MoreRequested();
+        
+        wxWindowList::compatibility_iterator node = wxTopLevelWindows.GetFirst();
+        while (node)
+        {
+            wxWindow* win = node->GetData();
+            
+            // Don't send idle events to the windows that are about to be destroyed
+            // anyhow, this is wasteful and unexpected.
+            if ( !wxPendingDelete.Member(win) && win->SendIdleEvents(event) )
+                needMore = true;
+            node = node->GetNext();
+        }
+        
+        wxUpdateUIEvent::ResetUpdateTime();
+
+    }
+    return needMore;
 }
 
 void wxGUIEventLoop::BeginModalSession( wxWindow* modalWindow )
 {
     WXWindow nsnow = nil;
-
+    
     m_modalNestedLevel++;
     if ( m_modalNestedLevel > 1 )
     {

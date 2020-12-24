@@ -3,7 +3,7 @@
 // Purpose:     helper functions for dealing with GTK+ mnemonics
 // Author:      Vadim Zeitlin
 // Created:     2007-11-12
-// Copyright:   (c) 2007 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2007 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 

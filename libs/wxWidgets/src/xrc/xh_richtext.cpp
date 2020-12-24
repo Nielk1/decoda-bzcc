@@ -19,7 +19,7 @@
 #include "wx/xrc/xh_richtext.h"
 #include "wx/richtext/richtextctrl.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxRichTextCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxRichTextCtrlXmlHandler, wxXmlResourceHandler)
 
 wxRichTextCtrlXmlHandler::wxRichTextCtrlXmlHandler() : wxXmlResourceHandler()
 {

@@ -51,7 +51,7 @@
     #define WXDEBUG_REFRESH
 #endif
 
-#if defined(WXDEBUG_REFRESH) && defined(__WXMSW__)
+#if defined(WXDEBUG_REFRESH) && defined(__WXMSW__) && !defined(__WXMICROWIN__)
 #include "wx/msw/private.h"
 #endif
 
@@ -59,7 +59,6 @@
 // implementation
 // ============================================================================
 
-#if wxUSE_SCROLLBAR
 // ----------------------------------------------------------------------------
 // scrollbars class
 // ----------------------------------------------------------------------------
@@ -81,7 +80,6 @@ public:
 
     virtual bool CanBeOutsideClientArea() const { return true; }
 };
-#endif // wxUSE_SCROLLBAR
 
 
 // ----------------------------------------------------------------------------
@@ -90,18 +88,20 @@ public:
 
 // we can't use wxWindowNative here as it won't be expanded inside the macro
 #if defined(__WXMSW__)
-    wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowMSW);
+    IMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowMSW)
 #elif defined(__WXGTK__)
-    wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowGTK);
-#elif defined(__WXOSX__)
-    wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowMac);
+    IMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowGTK)
+#elif defined(__WXOSX_OR_COCOA__)
+    IMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowMac)
 #elif defined(__WXDFB__)
-    wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowDFB);
+    IMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowDFB)
 #elif defined(__WXX11__)
-    wxIMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowX11);
+    IMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowX11)
+#elif defined(__WXPM__)
+    IMPLEMENT_DYNAMIC_CLASS(wxWindow, wxWindowOS2)
 #endif
 
-wxBEGIN_EVENT_TABLE(wxWindow, wxWindowNative)
+BEGIN_EVENT_TABLE(wxWindow, wxWindowNative)
     EVT_SIZE(wxWindow::OnSize)
 
 #if wxUSE_ACCEL || wxUSE_MENUS
@@ -116,7 +116,7 @@ wxBEGIN_EVENT_TABLE(wxWindow, wxWindowNative)
     EVT_PAINT(wxWindow::OnPaint)
     EVT_NC_PAINT(wxWindow::OnNcPaint)
     EVT_ERASE_BACKGROUND(wxWindow::OnErase)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
 // creation
@@ -479,7 +479,7 @@ void wxWindow::Refresh(bool eraseBackground, const wxRect *rect)
         dc.DrawRectangle(rectWin);
 
         // under Unix we use "--sync" X option for this
-        #if defined(__WXMSW__)
+        #if defined(__WXMSW__) && !defined(__WXMICROWIN__)
             ::GdiFlush();
             ::Sleep(200);
         #endif // __WXMSW__

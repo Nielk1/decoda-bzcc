@@ -18,8 +18,8 @@
 #if wxUSE_FILEDLG
 
 // NOTE : it probably also supports MAC, untested
-#if !defined(__UNIX__) && !defined(__WIN32__)
-#error wxGenericFileDialog currently only supports Unix and MSW
+#if !defined(__UNIX__) && !defined(__DOS__) && !defined(__WIN32__) && !defined(__OS2__)
+#error wxGenericFileDialog currently only supports Unix, win32 and DOS
 #endif
 
 #ifndef WX_PRECOMP
@@ -57,8 +57,10 @@
     #include "wx/config.h"
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#ifndef __WXWINCE__
+    #include <sys/types.h>
+    #include <sys/stat.h>
+#endif
 
 #ifdef __UNIX__
     #include <dirent.h>
@@ -68,13 +70,25 @@
     #endif
 #endif
 
-#include <time.h>
+#ifdef __WINDOWS__
+    #include "wx/msw/mslu.h"
+#endif
 
-#if defined(__UNIX__)
+#ifdef __WATCOMC__
+    #include <direct.h>
+#endif
+
+#ifndef __WXWINCE__
+#include <time.h>
+#endif
+
+#if defined(__UNIX__) || defined(__DOS__)
 #include <unistd.h>
 #endif
 
-#if defined(__WINDOWS__)
+#if defined(__WXWINCE__)
+#define IsTopMostDir(dir) (dir == wxT("\\") || dir == wxT("/"))
+#elif (defined(__DOS__) || defined(__WINDOWS__) || defined (__OS2__))
 #define IsTopMostDir(dir)   (dir.empty())
 #else
 #define IsTopMostDir(dir)   (dir == wxT("/"))
@@ -91,9 +105,9 @@
 #define  ID_NEW_DIR       (wxID_FILEDLGG + 4)
 #define  ID_FILE_CTRL     (wxID_FILEDLGG + 5)
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGenericFileDialog, wxFileDialogBase);
+IMPLEMENT_DYNAMIC_CLASS(wxGenericFileDialog, wxFileDialogBase)
 
-wxBEGIN_EVENT_TABLE(wxGenericFileDialog,wxDialog)
+BEGIN_EVENT_TABLE(wxGenericFileDialog,wxDialog)
     EVT_BUTTON(ID_LIST_MODE, wxGenericFileDialog::OnList)
     EVT_BUTTON(ID_REPORT_MODE, wxGenericFileDialog::OnReport)
     EVT_BUTTON(ID_UP_DIR, wxGenericFileDialog::OnUp)
@@ -103,10 +117,10 @@ wxBEGIN_EVENT_TABLE(wxGenericFileDialog,wxDialog)
     EVT_FILECTRL_FILEACTIVATED(ID_FILE_CTRL, wxGenericFileDialog::OnFileActivated)
 
     EVT_UPDATE_UI(ID_UP_DIR, wxGenericFileDialog::OnUpdateButtonsUI)
-#if defined(__WINDOWS__)
+#if defined(__DOS__) || defined(__WINDOWS__) || defined(__OS2__)
     EVT_UPDATE_UI(ID_NEW_DIR, wxGenericFileDialog::OnUpdateButtonsUI)
-#endif // defined(__WINDOWS__)
-wxEND_EVENT_TABLE()
+#endif // defined(__DOS__) || defined(__WINDOWS__) || defined(__OS2__)
+END_EVENT_TABLE()
 
 long wxGenericFileDialog::ms_lastViewStyle = wxLC_LIST;
 bool wxGenericFileDialog::ms_lastShowHidden = false;
@@ -187,7 +201,7 @@ bool wxGenericFileDialog::Create( wxWindow *parent,
     if ((len > 1) && (wxEndsWithPathSeparator(m_dir)))
         m_dir.Remove( len-1, 1 );
 
-    m_filterExtension.clear();
+    m_filterExtension = wxEmptyString;
 
     // layout
 
@@ -204,9 +218,11 @@ bool wxGenericFileDialog::Create( wxWindow *parent,
     m_upDirButton = AddBitmapButton( ID_UP_DIR, wxART_GO_DIR_UP,
                                      _("Go to parent directory"), buttonsizer );
 
+#ifndef __DOS__ // VS: Home directory is meaningless in MS-DOS...
     AddBitmapButton( ID_HOME_DIR, wxART_GO_HOME,
                      _("Go to home directory"), buttonsizer );
     buttonsizer->Add( 20, 20 );
+#endif //!__DOS__
 
     m_newDirButton = AddBitmapButton( ID_NEW_DIR, wxART_NEW_DIR,
                                       _("Create new directory"), buttonsizer );
@@ -409,7 +425,7 @@ void wxGenericFileDialog::OnUpdateButtonsUI(wxUpdateUIEvent& event)
 
 #ifdef wxHAS_GENERIC_FILEDIALOG
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxFileDialog, wxGenericFileDialog);
+IMPLEMENT_DYNAMIC_CLASS(wxFileDialog, wxGenericFileDialog)
 
 #endif // wxHAS_GENERIC_FILEDIALOG
 

@@ -13,7 +13,7 @@
 
 #include "wx/icon.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxIcon, wxBitmap);
+IMPLEMENT_DYNAMIC_CLASS(wxIcon, wxBitmap)
 
 // ============================================================================
 // Icons

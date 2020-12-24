@@ -200,7 +200,7 @@ static void wxgtk_text_draw( GtkWidget *widget, GdkRectangle *rect)
 //  wxTextCtrl
 //-----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxTextCtrl, wxTextCtrlBase)
+BEGIN_EVENT_TABLE(wxTextCtrl, wxTextCtrlBase)
     EVT_CHAR(wxTextCtrl::OnChar)
 
     EVT_MENU(wxID_CUT, wxTextCtrl::OnCut)
@@ -214,7 +214,7 @@ wxBEGIN_EVENT_TABLE(wxTextCtrl, wxTextCtrlBase)
     EVT_UPDATE_UI(wxID_PASTE, wxTextCtrl::OnUpdatePaste)
     EVT_UPDATE_UI(wxID_UNDO, wxTextCtrl::OnUpdateUndo)
     EVT_UPDATE_UI(wxID_REDO, wxTextCtrl::OnUpdateRedo)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 void wxTextCtrl::Init()
 {
@@ -1255,7 +1255,10 @@ void wxTextCtrl::OnInternalIdle()
 wxSize wxTextCtrl::DoGetBestSize() const
 {
     // FIXME should be different for multi-line controls...
-    return wxSize(80, wxControl::DoGetBestSize().y);
+    wxSize ret( wxControl::DoGetBestSize() );
+    wxSize best(80, ret.y);
+    CacheBestSize(best);
+    return best;
 }
 
 // ----------------------------------------------------------------------------

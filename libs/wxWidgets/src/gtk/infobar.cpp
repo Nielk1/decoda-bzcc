@@ -34,7 +34,6 @@
 
 #include "wx/gtk/private.h"
 #include "wx/gtk/private/messagetype.h"
-#include "wx/gtk/private/mnemonics.h"
 
 // ----------------------------------------------------------------------------
 // local classes
@@ -82,8 +81,12 @@ namespace
 
 inline bool UseNative()
 {
+#ifdef __WXGTK3__
+    return true;
+#else
     // native GtkInfoBar widget is only available in GTK+ 2.18 and later
-    return wx_is_at_least_gtk2(18);
+    return gtk_check_version(2, 18, 0) == 0;
+#endif
 }
 
 } // anonymous namespace
@@ -196,11 +199,7 @@ void wxInfoBar::ShowMessage(const wxString& msg, int flags)
     if ( wxGTKImpl::ConvertMessageTypeFromWX(flags, &type) )
         gtk_info_bar_set_message_type(GTK_INFO_BAR(m_widget), type);
     gtk_label_set_text(GTK_LABEL(m_impl->m_label), wxGTK_CONV(msg));
-    gtk_label_set_line_wrap(GTK_LABEL(m_impl->m_label), TRUE );
-#if GTK_CHECK_VERSION(2,10,0)
-    if( wx_is_at_least_gtk2( 10 ) )
-        gtk_label_set_line_wrap_mode(GTK_LABEL(m_impl->m_label), PANGO_WRAP_WORD);
-#endif
+
     if ( !IsShown() )
         Show();
 
@@ -235,36 +234,18 @@ GtkWidget *wxInfoBar::GTKAddButton(wxWindowID btnid, const wxString& label)
     // our best size (at least in vertical direction)
     InvalidateBestSize();
 
-    GtkWidget* button = gtk_info_bar_add_button(GTK_INFO_BAR(m_widget),
-#ifdef __WXGTK4__
-        wxGTK_CONV(label.empty() ? wxConvertMnemonicsToGTK(wxGetStockLabel(btnid)) : label),
-#else
-        label.empty() ? wxGetStockGtkID(btnid) : static_cast<const char*>(wxGTK_CONV(label)),
-#endif
-        btnid);
+    GtkWidget *button = gtk_info_bar_add_button
+                        (
+                            GTK_INFO_BAR(m_widget),
+                            (label.empty()
+                                ? GTKConvertMnemonics(wxGetStockGtkID(btnid))
+                                : label).utf8_str(),
+                            btnid
+                        );
 
     wxASSERT_MSG( button, "unexpectedly failed to add button to info bar" );
 
     return button;
-}
-
-size_t wxInfoBar::GetButtonCount() const
-{
-    if ( !UseNative() )
-        return wxInfoBarGeneric::GetButtonCount();
-
-    return m_impl->m_buttons.size();
-}
-
-wxWindowID wxInfoBar::GetButtonId(size_t idx) const
-{
-    if ( !UseNative() )
-        return wxInfoBarGeneric::GetButtonId(idx);
-
-    wxCHECK_MSG( idx < m_impl->m_buttons.size(), wxID_NONE,
-                 "Invalid infobar button position" );
-
-    return m_impl->m_buttons[idx].id;
 }
 
 void wxInfoBar::AddButton(wxWindowID btnid, const wxString& label)
@@ -288,24 +269,6 @@ void wxInfoBar::AddButton(wxWindowID btnid, const wxString& label)
         m_impl->m_buttons.push_back(wxInfoBarGTKImpl::Button(button, btnid));
 }
 
-bool wxInfoBar::HasButtonId(wxWindowID btnid) const
-{
-    if ( !UseNative() )
-        return wxInfoBarGeneric::HasButtonId(btnid);
-
-    // as in the generic version, look for the button starting from the end
-    const wxInfoBarGTKImpl::Buttons& buttons = m_impl->m_buttons;
-    for ( wxInfoBarGTKImpl::Buttons::const_reverse_iterator i = buttons.rbegin();
-          i != buttons.rend();
-          ++i )
-    {
-        if ( i->id == btnid )
-            return true;
-    }
-
-    return false;
-}
-
 void wxInfoBar::RemoveButton(wxWindowID btnid)
 {
     if ( !UseNative() )
@@ -323,7 +286,7 @@ void wxInfoBar::RemoveButton(wxWindowID btnid)
         if (i->id == btnid)
         {
             gtk_widget_destroy(i->button);
-            buttons.erase(i.base() - 1);
+            buttons.erase(i.base());
 
             // see comment in GTKAddButton()
             InvalidateBestSize();

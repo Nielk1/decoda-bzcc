@@ -33,6 +33,8 @@
 
 #include "wx/fdrepdlg.h"
 
+#include "wx/msw/mslu.h"
+
 // ----------------------------------------------------------------------------
 // functions prototypes
 // ----------------------------------------------------------------------------
@@ -46,7 +48,7 @@ UINT_PTR CALLBACK wxFindReplaceDialogHookProc(HWND hwnd,
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxFindReplaceDialog, wxDialog);
+IMPLEMENT_DYNAMIC_CLASS(wxFindReplaceDialog, wxDialog)
 
 // ----------------------------------------------------------------------------
 // wxFindReplaceDialogImpl: the internals of wxFindReplaceDialog
@@ -197,9 +199,32 @@ wxFindReplaceDialogImpl::FindMessageHandler(wxWindow * WXUNUSED(win),
                                             WPARAM WXUNUSED(wParam),
                                             LPARAM lParam)
 {
+#if wxUSE_UNICODE_MSLU
+    static unsigned long s_lastMsgFlags = 0;
+
+    // This flag helps us to identify the bogus ANSI message
+    // sent by UNICOWS.DLL (see below)
+    // while we're sending our message to the dialog
+    // we ignore possible messages sent in between
+    static bool s_blockMsg = false;
+#endif // wxUSE_UNICODE_MSLU
+
     wxASSERT_MSG( nMsg == ms_msgFindDialog, wxT("unexpected message received") );
 
     FINDREPLACE *pFR = (FINDREPLACE *)lParam;
+
+#if wxUSE_UNICODE_MSLU
+    // This is a hack for a MSLU problem: Versions up to 1.0.4011
+    // of UNICOWS.DLL send the correct UNICODE item after button press
+    // and a bogus ANSI mode item right after this, so let's ignore
+    // the second bogus message
+    if ( wxUsingUnicowsDll() && s_lastMsgFlags == pFR->Flags )
+    {
+        s_lastMsgFlags = 0;
+        return 0;
+    }
+    s_lastMsgFlags = pFR->Flags;
+#endif // wxUSE_UNICODE_MSLU
 
     wxFindReplaceDialog *dialog = (wxFindReplaceDialog *)pFR->lCustData;
 
@@ -256,7 +281,15 @@ wxFindReplaceDialogImpl::FindMessageHandler(wxWindow * WXUNUSED(win),
         event.SetReplaceString(pFR->lpstrReplaceWith);
     }
 
+#if wxUSE_UNICODE_MSLU
+    s_blockMsg = true;
+#endif // wxUSE_UNICODE_MSLU
+
     dialog->Send(event);
+
+#if wxUSE_UNICODE_MSLU
+    s_blockMsg = false;
+#endif // wxUSE_UNICODE_MSLU
 
     return true;
 }
@@ -347,9 +380,7 @@ bool wxFindReplaceDialog::Create(wxWindow *parent,
 {
     m_windowStyle = flags;
     m_FindReplaceData = data;
-
-    if ( parent )
-        parent->AddChild(this);
+    m_parent = parent;
 
     SetTitle(title);
 

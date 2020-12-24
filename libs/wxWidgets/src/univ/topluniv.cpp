@@ -62,11 +62,11 @@ private:
 // event tables
 // ----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxTopLevelWindow, wxTopLevelWindowNative)
+BEGIN_EVENT_TABLE(wxTopLevelWindow, wxTopLevelWindowNative)
     WX_EVENT_TABLE_INPUT_CONSUMER(wxTopLevelWindow)
     EVT_NC_PAINT(wxTopLevelWindow::OnNcPaint)
     EVT_MENU_RANGE(wxID_CLOSE_FRAME, wxID_RESTORE_FRAME, wxTopLevelWindow::OnSystemMenu)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 WX_FORWARD_TO_INPUT_CONSUMER(wxTopLevelWindow)
 
@@ -216,7 +216,8 @@ long wxTopLevelWindow::GetDecorationsStyle() const
 
 void wxTopLevelWindow::RefreshTitleBar()
 {
-    wxNcPaintEvent event(this);
+    wxNcPaintEvent event(GetId());
+    event.SetEventObject(this);
     GetEventHandler()->ProcessEvent(event);
 }
 
@@ -406,7 +407,7 @@ public:
     wxInteractiveMoveHandler(wxInteractiveMoveData& data) : m_data(data) {}
 
 private:
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
     void OnMouseMove(wxMouseEvent& event);
     void OnMouseDown(wxMouseEvent& event);
     void OnMouseUp(wxMouseEvent& event);
@@ -415,12 +416,12 @@ private:
     wxInteractiveMoveData& m_data;
 };
 
-wxBEGIN_EVENT_TABLE(wxInteractiveMoveHandler, wxEvtHandler)
+BEGIN_EVENT_TABLE(wxInteractiveMoveHandler, wxEvtHandler)
     EVT_MOTION(wxInteractiveMoveHandler::OnMouseMove)
     EVT_LEFT_DOWN(wxInteractiveMoveHandler::OnMouseDown)
     EVT_LEFT_UP(wxInteractiveMoveHandler::OnMouseUp)
     EVT_KEY_DOWN(wxInteractiveMoveHandler::OnKeyDown)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 
 static inline LINKAGEMODE

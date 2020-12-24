@@ -13,6 +13,7 @@
 
 #include "wx/stattext.h"
 
+#include <gtk/gtk.h>
 #include "wx/gtk/private.h"
 
 //-----------------------------------------------------------------------------
@@ -54,35 +55,11 @@ bool wxStaticText::Create(wxWindow *parent,
 
     GtkJustification justify;
     if ( style & wxALIGN_CENTER_HORIZONTAL )
-    {
-#ifndef __WXGTK3__
-        // This looks like a bug in GTK+ and seems to be fixed in GTK+3, but
-        // using non-default justification with default ellipsize mode doesn't
-        // work: the justification is just ignored. In practice, alignment is
-        // more important, so turn on ellipsize mode even if it was not
-        // specified to make it work if necessary.
-        if ( !(style & wxST_ELLIPSIZE_MASK) )
-            style |= wxST_ELLIPSIZE_MIDDLE;
-#endif // GTK+ 2
-
-        justify = GTK_JUSTIFY_CENTER;
-    }
+      justify = GTK_JUSTIFY_CENTER;
     else if ( style & wxALIGN_RIGHT )
-    {
-#ifndef __WXGTK3__
-        // As above, we need to use a non-default ellipsize mode for the
-        // alignment to have any effect.
-        if ( !(style & wxST_ELLIPSIZE_MASK) )
-            style |= wxST_ELLIPSIZE_START;
-#endif // GTK+ 2
-
-        justify = GTK_JUSTIFY_RIGHT;
-    }
-    else // must be wxALIGN_LEFT which is 0
-    {
-        // No need to play games with wxST_ELLIPSIZE_XXX.
-        justify = GTK_JUSTIFY_LEFT;
-    }
+      justify = GTK_JUSTIFY_RIGHT;
+    else
+      justify = GTK_JUSTIFY_LEFT;
 
     if (GetLayoutDirection() == wxLayout_RightToLeft)
     {
@@ -107,13 +84,7 @@ bool wxStaticText::Create(wxWindow *parent,
 
     // GTK_JUSTIFY_LEFT is 0, RIGHT 1 and CENTER 2
     static const float labelAlignments[] = { 0.0, 1.0, 0.5 };
-#ifdef __WXGTK4__
-    g_object_set(m_widget, "xalign", labelAlignments[justify], NULL);
-#else
-    wxGCC_WARNING_SUPPRESS(deprecated-declarations)
     gtk_misc_set_alignment(GTK_MISC(m_widget), labelAlignments[justify], 0.0);
-    wxGCC_WARNING_RESTORE()
-#endif
 
     gtk_label_set_line_wrap( GTK_LABEL(m_widget), TRUE );
 
@@ -137,16 +108,18 @@ void wxStaticText::GTKDoSetLabel(GTKLabelSetter setter, const wxString& label)
 {
     wxCHECK_RET( m_widget != NULL, wxT("invalid static text") );
 
+    InvalidateBestSize();
+
     (this->*setter)(GTK_LABEL(m_widget), label);
 
-    AutoResizeIfNecessary();
+    // adjust the label size to the new label unless disabled
+    if ( !HasFlag(wxST_NO_AUTORESIZE) &&
+         !IsEllipsized() )  // if ellipsization is ON, then we don't want to get resized!
+        SetSize( GetBestSize() );
 }
 
 void wxStaticText::SetLabel(const wxString& label)
 {
-    if ( label == m_labelOrig )
-        return;
-
     m_labelOrig = label;
 
     GTKDoSetLabel(&wxStaticText::GTKSetLabelForLabel, label);
@@ -174,8 +147,7 @@ bool wxStaticText::SetFont( const wxFont &font )
     const bool wasUnderlined = GetFont().GetUnderlined();
     const bool wasStrickenThrough = GetFont().GetStrikethrough();
 
-    if ( !wxControl::SetFont(font) )
-        return false;
+    bool ret = wxControl::SetFont(font);
 
     const bool isUnderlined = GetFont().GetUnderlined();
     const bool isStrickenThrough = GetFont().GetStrikethrough();
@@ -217,9 +189,12 @@ bool wxStaticText::SetFont( const wxFont &font )
         gtk_label_set_use_underline(GTK_LABEL(m_widget), !isUnderlined);
     }
 
-    AutoResizeIfNecessary();
-
-    return true;
+    // adjust the label size to the new label unless disabled
+    if (!HasFlag(wxST_NO_AUTORESIZE))
+    {
+        SetSize( GetBestSize() );
+    }
+    return ret;
 }
 
 wxSize wxStaticText::DoGetBestSize() const
@@ -237,25 +212,17 @@ wxSize wxStaticText::DoGetBestSize() const
     gtk_label_set_line_wrap(GTK_LABEL(m_widget), false);
 #else
     GTK_LABEL(m_widget)->wrap = FALSE;
-
-    // Reset the ellipsize mode while computing the best size, otherwise it's
-    // going to be too small as the control knows that it can be shrunk to the
-    // bare minimum and just hide most of the text replacing it with ellipsis.
-    // This is especially important because we can enable ellipsization
-    // implicitly for GTK+ 2, see the code dealing with alignment in the ctor.
-    const PangoEllipsizeMode ellipsizeMode = gtk_label_get_ellipsize(GTK_LABEL(m_widget));
-    gtk_label_set_ellipsize(GTK_LABEL(m_widget), PANGO_ELLIPSIZE_NONE);
 #endif
     wxSize size = wxStaticTextBase::DoGetBestSize();
 #ifdef __WXGTK3__
     gtk_label_set_line_wrap(GTK_LABEL(m_widget), true);
 #else
-    gtk_label_set_ellipsize(GTK_LABEL(m_widget), ellipsizeMode);
     GTK_LABEL(m_widget)->wrap = TRUE; // restore old value
 #endif
 
     // Adding 1 to width to workaround GTK sometimes wrapping the text needlessly
     size.x++;
+    CacheBestSize(size);
     return size;
 }
 
@@ -270,23 +237,17 @@ void wxStaticText::GTKWidgetDoSetMnemonic(GtkWidget* w)
 }
 
 
-// These functions are not used as GTK supports ellipsization natively and we
-// never call the base class UpdateText() which uses them.
-//
-// Note that, unfortunately, we still need to define them because they still
-// exist, as pure virtuals, in the base class even in wxGTK to allow
-// wxGenericStaticText to override them.
+// These functions should be used only when GTK+ < 2.6 by wxStaticTextBase::UpdateLabel()
 
-wxString wxStaticText::WXGetVisibleLabel() const
+wxString wxStaticText::DoGetLabel() const
 {
-    wxFAIL_MSG(wxS("Unreachable"));
-
-    return wxString();
+    GtkLabel *label = GTK_LABEL(m_widget);
+    return wxGTK_CONV_BACK( gtk_label_get_text( label ) );
 }
 
-void wxStaticText::WXSetVisibleLabel(const wxString& WXUNUSED(str))
+void wxStaticText::DoSetLabel(const wxString& str)
 {
-    wxFAIL_MSG(wxS("Unreachable"));
+    GTKSetLabelForLabel(GTK_LABEL(m_widget), str);
 }
 
 // static

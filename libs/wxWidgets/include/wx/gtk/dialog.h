@@ -25,19 +25,19 @@ public:
             const wxPoint &pos = wxDefaultPosition,
             const wxSize &size = wxDefaultSize,
             long style = wxDEFAULT_DIALOG_STYLE,
-            const wxString &name = wxASCII_STR(wxDialogNameStr) );
+            const wxString &name = wxDialogNameStr );
     bool Create( wxWindow *parent, wxWindowID id,
             const wxString &title,
             const wxPoint &pos = wxDefaultPosition,
             const wxSize &size = wxDefaultSize,
             long style = wxDEFAULT_DIALOG_STYLE,
-            const wxString &name = wxASCII_STR(wxDialogNameStr) );
+            const wxString &name = wxDialogNameStr );
     virtual ~wxDialog();
 
-    virtual bool Show( bool show = true ) wxOVERRIDE;
-    virtual int ShowModal() wxOVERRIDE;
-    virtual void EndModal( int retCode ) wxOVERRIDE;
-    virtual bool IsModal() const wxOVERRIDE;
+    virtual bool Show( bool show = true );
+    virtual int ShowModal();
+    virtual void EndModal( int retCode );
+    virtual bool IsModal() const;
 
 private:
     // common part of all ctors
@@ -46,7 +46,7 @@ private:
     bool m_modalShowing;
     wxGUIEventLoop *m_modalLoop;
 
-    wxDECLARE_DYNAMIC_CLASS(wxDialog);
+    DECLARE_DYNAMIC_CLASS(wxDialog)
 };
 
 #endif // _WX_GTKDIALOG_H_

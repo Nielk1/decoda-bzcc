@@ -29,7 +29,7 @@ public:
                    const wxSize& size = wxDefaultSize,
                    long style = wxCLRBTN_DEFAULT_STYLE,
                    const wxValidator& validator = wxDefaultValidator,
-                   const wxString& name = wxASCII_STR(wxColourPickerWidgetNameStr))
+                   const wxString& name = wxColourPickerWidgetNameStr)
         : m_topParent(NULL)
     {
         Create(parent, id, initial, pos, size, style, validator, name);
@@ -42,12 +42,12 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = wxCLRBTN_DEFAULT_STYLE,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxASCII_STR(wxColourPickerWidgetNameStr));
+                const wxString& name = wxColourPickerWidgetNameStr);
 
     virtual ~wxColourButton();
 
 protected:
-    void UpdateColour() wxOVERRIDE;
+    void UpdateColour();
 
 public:     // used by the GTK callback only
 
@@ -57,7 +57,7 @@ public:     // used by the GTK callback only
     wxWindow *m_topParent;
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxColourButton);
+    DECLARE_DYNAMIC_CLASS(wxColourButton)
 };
 
 #endif // _WX_GTK_CLRPICKER_H_

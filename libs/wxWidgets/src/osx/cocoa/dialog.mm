@@ -32,41 +32,15 @@ void wxDialog::DoShowWindowModal()
     NSWindow* parentWindow = parent->GetWXWindow();
     NSWindow* theWindow = GetWXWindow();
     
-    [parentWindow beginSheet:theWindow completionHandler:
-     ^(NSModalResponse returnCode)
-    {
-        this->ModalFinishedCallback(theWindow, returnCode);
-    }];
+    [NSApp beginSheet: theWindow
+            modalForWindow: parentWindow
+            modalDelegate: theWindow
+            didEndSelector: nil
+            contextInfo: nil];
 }
 
 void wxDialog::EndWindowModal()
 {
     [NSApp endSheet: GetWXWindow()];
     [GetWXWindow() orderOut:GetWXWindow()];
-}
-
-bool wxDialog::OSXGetWorksWhenModal()
-{
-    bool worksWhenModal = false;
-
-    NSWindow* nswindow = IsModal() ? GetWXWindow() : nil;
-    if ( nswindow != nil )
-    {
-        if ( [nswindow isKindOfClass:[NSPanel class]] &&  [(NSPanel*)nswindow worksWhenModal] == YES )
-        {
-            [(NSPanel*)nswindow setWorksWhenModal:NO];
-            worksWhenModal = true;
-        }
-    }
-    return worksWhenModal;
-}
-
-void wxDialog::OSXSetWorksWhenModal(bool worksWhenModal)
-{
-    NSWindow* nswindow = IsModal() ? GetWXWindow() : nil;
-    if ( nswindow != nil )
-    {
-        if ( [nswindow isKindOfClass:[NSPanel class]] &&  [(NSPanel*)nswindow worksWhenModal] == YES )
-            [(NSPanel*)nswindow setWorksWhenModal:worksWhenModal];
-    }
 }

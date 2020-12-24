@@ -20,7 +20,7 @@
 
 #include "wx/commandlinkbutton.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxCommandLinkButtonXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxCommandLinkButtonXmlHandler, wxXmlResourceHandler)
 
 wxCommandLinkButtonXmlHandler::wxCommandLinkButtonXmlHandler()
     : wxXmlResourceHandler()

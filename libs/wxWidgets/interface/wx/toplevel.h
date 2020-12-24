@@ -142,44 +142,13 @@ public:
         corner of a dialog) and the Close entry of the system menu (most often
         in the left upper corner of the dialog).
 
+        Currently only implemented for wxMSW and wxGTK.
+
         Returns @true if operation was successful. This may be wrong on X11
         (including GTK+) where the window manager may not support this operation
         and there is no way to find out.
     */
     virtual bool EnableCloseButton(bool enable = true);
-
-    /**
-        Enables or disables the Maximize button (in the right or left upper
-        corner of a frame or dialog).
-
-        Currently only implemented for wxMSW and wxOSX.
-
-        The window style must contain wxMAXIMIZE_BOX.
-
-        Returns @true if operation was successful. Note that a successful
-        operation does not change the window style flags.
-
-        @since 3.1.0
-    */
-    virtual bool EnableMaximizeButton(bool enable = true);
-
-    /**
-        Enables or disables the Minimize button (in the right or left upper
-        corner of a frame or dialog).
-
-        Currently only implemented for wxMSW and wxOSX.
-
-        The window style must contain wxMINIMIZE_BOX.
-
-        Note that in wxMSW a successful operation will change the window
-        style flags.
-
-        Returns @true if operation was successful. Note that a successful
-        operation does not change the window style flags.
-
-        @since 3.1.0
-    */
-    virtual bool EnableMinimizeButton(bool enable = true);
 
     /**
         Returns a pointer to the button which is the default for this window, or
@@ -226,18 +195,20 @@ public:
     virtual wxString GetTitle() const;
 
     /**
-        Iconizes or restores the window.
+        Unique to the wxWinCE port. Responds to showing/hiding SIP (soft input
+        panel) area and resize window accordingly. Override this if you want to
+        avoid resizing or do additional operations.
+    */
+    virtual bool HandleSettingChange(WXWPARAM wParam,
+                                     WXLPARAM lParam);
 
-        Note that in wxGTK the change to the window state is not immediate,
-        i.e. IsIconized() will typically return @false right after a call to
-        Iconize() and its return value will only change after the control flow
-        returns to the event loop and the notification about the window being
-        really iconized is received.
+    /**
+        Iconizes or restores the window.
 
         @param iconize
             If @true, iconizes the window; if @false, shows and restores it.
 
-        @see IsIconized(), Restore()(), wxIconizeEvent.
+        @see IsIconized(), Maximize(), wxIconizeEvent.
     */
     virtual void Iconize(bool iconize = true);
 
@@ -283,33 +254,18 @@ public:
     bool IsUsingNativeDecorations() const;
 
     /**
-        Lays out the children using the window sizer or resizes the only child
-        of the window to cover its entire area.
-
-        This class overrides the base class Layout() method to check if this
-        window contains exactly one child -- which is commonly the case, with
-        wxPanel being often created as the only child of wxTopLevelWindow --
-        and, if this is the case, resizes this child window to cover the entire
-        client area.
-
-        Note that if you associate a sizer with this window, the sizer takes
-        precedence and the only-child-resizing is only used as fallback.
-
-        @returns @false if nothing was done because the window doesn't have
-                 neither a sizer nor a single child, @true otherwise.
+        See wxWindow::SetAutoLayout(): when auto layout is on, this function gets
+        called automatically when the window is resized.
     */
     virtual bool Layout();
 
     /**
         Maximizes or restores the window.
 
-        Note that, just as with Iconize(), the change to the window state is
-        not immediate in at least wxGTK port.
-
         @param maximize
             If @true, maximizes the window, otherwise it restores it.
 
-        @see Restore(), Iconize()
+        @see Iconize()
     */
     virtual void Maximize(bool maximize = true);
 
@@ -372,105 +328,17 @@ public:
     void Restore();
 
     /**
-        Class used with SaveGeometry() and RestoreToGeometry().
-
-        This is an abstract base class, i.e. to use it you must define a
-        derived class implementing the pure virtual SaveField() and
-        RestoreField() methods.
-
-        For example, if you wished to store the window geometry in a database,
-        you could derive a class saving fields such as "width" or "height" in a
-        table in this database and restoring them from it later.
-
-        @since 3.1.2
-     */
-    class GeometrySerializer
-    {
-        /**
-            Save a single field with the given value.
-
-            Note that if this function returns @false, SaveGeometry() supposes
-            that saving the geometry failed and returns @false itself, without
-            even trying to save anything else.
-
-            @param name uniquely identifies the field but is otherwise
-                arbitrary.
-            @param value value of the field (can be positive or negative, i.e.
-                it can't be assumed that a value like -1 is invalid).
-
-            @return @true if the field was saved or @false if saving it failed,
-                resulting in wxTopLevelWindow::SaveGeometry() failure.
-         */
-        virtual bool SaveField(const wxString& name, int value) const = 0;
-
-        /**
-            Try to restore a single field.
-
-            Unlike for SaveField(), returning @false from this function may
-            indicate that the value simply wasn't present and doesn't prevent
-            RestoreToGeometry() from continuing with trying to restore the
-            other values.
-
-            @param name uniquely identifies the field
-            @param value non-@NULL pointer to the value to be filled by this
-                function
-
-            @return @true if the value was retrieved or @false if it wasn't
-                found or an error occurred.
-         */
-        virtual bool RestoreField(const wxString& name, int* value) = 0;
-    };
-
-    /**
-        Restores the window to the previously saved geometry.
-
-        This is a companion function to SaveGeometry() and can be called later
-        to restore the window to the geometry it had when it was saved.
-
-        @param ser An object implementing GeometrySerializer virtual methods.
-
-        @return @true if any (and, usually, but not necessarily, all) of the
-            window geometry attributes were restored or @false if there was no
-            saved geometry information at all or restoring it failed.
-
-        @since 3.1.2
-     */
-    bool RestoreToGeometry(GeometrySerializer& ser);
-
-    /**
-        Save the current window geometry to allow restoring it later.
-
-        After calling this function, window geometry is saved in the provided
-        serializer and calling RestoreToGeometry() with the same serializer
-        later (i.e. usually during a subsequent program execution) would
-        restore the window to the same position, size, maximized/minimized
-        state etc.
-
-        This function is used by wxPersistentTLW, so it is not necessary to use
-        it if the goal is to just save and restore window geometry in the
-        simplest possible way. However is more flexibility is required, it can
-        be also used directly with a custom serializer object.
-
-        @param ser An object implementing GeometrySerializer virtual methods.
-
-        @return @true if the geometry was saved, @false if doing it failed
-
-        @since 3.1.2
-     */
-    bool SaveGeometry(const GeometrySerializer& ser) const;
-
-    /**
         Changes the default item for the panel, usually @a win is a button.
 
         @see GetDefaultItem()
     */
     wxWindow* SetDefaultItem(wxWindow* win);
 
-
+    
     wxWindow*  SetTmpDefaultItem(wxWindow * win);
     wxWindow* GetTmpDefaultItem() const;
 
-
+    
     /**
         Sets the icon for this window.
 
@@ -504,6 +372,24 @@ public:
     virtual void SetIcons(const wxIconBundle& icons);
 
     /**
+        Sets action or menu activated by pressing left hardware button on the
+        smart phones. Unavailable on full keyboard machines.
+
+        @param id
+            Identifier for this button.
+        @param label
+            Text to be displayed on the screen area dedicated to this hardware
+            button.
+        @param subMenu
+            The menu to be opened after pressing this hardware button.
+
+        @see SetRightMenu().
+    */
+    void SetLeftMenu(int id = wxID_ANY,
+                     const wxString& label = wxEmptyString,
+                     wxMenu* subMenu = NULL);
+
+    /**
         A simpler interface for setting the size hints than SetSizeHints().
     */
     virtual void SetMaxSize(const wxSize& size);
@@ -512,6 +398,24 @@ public:
         A simpler interface for setting the size hints than SetSizeHints().
     */
     virtual void SetMinSize(const wxSize& size);
+
+    /**
+        Sets action or menu activated by pressing right hardware button on the
+        smart phones. Unavailable on full keyboard machines.
+
+        @param id
+            Identifier for this button.
+        @param label
+            Text to be displayed on the screen area dedicated to this hardware
+            button.
+        @param subMenu
+            The menu to be opened after pressing this hardware button.
+
+        @see SetLeftMenu().
+    */
+    void SetRightMenu(int id = wxID_ANY,
+                      const wxString& label = wxEmptyString,
+                      wxMenu* subMenu = NULL);
 
     /**
         Allows specification of minimum and maximum window sizes, and window
@@ -592,20 +496,20 @@ public:
         there are any open top level windows.
     */
     virtual bool ShouldPreventAppExit() const;
-
+    
     /**
-        This function sets the wxTopLevelWindow's modified state on macOS,
+        This function sets the wxTopLevelWindow's modified state on OS X,
         which currently draws a black dot in the wxTopLevelWindow's close button.
         On other platforms, this method does nothing.
-
+        
         @see OSXIsModified()
     */
     virtual void OSXSetModified(bool modified);
-
+    
     /**
-        Returns the current modified state of the wxTopLevelWindow on macOS.
+        Returns the current modified state of the wxTopLevelWindow on OS X.
         On other platforms, this method does nothing.
-
+        
         @see OSXSetModified()
     */
     virtual bool OSXIsModified() const;
@@ -613,7 +517,7 @@ public:
     /**
         Sets the file name represented by this wxTopLevelWindow.
 
-        Under macOS, this file name is used to set the "proxy icon", which
+        Under OS X, this file name is used to set the "proxy icon", which
         appears in the window title bar near its title, corresponding to this
         file name. Under other platforms it currently doesn't do anything but
         it is harmless to call it now and it might be implemented to do
@@ -630,35 +534,7 @@ public:
         focus.
      */
     virtual void ShowWithoutActivating();
-
-    /**
-        Enables the maximize button to toggle full screen mode. Prior to
-        macOS 10.10 a full screen button is added to the right upper corner
-        of a window's title bar.
-
-        Currently only available for wxOSX/Cocoa.
-
-        @param enable
-            If @true (default) adds the full screen button in the title bar;
-            if @false the button is removed.
-
-        @return @true if the button was added or removed, @false if running
-        under another OS.
-
-        @note Having the button is also required to let ShowFullScreen()
-        make use of the full screen API: a full screen window gets its own space
-        and entering and exiting the mode is animated.
-        If the button is not present the old way of switching to full screen
-        is used.
-
-        @onlyfor{wxosx}
-
-        @see ShowFullScreen()
-
-        @since 3.1.0
-    */
-    virtual bool EnableFullScreenView(bool enable = true);
-
+    
     /**
         Depending on the value of @a show parameter the window is either shown
         full screen or restored to its normal state. @a style is a bit list
@@ -677,7 +553,7 @@ public:
         @note Showing a window full screen also actually @ref wxWindow::Show()
               "Show()"s the window if it isn't shown.
 
-        @see EnableFullScreenView(), IsFullScreen()
+        @see IsFullScreen()
     */
     virtual bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL);
 

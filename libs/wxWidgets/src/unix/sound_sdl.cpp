@@ -37,9 +37,9 @@
 class wxSoundBackendSDLNotification : public wxEvent
 {
 public:
-    wxDECLARE_DYNAMIC_CLASS(wxSoundBackendSDLNotification);
+    DECLARE_DYNAMIC_CLASS(wxSoundBackendSDLNotification)
     wxSoundBackendSDLNotification();
-    wxEvent *Clone() const wxOVERRIDE { return new wxSoundBackendSDLNotification(*this); }
+    wxEvent *Clone() const { return new wxSoundBackendSDLNotification(*this); }
 };
 
 typedef void (wxEvtHandler::*wxSoundBackendSDLNotificationFunction)
@@ -54,7 +54,7 @@ wxDECLARE_EVENT(wxEVT_SOUND_BACKEND_SDL_NOTIFICATION, wxSoundBackendSDLNotificat
                               wxEVENT_HANDLER_CAST( wxSoundBackendSDLNotificationFunction, func ), \
                               NULL ),
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxSoundBackendSDLNotification, wxEvtHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxSoundBackendSDLNotification, wxEvtHandler)
 wxDEFINE_EVENT( wxEVT_SOUND_BACKEND_SDL_NOTIFICATION, wxSoundBackendSDLNotification );
 
 wxSoundBackendSDLNotification::wxSoundBackendSDLNotification()
@@ -114,12 +114,12 @@ private:
     }
     wxSoundBackendSDL *m_backend;
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
 };
 
-wxBEGIN_EVENT_TABLE(wxSoundBackendSDLEvtHandler, wxEvtHandler)
+BEGIN_EVENT_TABLE(wxSoundBackendSDLEvtHandler, wxEvtHandler)
     EVT_SOUND_BACKEND_SDL_NOTIFICATON(wxSoundBackendSDLEvtHandler::OnNotify)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxSoundBackendSDL::~wxSoundBackendSDL()
 {
@@ -215,7 +215,7 @@ bool wxSoundBackendSDL::OpenAudio()
 #if SDL_MAJOR_VERSION == 1
             SDL_AudioDriverName(driver, 256);
 #elif SDL_MAJOR_VERSION > 1            
-            wxStrlcpy(driver, SDL_GetCurrentAudioDriver(), 256);
+            strncpy(driver, SDL_GetCurrentAudioDriver(), 256);
 #endif
             wxLogTrace(wxT("sound"), wxT("opened audio, driver '%s'"),
                        wxString(driver, wxConvLocal).c_str());

@@ -11,9 +11,10 @@
 #ifndef _WX_GTK_PRIVATE_H_
 #define _WX_GTK_PRIVATE_H_
 
-#include "wx/gtk/private/wrapgtk.h"
+#include <gtk/gtk.h>
 
 #include "wx/gtk/private/string.h"
+#include "wx/gtk/private/gtk2-compat.h"
 
 #ifndef G_VALUE_INIT
     // introduced in GLib 2.30

@@ -1,16 +1,7 @@
-/*
-    This file is used on systems not using configure only and contains
-    hardcoded definitions for MSVC, Xcode and MinGW when using makefiles.
- */
-
 #ifdef __APPLE__
 
 /* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
-
-/* Define to 1 if you have the declaration of `optarg', and to 0 if you don't.
-   */
-#undef HAVE_DECL_OPTARG
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -20,9 +11,6 @@
 
 /* Define to 1 if you have the `floor' function. */
 #define HAVE_FLOOR 1
-
-/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
-#define HAVE_FSEEKO 1
 
 /* Define to 1 if you have the `getopt' function. */
 #define HAVE_GETOPT 1
@@ -67,6 +55,9 @@
 /* Define to 1 if you have the `lfind' function. */
 #define HAVE_LFIND 1
 
+/* Define to 1 if you have the `m' library (-lm). */
+/* #undef HAVE_LIBM */
+
 /* Define to 1 if you have the <limits.h> header file. */
 #define HAVE_LIMITS_H 1
 
@@ -102,9 +93,6 @@
 
 /* Define to 1 if you have the `setmode' function. */
 #define HAVE_SETMODE 1
-
-/* Define to 1 if you have the `snprintf' function. */
-#define HAVE_SNPRINTF 1
 
 /* Define to 1 if you have the `sqrt' function. */
 #define HAVE_SQRT 1
@@ -199,7 +187,8 @@
 /* Support LogLuv high dynamic range encoding */
 #define LOGLUV_SUPPORT 1
 
-/* Define to the sub-directory where libtool stores uninstalled libraries. */
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
 #define LT_OBJDIR ".libs/"
 
 /* Support LZMA2 compression */
@@ -213,6 +202,9 @@
 
 /* Support NeXT 2-bit RLE algorithm */
 #define NEXT_SUPPORT 1
+
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+/* #undef NO_MINUS_C_MINUS_O */
 
 /* Support Old JPEG compresson (read-only) */
 /* #undef OJPEG_SUPPORT */
@@ -238,9 +230,6 @@
 
 /* The size of `signed short', as computed by sizeof. */
 #define SIZEOF_SIGNED_SHORT 2
-
-/* The size of `size_t', as computed by sizeof. */
-#define SIZEOF_SIZE_T 8
 
 /* The size of `unsigned char *', as computed by sizeof. */
 #define SIZEOF_UNSIGNED_CHAR_P 4
@@ -296,12 +285,6 @@
 
 /* Pointer difference type */
 #define TIFF_PTRDIFF_T ptrdiff_t
-
-/* Size type formatter */
-#define TIFF_SIZE_FORMAT "%zd"
-
-/* Unsigned size type */
-#define TIFF_SIZE_T size_t
 
 /* Signed size type formatter */
 #define TIFF_SSIZE_FORMAT "%ld"
@@ -360,9 +343,6 @@
 /* Define to 1 if you have the `setmode' function. */
 #define HAVE_SETMODE 1
 
-/* Define to 1 if you have the `snprintf' function. */
-#define HAVE_SNPRINTF 1
-
 /* The size of a `int', as computed by sizeof. */
 #define SIZEOF_INT 4
 
@@ -413,6 +393,11 @@
 
 #if !defined (__BORLANDC__) && !defined (__WATCOMC__)
    #define lfind _lfind
+#endif
+
+#ifdef __DMC__
+#define HAVE_INT32
+typedef	long int32;
 #endif
 
 #ifdef _WIN32_WCE

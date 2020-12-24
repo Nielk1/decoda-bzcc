@@ -39,8 +39,8 @@
 #endif
  // End __WXMSW__
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxPrintPaperType, wxObject);
-// wxIMPLEMENT_DYNAMIC_CLASS(wxPrintPaperDatabase, wxList);
+IMPLEMENT_DYNAMIC_CLASS(wxPrintPaperType, wxObject)
+// IMPLEMENT_DYNAMIC_CLASS(wxPrintPaperDatabase, wxList)
 
 /*
  * Paper size database for all platforms
@@ -50,15 +50,16 @@ wxPrintPaperType::wxPrintPaperType()
 {
     m_paperId = wxPAPER_NONE;
     m_platformId = 0;
+    m_paperName = wxEmptyString;
     m_width = 0;
     m_height = 0;
 }
 
 wxPrintPaperType::wxPrintPaperType(wxPaperSize paperId, int platformId, const wxString& name, int w, int h)
-    : m_paperName(name)
 {
     m_paperId = paperId;
     m_platformId = platformId;
+    m_paperName = name;
     m_width = w;
     m_height = h;
 }
@@ -349,14 +350,14 @@ wxPrintPaperType* wxPrintPaperDatabase::Item(size_t index) const
 
 class WXDLLEXPORT wxPrintPaperModule: public wxModule
 {
-    wxDECLARE_DYNAMIC_CLASS(wxPrintPaperModule);
+DECLARE_DYNAMIC_CLASS(wxPrintPaperModule)
 public:
     wxPrintPaperModule() {}
-    bool OnInit() wxOVERRIDE;
-    void OnExit() wxOVERRIDE;
+    bool OnInit();
+    void OnExit();
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxPrintPaperModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxPrintPaperModule, wxModule)
 
 /*
  * Initialization/cleanup module

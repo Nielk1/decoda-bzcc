@@ -28,10 +28,10 @@
 
 #include "wx/motif/private.h"
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxControl, wxWindow);
+IMPLEMENT_ABSTRACT_CLASS(wxControl, wxWindow)
 
-wxBEGIN_EVENT_TABLE(wxControl, wxWindow)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxControl, wxWindow)
+END_EVENT_TABLE()
 
 // Item members
 wxControl::wxControl()

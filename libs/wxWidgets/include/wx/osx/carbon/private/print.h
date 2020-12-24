@@ -23,15 +23,15 @@ public:
                             wxOSXPrintData();
     virtual                 ~wxOSXPrintData();
 
-    virtual bool            TransferTo( wxPrintData &data ) wxOVERRIDE;
-    virtual bool            TransferFrom( const wxPrintData &data ) wxOVERRIDE;
+    virtual bool            TransferTo( wxPrintData &data );
+    virtual bool            TransferFrom( const wxPrintData &data );
 
-    virtual bool            IsOk() const wxOVERRIDE;
+    virtual bool            IsOk() const ;
 
-    virtual void            TransferFrom( const wxPageSetupDialogData * ) wxOVERRIDE;
-    virtual void            TransferTo( wxPageSetupDialogData * ) wxOVERRIDE;
+    virtual void            TransferFrom( wxPageSetupDialogData * );
+    virtual void            TransferTo( wxPageSetupDialogData * );
 
-    virtual void            TransferFrom( const wxPrintDialogData * );
+    virtual void            TransferFrom( wxPrintDialogData * );
     virtual void            TransferTo( wxPrintDialogData * );
 
     PMPrintSession          GetPrintSession() { return m_macPrintSession; }
@@ -55,10 +55,21 @@ protected :
     PMPrintSettings         m_macPrintSettings ;
     PMPaper                 m_macPaper;
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxOSXPrintData);
+    DECLARE_DYNAMIC_CLASS(wxOSXPrintData)
 } ;
 
 WXDLLIMPEXP_CORE wxPrintNativeDataBase* wxOSXCreatePrintData();
+
+#if wxOSX_USE_CARBON
+class WXDLLIMPEXP_CORE wxOSXCarbonPrintData : public wxOSXPrintData
+{
+public:
+                            wxOSXCarbonPrintData();
+    virtual                 ~wxOSXCarbonPrintData();
+private:
+    DECLARE_DYNAMIC_CLASS(wxOSXCarbonPrintData)
+} ;
+#endif
 
 #if wxOSX_USE_COCOA
 class WXDLLIMPEXP_CORE wxOSXCocoaPrintData : public wxOSXPrintData
@@ -69,12 +80,12 @@ public:
 
     WX_NSPrintInfo          GetNSPrintInfo() { return m_macPrintInfo; }
 protected:
-    virtual void            UpdateFromPMState() wxOVERRIDE;
-    virtual void            UpdateToPMState() wxOVERRIDE;
+    virtual void            UpdateFromPMState();
+    virtual void            UpdateToPMState();
 
     WX_NSPrintInfo          m_macPrintInfo;
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxOSXCocoaPrintData);
+    DECLARE_DYNAMIC_CLASS(wxOSXCocoaPrintData)
 } ;
 #endif
 

@@ -3,7 +3,7 @@
 // Purpose:     implements wrappers for GDI+ flat API
 // Author:      Vadim Zeitlin
 // Created:     2007-03-14
-// Copyright:   (c) 2007 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2007 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -861,13 +861,13 @@ bool wxGdiPlus::DoInit()
 class wxGdiPlusModule : public wxModule
 {
 public:
-    virtual bool OnInit() wxOVERRIDE { return true; }
-    virtual void OnExit() wxOVERRIDE { wxGdiPlus::Terminate(); }
+    virtual bool OnInit() { return true; }
+    virtual void OnExit() { wxGdiPlus::Terminate(); }
 
-    wxDECLARE_DYNAMIC_CLASS(wxGdiPlusModule);
+    DECLARE_DYNAMIC_CLASS(wxGdiPlusModule)
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGdiPlusModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxGdiPlusModule, wxModule)
 
 // ============================================================================
 // implementation of the functions themselves

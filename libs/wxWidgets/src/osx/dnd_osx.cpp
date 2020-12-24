@@ -13,7 +13,6 @@
 #if wxUSE_DRAG_AND_DROP
 
 #include "wx/dnd.h"
-#include "wx/scopedarray.h"
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
@@ -36,22 +35,8 @@ wxDragResult wxDropTarget::OnDragOver(
 
 wxDataFormat wxDropTarget::GetMatchingPair()
 {
-    wxDataFormat supported;
-    if (m_dataObject != NULL)
-    {
-        if ( wxDropSource* currentSource = wxDropSource::GetCurrentDropSource() )
-        {
-            wxDataObject* data = currentSource->GetDataObject();
-        
-            if ( data )
-                supported = m_dataObject->GetSupportedFormatInSource(data);
-        }
-    
-        if ( supported == wxDF_INVALID )
-            supported = m_dataObject->GetSupportedFormatInSource( m_currentDragPasteboard );
-    }
-    
-    return supported;
+    wxFAIL_MSG("wxDropTarget::GetMatchingPair() not implemented in src/osx/dnd_osx.cpp");
+    return wxDF_INVALID;
 }
 
 bool wxDropTarget::OnDrop( wxCoord WXUNUSED(x), wxCoord WXUNUSED(y) )
@@ -77,7 +62,39 @@ wxDragResult wxDropTarget::OnData(
 
 bool wxDropTarget::CurrentDragHasSupportedFormat()
 {
-    return GetMatchingPair() != wxDF_INVALID;
+    bool supported = false;
+    if (m_dataObject == NULL)
+        return false;
+
+    if ( wxDropSource* currentSource = wxDropSource::GetCurrentDropSource() )
+    {
+        wxDataObject* data = currentSource->GetDataObject();
+
+        if ( data )
+        {
+            size_t formatcount = data->GetFormatCount();
+            wxDataFormat *array = new wxDataFormat[formatcount];
+            data->GetAllFormats( array );
+            for (size_t i = 0; !supported && i < formatcount; i++)
+            {
+                wxDataFormat format = array[i];
+                if ( m_dataObject->IsSupported( format, wxDataObject::Set ) )
+                {
+                    supported = true;
+                    break;
+                }
+            }
+
+            delete [] array;
+        }
+    }
+
+    if ( !supported )
+    {
+        supported = m_dataObject->HasDataInPasteboard( m_currentDragPasteboard );
+    }
+
+    return supported;
 }
 
 bool wxDropTarget::GetData()
@@ -94,11 +111,39 @@ bool wxDropTarget::GetData()
         wxDataObject* data = currentSource->GetDataObject();
 
         if (data != NULL)
-            transferred = m_dataObject->ReadFromSource(data);
+        {
+            size_t formatcount = data->GetFormatCount();
+            wxDataFormat *array = new wxDataFormat[formatcount];
+            data->GetAllFormats( array );
+            for (size_t i = 0; !transferred && i < formatcount; i++)
+            {
+                wxDataFormat format = array[i];
+                if ( m_dataObject->IsSupported( format, wxDataObject::Set ) )
+                {
+                    int size = data->GetDataSize( format );
+                    transferred = true;
+
+                    if (size == 0)
+                    {
+                        m_dataObject->SetData( format, 0, 0 );
+                    }
+                    else
+                    {
+                        wxCharBuffer d(size);
+                        data->GetDataHere( format, d.data() );
+                        m_dataObject->SetData( format, size, d.data() );
+                    }
+                }
+            }
+
+            delete [] array;
+        }
     }
 
     if ( !transferred )
-        transferred = m_dataObject->ReadFromSource(m_currentDragPasteboard);
+    {
+        transferred = m_dataObject->GetFromPasteboard( m_currentDragPasteboard );
+    }
 
     return transferred;
 }

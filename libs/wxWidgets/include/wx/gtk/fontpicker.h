@@ -21,7 +21,7 @@ class WXDLLIMPEXP_CORE wxFontButton : public wxButton,
                                       public wxFontPickerWidgetBase
 {
 public:
-    wxFontButton() { Init(); }
+    wxFontButton() {}
     wxFontButton(wxWindow *parent,
                  wxWindowID id,
                  const wxFont& initial = wxNullFont,
@@ -29,11 +29,9 @@ public:
                  const wxSize& size = wxDefaultSize,
                  long style = wxFONTBTN_DEFAULT_STYLE,
                  const wxValidator& validator = wxDefaultValidator,
-                 const wxString& name = wxASCII_STR(wxFontPickerWidgetNameStr))
+                 const wxString& name = wxFontPickerWidgetNameStr)
     {
-        Init();
-
-        Create(parent, id, initial, pos, size, style, validator, name);
+       Create(parent, id, initial, pos, size, style, validator, name);
     }
 
     bool Create(wxWindow *parent,
@@ -43,35 +41,21 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = wxFONTBTN_DEFAULT_STYLE,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxASCII_STR(wxFontPickerWidgetNameStr));
-
-    virtual wxColour GetSelectedColour() const wxOVERRIDE
-        { return m_selectedColour; }
-
-    void SetSelectedColour(const wxColour &colour) wxOVERRIDE
-        { m_selectedColour = colour; }
+                const wxString& name = wxFontPickerWidgetNameStr);
 
     virtual ~wxFontButton();
 
 protected:
-    void UpdateFont() wxOVERRIDE;
+    void UpdateFont();
 
 
 public:     // used by the GTK callback only
-    void SetNativeFontInfo(const char* gtkdescription);
+
+    void SetNativeFontInfo(const char *gtkdescription)
+        { m_selectedFont.SetNativeFontInfo(wxString::FromUTF8(gtkdescription)); }
 
 private:
-    // Common part of both ctors.
-    void Init()
-    {
-        m_selectedColour = *wxBLACK;
-    }
-
-    // This can't be changed by the user, but is provided to
-    // satisfy the wxFontPickerWidgetBase interface.
-    wxColour m_selectedColour;
-
-    wxDECLARE_DYNAMIC_CLASS(wxFontButton);
+    DECLARE_DYNAMIC_CLASS(wxFontButton)
 };
 
 #endif // _WX_GTK_FONTPICKER_H_

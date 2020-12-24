@@ -23,13 +23,13 @@ public:
             const wxPoint &pos = wxDefaultPosition,
             const wxSize &size = wxDefaultSize,
             long style = wxDEFAULT_DIALOG_STYLE,
-            const wxString &name = wxASCII_STR(wxDialogNameStr) );
+            const wxString &name = wxDialogNameStr );
     bool Create( wxWindow *parent, wxWindowID id,
             const wxString &title,
             const wxPoint &pos = wxDefaultPosition,
             const wxSize &size = wxDefaultSize,
             long style = wxDEFAULT_DIALOG_STYLE,
-            const wxString &name = wxASCII_STR(wxDialogNameStr) );
+            const wxString &name = wxDialogNameStr );
     virtual ~wxDialog() {}
 
     void OnApply( wxCommandEvent &event );
@@ -57,8 +57,8 @@ protected:
     void Init();
 
 private:
-    wxDECLARE_EVENT_TABLE();
-    wxDECLARE_DYNAMIC_CLASS(wxDialog);
+    DECLARE_EVENT_TABLE()
+    DECLARE_DYNAMIC_CLASS(wxDialog)
 };
 
 #endif // __GTKDIALOGH__

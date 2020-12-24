@@ -232,14 +232,14 @@ void wxGenericTimerImpl::Stop()
 // A module to deallocate memory properly:
 class wxTimerModule: public wxModule
 {
-    wxDECLARE_DYNAMIC_CLASS(wxTimerModule);
+DECLARE_DYNAMIC_CLASS(wxTimerModule)
 public:
     wxTimerModule() {}
     bool OnInit() { return true; }
     void OnExit() { wxDELETE(gs_scheduler); }
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTimerModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxTimerModule, wxModule)
 
 // ----------------------------------------------------------------------------
 // wxGUIAppTraits

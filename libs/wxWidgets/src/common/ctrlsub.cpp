@@ -30,7 +30,7 @@
     #include "wx/arrstr.h"
 #endif
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxControlWithItems, wxControl);
+IMPLEMENT_ABSTRACT_CLASS(wxControlWithItems, wxControl)
 
 // ============================================================================
 // wxItemContainerImmutable implementation
@@ -168,9 +168,10 @@ void wxItemContainer::SetClientObject(unsigned int n, wxClientData *data)
 
     if ( HasClientObjectData() )
     {
-        wxClientData * clientDataOld =
-            static_cast<wxClientData *>(DoGetItemClientData(n));
-        delete clientDataOld;
+        wxClientData * clientDataOld
+            = static_cast<wxClientData *>(DoGetItemClientData(n));
+        if ( clientDataOld )
+            delete clientDataOld;
     }
     else // didn't have any client data so far
     {
@@ -254,7 +255,7 @@ void wxItemContainer::AssignNewItemClientData(unsigned int pos,
 
         default:
             wxFAIL_MSG( wxT("unknown client data type") );
-            wxFALLTHROUGH;
+            // fall through
 
         case wxClientData_None:
             // nothing to do
@@ -298,6 +299,7 @@ void wxControlWithItemsBase::SendSelectionChangedEvent(wxEventType eventType)
 
     wxCommandEvent event(eventType, m_windowId);
     event.SetInt(n);
+    event.SetEventObject(this);
     event.SetString(GetStringSelection());
     InitCommandEventWithItems(event, n);
 

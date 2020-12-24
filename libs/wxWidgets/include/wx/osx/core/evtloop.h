@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2006-01-12
-// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,25 +25,27 @@ public:
 
     // sets the "should exit" flag and wakes up the loop so that it terminates
     // soon
-    virtual void ScheduleExit(int rc = 0) wxOVERRIDE;
+    virtual void ScheduleExit(int rc = 0);
 
     // return true if any events are available
-    virtual bool Pending() const wxOVERRIDE;
+    virtual bool Pending() const;
 
     // dispatch a single event, return false if we should exit from the loop
-    virtual bool Dispatch() wxOVERRIDE;
+    virtual bool Dispatch();
 
     // same as Dispatch() but doesn't wait for longer than the specified (in
     // ms) timeout, return true if an event was processed, false if we should
     // exit the loop or -1 if timeout expired
-    virtual int DispatchTimeout(unsigned long timeout) wxOVERRIDE;
+    virtual int DispatchTimeout(unsigned long timeout);
 
     // implement this to wake up the loop: usually done by posting a dummy event
     // to it (can be called from non main thread)
-    virtual void WakeUp() wxOVERRIDE;
+    virtual void WakeUp();
+
+    virtual bool YieldFor(long eventsToProcess);
 
     bool ShouldProcessIdleEvents() const { return m_processIdleEvents ; }
-
+    
 #if wxUSE_UIACTIONSIMULATOR
     // notifies Yield and Dispatch to wait for at least one event before
     // returning, this is necessary, because the synthesized events need to be
@@ -53,13 +55,7 @@ public:
 protected:
     // enters a loop calling OnNextIteration(), Pending() and Dispatch() and
     // terminating when Exit() is called
-    virtual int DoRun() wxOVERRIDE;
-
-    // may be overridden to perform some action at the start of each new event
-    // loop iteration
-    virtual void OnNextIteration() {}
-
-    virtual void DoYieldFor(long eventsToProcess) wxOVERRIDE;
+    virtual int DoRun();
 
     void CommonModeObserverCallBack(CFRunLoopObserverRef observer, int activity);
     void DefaultModeObserverCallBack(CFRunLoopObserverRef observer, int activity);

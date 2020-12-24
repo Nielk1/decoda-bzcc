@@ -42,7 +42,7 @@
     This class is currently implemented generically and so looks the same under
     all platforms.
 
-    @library{wxcore}
+    @library{wxadv}
     @category{miscwnd}
     @genericAppearance{bannerwindow}
 

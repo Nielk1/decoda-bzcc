@@ -30,7 +30,9 @@ GTK1DIR  = $(WXDIR)/src/gtk1
 X11DIR   = $(WXDIR)/src/x11
 X11INC   = $(WXDIR)/include/wx/x11
 MOTIFDIR = $(WXDIR)/src/motif
+MSDOSDIR = $(WXDIR)/src/msdos
 MSWDIR   = $(WXDIR)/src/msw
+PMDIR    = $(WXDIR)/src/os2
 MACDIR   = $(WXDIR)/src/osx
 COCOADIR = $(WXDIR)/src/cocoa
 FTDIR    = $(WXDIR)/src/freetype
@@ -142,6 +144,7 @@ ALL_DIST: distrib_clean
 # but is not used when building wxBase distribution
 ALL_GUI_DIST: ALL_DIST
 	$(CP_P) $(DOCDIR)/readme.txt $(DISTDIR)/README.txt
+	$(CP_P) $(DOCDIR)/$(TOOLKITDIR)/install.txt $(DISTDIR)/INSTALL.txt
 	if test -f $(DOCDIR)/$(TOOLKITDIR)/changes.txt ; then \
 	  $(CP_P) $(DOCDIR)/$(TOOLKITDIR)/changes.txt $(DISTDIR)/CHANGES-$(TOOLKIT).txt ; fi
 	$(CP_P) $(DOCDIR)/$(TOOLKITDIR)/readme.txt $(DISTDIR)/README-$(TOOLKIT).txt
@@ -157,7 +160,6 @@ ALL_GUI_DIST: ALL_DIST
 	mkdir $(DISTDIR)/include/wx/generic/private
 	mkdir $(DISTDIR)/include/wx/html
 	mkdir $(DISTDIR)/include/wx/richtext
-	mkdir $(DISTDIR)/include/wx/richtext/bitmaps
 	mkdir $(DISTDIR)/include/wx/aui
 	mkdir $(DISTDIR)/include/wx/ribbon
 	mkdir $(DISTDIR)/include/wx/persist
@@ -175,7 +177,6 @@ ALL_GUI_DIST: ALL_DIST
 	$(CP_P) $(INCDIR)/wx/generic/private/*.h $(DISTDIR)/include/wx/generic/private
 	$(CP_P) $(INCDIR)/wx/html/*.h $(DISTDIR)/include/wx/html
 	$(CP_P) $(INCDIR)/wx/richtext/*.h $(DISTDIR)/include/wx/richtext
-	$(CP_P) $(INCDIR)/wx/richtext/bitmaps/*.xpm $(DISTDIR)/include/wx/richtext/bitmaps
 	$(CP_P) $(INCDIR)/wx/aui/*.h $(DISTDIR)/include/wx/aui
 	$(CP_P) $(INCDIR)/wx/ribbon/*.h $(DISTDIR)/include/wx/ribbon
 	$(CP_P) $(INCDIR)/wx/persist/*.h $(DISTDIR)/include/wx/persist
@@ -282,10 +283,10 @@ BASE_DIST: ALL_DIST INTL_DIST
 	mkdir $(DISTDIR)/include/wx/protocol
 	mkdir $(DISTDIR)/include/wx/unix
 	mkdir $(DISTDIR)/include/wx/xml
+	mkdir $(DISTDIR)/include/wx/msdos
 	mkdir $(DISTDIR)/include/wx/msw
 	mkdir $(DISTDIR)/include/wx/html
 	mkdir $(DISTDIR)/include/wx/richtext
-	mkdir $(DISTDIR)/include/wx/richtext/bitmaps
 	mkdir $(DISTDIR)/include/wx/aui
 	mkdir $(DISTDIR)/include/wx/ribbon
 	mkdir $(DISTDIR)/include/wx/persist
@@ -294,11 +295,14 @@ BASE_DIST: ALL_DIST INTL_DIST
 	mkdir $(DISTDIR)/include/wx/osx
 	mkdir $(DISTDIR)/include/wx/osx/carbon
 	mkdir $(DISTDIR)/include/wx/osx/core
+	mkdir $(DISTDIR)/include/wx/os2
 	mkdir $(DISTDIR)/src/unix
 	mkdir $(DISTDIR)/src/osx
 	mkdir $(DISTDIR)/src/osx/core
 	mkdir $(DISTDIR)/src/osx/carbon
+	mkdir $(DISTDIR)/src/msdos
 	mkdir $(DISTDIR)/src/msw
+	mkdir $(DISTDIR)/src/os2
 	$(CP_P) $(DOCDIR)/base/readme.txt $(DISTDIR)/README.txt
 	$(CP_P) $(WXDIR)/src/common/*.inc $(DISTDIR)/src/common
 	list='$(ALL_PORTS_BASE_HEADERS)'; for p in $$list; do \
@@ -311,6 +315,7 @@ BASE_DIST: ALL_DIST INTL_DIST
 	mkdir $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/Makefile.in $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/makefile.* $(DISTDIR)/samples
+	$(CP_P) $(SAMPDIR)/Info.plist $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/sample.* $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/samples.* $(DISTDIR)/samples
 
@@ -345,6 +350,11 @@ GTK_DIST: UNIV_DIST
 	mkdir $(DISTDIR)/src/gtk/gnome
 	$(CP_P) $(INCDIR)/wx/gtk/gnome/*.h $(DISTDIR)/include/wx/gtk/gnome
 	$(CP_P) $(GTKDIR)/gnome/*.cpp $(DISTDIR)/src/gtk/gnome
+
+	mkdir $(DISTDIR)/include/wx/gtk/hildon
+	mkdir $(DISTDIR)/src/gtk/hildon
+	$(CP_P) $(INCDIR)/wx/gtk/hildon/*.h $(DISTDIR)/include/wx/gtk/hildon
+	$(CP_P) $(GTKDIR)/hildon/*.cpp $(DISTDIR)/src/gtk/hildon
 
 	mkdir $(DISTDIR)/src/osx
 	mkdir $(DISTDIR)/src/osx/core
@@ -438,6 +448,7 @@ COCOA_DIST: ALL_GUI_DIST
 
 MSW_DIST: UNIV_DIST
 	mkdir $(DISTDIR)/include/wx/msw/ole
+	mkdir $(DISTDIR)/include/wx/msw/wince
 	$(CP_P) $(INCDIR)/wx/msw/*.h $(DISTDIR)/include/wx/msw
 	$(CP_P) $(INCDIR)/wx/msw/*.cur $(DISTDIR)/include/wx/msw
 	$(CP_P) $(INCDIR)/wx/msw/*.ico $(DISTDIR)/include/wx/msw
@@ -445,7 +456,9 @@ MSW_DIST: UNIV_DIST
 	$(CP_P) $(INCDIR)/wx/msw/*.rc $(DISTDIR)/include/wx/msw
 	$(CP_P) $(INCDIR)/wx/msw/*.manifest $(DISTDIR)/include/wx/msw
 	$(CP_P) $(INCDIR)/wx/msw/ole/*.h $(DISTDIR)/include/wx/msw/ole
+	$(CP_P) $(INCDIR)/wx/msw/wince/*.h $(DISTDIR)/include/wx/msw/wince
 	mkdir $(DISTDIR)/src/msw/ole
+	mkdir $(DISTDIR)/src/msw/wince
 	$(CP_P) $(MSWDIR)/*.cpp $(DISTDIR)/src/msw
 	$(CP_P) $(MSWDIR)/*.c $(DISTDIR)/src/msw
 	$(CP_P) $(MSWDIR)/*.rc $(DISTDIR)/src/msw
@@ -456,15 +469,19 @@ MSW_ZIP_TEXT_DIST: ALL_GUI_DIST
 	$(CP_P) $(WXDIR)/build/msw/* $(DISTDIR)/build/msw
 	$(CP_P) $(INCDIR)/wx/msw/*.h $(DISTDIR)/include/wx/msw
 	mkdir $(DISTDIR)/include/wx/msw/ole
+	mkdir $(DISTDIR)/include/wx/msw/wince
 	$(CP_P) $(INCDIR)/wx/msw/*.h $(DISTDIR)/include/wx/msw
 	$(CP_P) $(INCDIR)/wx/msw/*.rc $(DISTDIR)/include/wx/msw
 	$(CP_P) $(INCDIR)/wx/msw/*.manifest $(DISTDIR)/include/wx/msw
 	$(CP_P) $(INCDIR)/wx/msw/ole/*.h $(DISTDIR)/include/wx/msw/ole
+	$(CP_P) $(INCDIR)/wx/msw/wince/*.h $(DISTDIR)/include/wx/msw/wince
 	mkdir $(DISTDIR)/src/msw/ole
+	mkdir $(DISTDIR)/src/msw/wince
 	$(CP_P) $(MSWDIR)/*.cpp $(DISTDIR)/src/msw
 	$(CP_P) $(MSWDIR)/*.rc $(DISTDIR)/src/msw
 	$(CP_P) $(MSWDIR)/*.c $(DISTDIR)/src/msw
 	$(CP_P) $(MSWDIR)/ole/*.cpp $(DISTDIR)/src/msw/ole
+	$(CP_P) $(MSWDIR)/wince/*.* $(DISTDIR)/src/msw/wince
 	$(CP_P) $(SRCDIR)/*.??? $(DISTDIR)/src
 
 UNIV_DIST: ALL_GUI_DIST
@@ -537,6 +554,7 @@ SAMPLES_DIST: ALL_GUI_DIST
 	mkdir $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/Makefile.in $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/makefile.* $(DISTDIR)/samples
+	$(CP_P) $(SAMPDIR)/Info.plist $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/sample.* $(DISTDIR)/samples
 	$(CP_P) $(SAMPDIR)/samples.* $(DISTDIR)/samples
 

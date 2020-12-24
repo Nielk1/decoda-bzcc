@@ -10,8 +10,6 @@
 #ifndef _WX_MSW_PRIVATE_METRICS_H_
 #define _WX_MSW_PRIVATE_METRICS_H_
 
-#include "wx/msw/private.h"
-
 namespace wxMSWImpl
 {
 
@@ -22,14 +20,10 @@ namespace wxMSWImpl
 // in the future
 //
 // MT-safety: this function is only meant to be called from the main thread
-inline const NONCLIENTMETRICS GetNonClientMetrics(const wxWindow* win)
+inline const NONCLIENTMETRICS& GetNonClientMetrics()
 {
-    WinStruct<NONCLIENTMETRICS> nm;
-    if ( !wxSystemParametersInfo(SPI_GETNONCLIENTMETRICS,
-                                 sizeof(NONCLIENTMETRICS),
-                                 &nm,
-                                 0,
-                                 win) )
+    static WinStruct<NONCLIENTMETRICS> nm;
+    if ( !::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, &nm, 0) )
     {
 #if WINVER >= 0x0600
         // a new field has been added to NONCLIENTMETRICS under Vista, so
@@ -37,11 +31,7 @@ inline const NONCLIENTMETRICS GetNonClientMetrics(const wxWindow* win)
         // size incorporating this new value on an older system -- retry
         // without it
         nm.cbSize -= sizeof(int);
-        if ( !wxSystemParametersInfo(SPI_GETNONCLIENTMETRICS,
-                                     sizeof(NONCLIENTMETRICS),
-                                     &nm,
-                                     0,
-                                     win) )
+        if ( !::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, &nm, 0) )
 #endif // WINVER >= 0x0600
         {
             // maybe we should initialize the struct with some defaults?

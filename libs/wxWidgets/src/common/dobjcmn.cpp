@@ -394,13 +394,13 @@ bool wxTextDataObject::GetDataHere(const wxDataFormat& format, void *buf) const
 }
 
 bool wxTextDataObject::SetData(const wxDataFormat& format,
-                               size_t len,
+                               size_t WXUNUSED(len),
                                const void *buf)
 {
     if ( buf == NULL )
         return false;
 
-    SetText(GetConv(format).cMB2WC(static_cast<const char*>(buf), len, NULL));
+    SetText(GetConv(format).cMB2WX(static_cast<const char*>(buf)));
 
     return true;
 }

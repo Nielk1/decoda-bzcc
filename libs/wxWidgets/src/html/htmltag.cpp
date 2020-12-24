@@ -276,7 +276,7 @@ void wxHtmlTagsCache::QueryTag(const wxString::const_iterator& at,
 
         case wxHtmlCacheItem::Type_EndingTag:
             wxFAIL_MSG("QueryTag called for ending tag - can't be");
-            wxFALLTHROUGH;// but if it does happen, fall through, better than crashing
+            // but if it does happen, fall through, better than crashing
 
         case wxHtmlCacheItem::Type_NoMatchingEndingTag:
             // If input HTML is invalid and there's no closing tag for this
@@ -464,9 +464,6 @@ wxHtmlTag::wxHtmlTag(wxHtmlTag *parent,
         { "vertical-align",     "VALIGN"        },
         { "background",         "BGCOLOR"       },
         { "background-color",   "BGCOLOR"       },
-        { "color",              "COLOR"         },
-        { "size",               "SIZE"          },
-        { "face",               "FACE"          },
     };
 
     wxHtmlStyleParams styleParams(*this);
@@ -616,10 +613,6 @@ wxHtmlTag::GetParamAsIntOrPercent(const wxString& par,
     {
         isPercent = true;
     }
-    else if ( param.EndsWith("px", &num) )
-    {
-        isPercent = false;
-    }
     else
     {
         isPercent = false;
@@ -662,7 +655,7 @@ wxHtmlTag *wxHtmlTag::GetFirstSibling() const
         return m_Parent->m_FirstChild;
     else
     {
-        wxHtmlTag* cur = const_cast<wxHtmlTag*>(this);
+        wxHtmlTag *cur = (wxHtmlTag*)this;
         while (cur->m_Prev)
             cur = cur->m_Prev;
         return cur;
@@ -675,7 +668,7 @@ wxHtmlTag *wxHtmlTag::GetLastSibling() const
         return m_Parent->m_LastChild;
     else
     {
-        wxHtmlTag* cur = const_cast<wxHtmlTag*>(this);
+        wxHtmlTag *cur = (wxHtmlTag*)this;
         while (cur->m_Next)
             cur = cur->m_Next;
         return cur;

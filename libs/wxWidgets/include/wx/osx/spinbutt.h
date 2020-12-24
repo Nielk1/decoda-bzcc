@@ -51,25 +51,25 @@ public:
 
 
     // accessors
-    virtual void SetRange(int minVal, int maxVal) wxOVERRIDE;
-    virtual int GetValue() const wxOVERRIDE;
-    virtual void SetValue(int val) wxOVERRIDE;
+    virtual void SetRange(int minVal, int maxVal);
+    virtual int GetValue() const ;
+    virtual void SetValue(int val);
 
     // implementation
 
-    virtual void TriggerScrollEvent( wxEventType scrollEvent ) wxOVERRIDE;
+    virtual void TriggerScrollEvent( wxEventType scrollEvent ) ;
 
     // osx specific event handling common for all osx-ports
 
-    virtual bool OSXHandleClicked( double timestampsec ) wxOVERRIDE;
+    virtual bool OSXHandleClicked( double timestampsec );
 
 protected:
     void         SendThumbTrackEvent() ;
 
-    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+    virtual wxSize DoGetBestSize() const;
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxSpinButton);
+    DECLARE_DYNAMIC_CLASS(wxSpinButton)
 };
 
 #endif

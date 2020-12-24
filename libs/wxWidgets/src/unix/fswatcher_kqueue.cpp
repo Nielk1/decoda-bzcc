@@ -23,10 +23,6 @@
 #include <sys/types.h>
 #include <sys/event.h>
 
-#ifdef __NetBSD__
-    #include <sys/param.h>
-#endif
-
 #include "wx/dynarray.h"
 #include "wx/evtloop.h"
 #include "wx/evtloopsrc.h"
@@ -36,10 +32,9 @@
 namespace
 {
 
-// NetBSD was different until version 10 (or almost), as it used intptr_t as
-// type of kevent struct udata field, instead of "void*" as all the other
-// platforms using kqueue, so accommodate it by adding an extra cast.
-#if defined(__NetBSD__) && (__NetBSD_Version__ <= 999001400)
+// NetBSD is different as it uses intptr_t as type of kevent struct udata field
+// for some reason, instead of "void*" as all the other platforms using kqueue.
+#ifdef __NetBSD__
     inline intptr_t ToUdata(void* d) { return reinterpret_cast<intptr_t>(d); }
     inline void* FromUdata(intptr_t d) { return reinterpret_cast<void*>(d); }
 #else
@@ -65,9 +60,9 @@ public:
         m_service(service)
     {  }
 
-    virtual void OnReadWaiting() wxOVERRIDE;
-    virtual void OnWriteWaiting() wxOVERRIDE;
-    virtual void OnExceptionWaiting() wxOVERRIDE;
+    virtual void OnReadWaiting();
+    virtual void OnWriteWaiting();
+    virtual void OnExceptionWaiting();
 
 protected:
     wxFSWatcherImplKqueue* m_service;
@@ -102,7 +97,7 @@ public:
         delete m_handler;
     }
 
-    bool Init() wxOVERRIDE
+    bool Init()
     {
         wxCHECK_MSG( !IsOk(), false,
                      "Kqueue appears to be already initialized" );
@@ -119,7 +114,7 @@ public:
         }
 
         // create source
-        m_source = wxEventLoopBase::AddSourceForFD(m_kfd, m_handler, wxEVENT_SOURCE_INPUT);
+        m_source = loop->AddSourceForFD(m_kfd, m_handler, wxEVENT_SOURCE_INPUT);
 
         return m_source != NULL;
     }
@@ -137,7 +132,7 @@ public:
         wxDELETE(m_source);
     }
 
-    virtual bool DoAdd(wxSharedPtr<wxFSWatchEntryKq> watch) wxOVERRIDE
+    virtual bool DoAdd(wxSharedPtr<wxFSWatchEntryKq> watch)
     {
         wxCHECK_MSG( IsOk(), false,
                     "Kqueue not initialized or invalid kqueue descriptor" );
@@ -160,7 +155,7 @@ public:
         return true;
     }
 
-    virtual bool DoRemove(wxSharedPtr<wxFSWatchEntryKq> watch) wxOVERRIDE
+    virtual bool DoRemove(wxSharedPtr<wxFSWatchEntryKq> watch)
     {
         wxCHECK_MSG( IsOk(), false,
                     "Kqueue not initialized or invalid kqueue descriptor" );
@@ -177,7 +172,7 @@ public:
         return true;
     }
 
-    virtual bool RemoveAll() wxOVERRIDE
+    virtual bool RemoveAll()
     {
         wxFSWatchEntries::iterator it = m_watches.begin();
         for ( ; it != m_watches.end(); ++it )
@@ -301,8 +296,8 @@ protected:
 
         wxASSERT_MSG(udata, "Null user data associated with kevent!");
 
-        wxLogTrace(wxTRACE_FSWATCHER, "Event: ident=%llu, filter=%d, flags=%u, "
-                   "fflags=%u, data=%lld, user_data=%lp",
+        wxLogTrace(wxTRACE_FSWATCHER, "Event: ident=%d, filter=%d, flags=%u, "
+                   "fflags=%u, data=%d, user_data=%p",
                    e.ident, e.filter, e.flags, e.fflags, e.data, udata);
 
         // for ease of use

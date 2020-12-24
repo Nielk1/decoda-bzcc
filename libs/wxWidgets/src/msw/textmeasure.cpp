@@ -105,16 +105,12 @@ void wxTextMeasure::DoGetTextExtent(const wxString& string,
         wxLogLastError(wxT("GetTextExtentPoint32()"));
     }
 
+#if !defined(_WIN32_WCE) || (_WIN32_WCE >= 400)
     // the result computed by GetTextExtentPoint32() may be too small as it
     // accounts for under/overhang of the first/last character while we want
     // just the bounding rect for this string so adjust the width as needed
-    // when using italic fonts as the difference is really noticeable for them
-    // (it may still exist, but seems to be at most 1px for the other fonts,
-    // and calling GetCharABCWidths() is pretty slow and much slower than
-    // calling GetTextExtentPoint32() itself, so avoid its overhead unless it's
-    // really, really necessary).
-    const wxFont font = GetFont();
-    if ( font.IsOk() && font.GetStyle() != wxFONTSTYLE_NORMAL && len > 0 )
+    // (using API not available in 2002 SDKs of WinCE)
+    if ( len > 0 )
     {
         ABC widthABC;
         const wxChar chFirst = *string.begin();
@@ -135,6 +131,7 @@ void wxTextMeasure::DoGetTextExtent(const wxString& string,
         }
         //else: GetCharABCWidths() failed, not a TrueType font?
     }
+#endif // !defined(_WIN32_WCE) || (_WIN32_WCE >= 400)
 
     *width = sizeRect.cx;
     *height = sizeRect.cy;
@@ -157,12 +154,27 @@ bool wxTextMeasure::DoGetPartialTextExtents(const wxString& text,
     if ( !m_hdc )
         return wxTextMeasureBase::DoGetPartialTextExtents(text, widths, scaleX);
 
+    static int maxLenText = -1;
+    static int maxWidth = -1;
+
+    if (maxLenText == -1)
+    {
+        // Win9x and WinNT+ have different limits
+        int version = wxGetOsVersion();
+        maxLenText = version == wxOS_WINDOWS_NT ? 65535 : 8192;
+        maxWidth =   version == wxOS_WINDOWS_NT ? INT_MAX : 32767;
+    }
+
+    int len = text.length();
+    if ( len > maxLenText )
+        len = maxLenText;
+
     int fit = 0;
     SIZE sz = {0,0};
     if ( !::GetTextExtentExPoint(m_hdc,
                                  text.t_str(), // string to check
-                                 text.length(),
-                                 INT_MAX,      // max allowable width
+                                 len,
+                                 maxWidth,
                                  &fit,         // [out] count of chars
                                                // that will fit
                                  &widths[0],   // array to fill
@@ -171,26 +183,6 @@ bool wxTextMeasure::DoGetPartialTextExtents(const wxString& text,
         wxLogLastError(wxT("GetTextExtentExPoint"));
 
         return false;
-    }
-
-    // The width of \t determined by GetTextExtentExPoint is 0. Determine the
-    // actual width using DoGetTextExtent and update the widths accordingly.
-    int offset = 0;
-    int tabWidth = 0;
-    int tabHeight = 0;
-    int* widthPtr = &widths[0];
-    for ( wxString::const_iterator i = text.begin(); i != text.end(); ++i )
-    {
-        if ( *i == '\t' )
-        {
-            if ( tabWidth == 0 )
-            {
-                DoGetTextExtent("\t", &tabWidth, &tabHeight);
-            }
-            offset += tabWidth;
-        }
-
-        *widthPtr++ += offset;
     }
 
     return true;

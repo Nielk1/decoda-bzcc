@@ -26,7 +26,7 @@ static const long DEFAULT_VALUE = 0;
 static const long DEFAULT_MIN = 0;
 static const long DEFAULT_MAX = 100;
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxSpinButtonXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxSpinButtonXmlHandler, wxXmlResourceHandler)
 
 wxSpinButtonXmlHandler::wxSpinButtonXmlHandler()
 : wxXmlResourceHandler()
@@ -45,7 +45,7 @@ wxObject *wxSpinButtonXmlHandler::DoCreateResource()
     control->Create(m_parentAsWindow,
                     GetID(),
                     GetPosition(), GetSize(),
-                    GetStyle(wxT("style"), wxSP_ARROW_KEYS),
+                    GetStyle(wxT("style"), wxSP_VERTICAL | wxSP_ARROW_KEYS),
                     GetName());
 
     control->SetValue(GetLong( wxT("value"), DEFAULT_VALUE));
@@ -67,25 +67,18 @@ bool wxSpinButtonXmlHandler::CanHandle(wxXmlNode *node)
 
 #include "wx/spinctrl.h"
 
-static const float DEFAULT_INC = 1.;
-
-static void AddSpinCtrlStyles(wxXmlResourceHandler& handler)
-{
-    handler.XRC_ADD_STYLE(wxSP_HORIZONTAL);
-    handler.XRC_ADD_STYLE(wxSP_VERTICAL);
-    handler.XRC_ADD_STYLE(wxSP_ARROW_KEYS);
-    handler.XRC_ADD_STYLE(wxSP_WRAP);
-    handler.XRC_ADD_STYLE(wxALIGN_LEFT);
-    handler.XRC_ADD_STYLE(wxALIGN_CENTER);
-    handler.XRC_ADD_STYLE(wxALIGN_RIGHT);
-}
-
-wxIMPLEMENT_DYNAMIC_CLASS(wxSpinCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxSpinCtrlXmlHandler, wxXmlResourceHandler)
 
 wxSpinCtrlXmlHandler::wxSpinCtrlXmlHandler()
-    : wxXmlResourceHandler()
+: wxXmlResourceHandler()
 {
-    AddSpinCtrlStyles(*this);
+    XRC_ADD_STYLE(wxSP_HORIZONTAL);
+    XRC_ADD_STYLE(wxSP_VERTICAL);
+    XRC_ADD_STYLE(wxSP_ARROW_KEYS);
+    XRC_ADD_STYLE(wxSP_WRAP);
+    XRC_ADD_STYLE(wxALIGN_LEFT);
+    XRC_ADD_STYLE(wxALIGN_CENTER);
+    XRC_ADD_STYLE(wxALIGN_RIGHT);
 }
 
 wxObject *wxSpinCtrlXmlHandler::DoCreateResource()
@@ -96,7 +89,7 @@ wxObject *wxSpinCtrlXmlHandler::DoCreateResource()
                     GetID(),
                     GetText(wxT("value")),
                     GetPosition(), GetSize(),
-                    GetStyle(wxT("style"), wxSP_ARROW_KEYS),
+                    GetStyle(wxT("style"), wxSP_ARROW_KEYS | wxALIGN_RIGHT),
                     GetLong(wxT("min"), DEFAULT_MIN),
                     GetLong(wxT("max"), DEFAULT_MAX),
                     GetLong(wxT("value"), DEFAULT_VALUE),
@@ -114,40 +107,6 @@ wxObject *wxSpinCtrlXmlHandler::DoCreateResource()
 bool wxSpinCtrlXmlHandler::CanHandle(wxXmlNode *node)
 {
     return IsOfClass(node, wxT("wxSpinCtrl"));
-}
-
-
-wxIMPLEMENT_DYNAMIC_CLASS(wxSpinCtrlDoubleXmlHandler, wxXmlResourceHandler);
-
-wxSpinCtrlDoubleXmlHandler::wxSpinCtrlDoubleXmlHandler()
-    : wxXmlResourceHandler()
-{
-    AddSpinCtrlStyles(*this);
-}
-
-wxObject *wxSpinCtrlDoubleXmlHandler::DoCreateResource()
-{
-    XRC_MAKE_INSTANCE(control, wxSpinCtrlDouble)
-
-    control->Create(m_parentAsWindow,
-                    GetID(),
-                    GetText(wxS("value")),
-                    GetPosition(), GetSize(),
-                    GetStyle(wxS("style"), wxSP_ARROW_KEYS),
-                    GetFloat(wxS("min"), (float)DEFAULT_MIN),
-                    GetFloat(wxS("max"), (float)DEFAULT_MAX),
-                    GetFloat(wxS("value"), (float)DEFAULT_VALUE),
-                    GetFloat(wxS("inc"), DEFAULT_INC),
-                    GetName());
-
-    SetupWindow(control);
-
-    return control;
-}
-
-bool wxSpinCtrlDoubleXmlHandler::CanHandle(wxXmlNode *node)
-{
-    return IsOfClass(node, wxS("wxSpinCtrlDouble"));
 }
 
 #endif // wxUSE_SPINCTRL

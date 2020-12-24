@@ -47,7 +47,7 @@
 // ----------------------------------------------------------------------------
 // ctor & dtor
 // ----------------------------------------------------------------------------
-wxIMPLEMENT_ABSTRACT_CLASS(wxIniConfig, wxConfigBase);
+IMPLEMENT_ABSTRACT_CLASS(wxIniConfig, wxConfigBase)
 
 wxIniConfig::wxIniConfig(const wxString& strAppName,
                          const wxString& strVendor,
@@ -288,8 +288,8 @@ bool wxIniConfig::DoReadString(const wxString& szKey, wxString *pstr) const
                           m_strLocalFilename.t_str());
   if ( wxIsEmpty(szBuf) ) {
     // now look in win.ini
-    wxString strWinKey = GetKeyName(path.Name());
-    GetProfileString(m_strGroup.t_str(), strWinKey.t_str(),
+    wxString strKey = GetKeyName(path.Name());
+    GetProfileString(m_strGroup.t_str(), strKey.t_str(),
                      wxT(""), szBuf, WXSIZEOF(szBuf));
   }
 

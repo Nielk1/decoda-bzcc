@@ -40,7 +40,7 @@ public:
 
 class wxRemoteHtmlHelpController : public wxHelpControllerBase
 {
-    wxDECLARE_CLASS(wxRemoteHtmlHelpController);
+    DECLARE_CLASS(wxRemoteHtmlHelpController)
 public:
     wxRemoteHtmlHelpController(int style = wxHF_DEFAULT_STYLE);
     virtual ~wxRemoteHtmlHelpController();

@@ -85,8 +85,8 @@
         - String in UTF-8 encoding using wxString::utf8_str().
         - String in any given encoding using mb_str() with the appropriate
         wxMBConv object. This is also a potentially destructive operation.
-        - Standard @c std::string using wxString::ToStdString(). The encoding
-        of the returned string is specified with a wxMBConv object, so this
+        - Standard @c std::string using wxString::ToStdString(). The contents
+        of the returned string use the current locale encoding, so this
         conversion is potentially destructive as well.
         - Wide C string using wxString::wc_str().
         - Standard @c std::wstring using wxString::ToStdWstring().
@@ -386,13 +386,13 @@ public:
     wxString(const char *psz, const wxMBConv& conv);
 
     /**
-       Constructs a string from the first @a nLength bytes of the string literal @a psz using
+       Constructs a string from the first @a nLength character of the string literal @a psz using
        the current locale encoding to convert it to Unicode (wxConvLibc).
     */
     wxString(const char *psz, size_t nLength);
 
     /**
-       Constructs a string from the first @a nLength bytes of the string literal @a psz using
+       Constructs a string from the first @a nLength character of the string literal @a psz using
        @a conv to convert it Unicode.
     */
     wxString(const char *psz, const wxMBConv& conv, size_t nLength);
@@ -656,11 +656,18 @@ public:
     /**
         Returns a string representation suitable for passing to OS' functions
         for file handling.
-
-        Depending on OS and configuration, TYPE is either @c wchar_t*,
-        @c char*, or wxCharBuffer.
     */
-    const TYPE fn_str() const;
+    const wchar_t* fn_str() const;
+
+    /**
+        @overload
+    */
+    const char* fn_str() const;
+
+    /**
+        @overload
+    */
+    const wxCharBuffer fn_str() const;
 
     /**
         Returns the multibyte (C string) representation of the string
@@ -681,18 +688,20 @@ public:
 
     /**
         Converts the strings contents to the wide character representation
-        and returns it as a temporary wxWCharBuffer object (Unix and macOS)
+        and returns it as a temporary wxWCharBuffer object (Unix and OS X)
         or returns a pointer to the internal string contents in wide character
         mode (Windows).
-
-        Depending on OS and configuration, TYPE is either @c wchar_t*
-        or wxCharBuffer.
 
         The macro wxWX2WCbuf is defined as the correct return type (without const).
 
         @see utf8_str(), c_str(), mb_str(), fn_str(), wchar_str()
     */
-    const TYPE wc_str() const;
+    const wchar_t* wc_str() const;
+
+    /**
+        @overload
+    */
+    const wxWCharBuffer wc_str() const;
 
     /**
         Returns an object with string data that is implicitly convertible to
@@ -730,25 +739,23 @@ public:
         a wxCharBuffer (Unicode builds only) or a C string (ANSI builds).
 
         Note that this conversion is only lossless if the string contains only
-        ASCII characters as all the non-ASCII ones are replaced with the (same)
-        provided replacement character.
+        ASCII characters as all the non-ASCII ones are replaced with the @c '_'
+        (underscore) character.
 
         Use mb_str() or utf8_str() to convert to other encodings.
-
-        Depending on OS and configuration, TYPE is either @c char* or
-        wxCharBuffer.
-
-        @param replaceWith
-            The character used to replace any non-ASCII characters, default to
-            underscore (@c "_"). This parameter is new since wxWidgets 3.1.0.
     */
-    const TYPE ToAscii(char replaceWith = '_') const;
+    const char* ToAscii() const;
 
     /**
-        Return the string as an std::string using @e conv's wxMBConv::cWC2MB method.
+        @overload
+    */
+    const wxCharBuffer ToAscii() const;
 
-        Note that if the conversion of (Unicode) string contents using @e conv
-        fails, the return string will be empty. Be sure to check for
+    /**
+        Return the string as an std::string in current locale encoding.
+
+        Note that if the conversion of (Unicode) string contents to the current
+        locale fails, the return string will be empty. Be sure to check for
         this to avoid silent data loss.
 
         Instead of using this function it's also possible to write
@@ -760,12 +767,9 @@ public:
         @endcode
         but using ToStdString() may make the code more clear.
 
-        @param conv
-            The converter to be used. This parameter is new in wxWidgets 3.1.1.
-
         @since 2.9.1
     */
-    std::string ToStdString(const wxMBConv& conv = wxConvLibc) const;
+    std::string ToStdString() const;
 
     /**
         Return the string as an std::wstring.
@@ -1428,12 +1432,8 @@ public:
     bool Alloc(size_t nLen);
 
     /**
-        Minimizes the string's memory.
-
-        This can be useful after a call to Alloc() if too much memory were
-        preallocated.
-
-        @return Always returns @true
+        Minimizes the string's memory. This can be useful after a call to
+        Alloc() if too much memory were preallocated.
     */
     bool Shrink();
 
@@ -1578,17 +1578,13 @@ public:
 
     const_iterator begin() const;
     iterator begin();
-    const_iterator cbegin() const;
     const_iterator end() const;
     iterator end();
-    const_iterator cend() const;
 
     const_reverse_iterator rbegin() const;
     reverse_iterator rbegin();
-    const_reverse_iterator crbegin() const;
     const_reverse_iterator rend() const;
     reverse_iterator rend();
-    const_reverse_iterator crend() const;
 
     //@}
 
@@ -1715,14 +1711,6 @@ public:
     wxString substr(size_t nStart = 0, size_t nLen = npos) const;
     void swap(wxString& str);
 
-    bool starts_with(const wxString &str) const;
-    bool starts_with(const char *sz) const;
-    bool starts_with(const wchar_t *sz) const;
-
-    bool ends_with(const wxString &str) const;
-    bool ends_with(const char *sz) const;
-    bool ends_with(const wchar_t *sz) const;
-
     //@}
 
 
@@ -1832,14 +1820,10 @@ public:
         alternative to this function called FromUTF8Unchecked() which, unlike
         this one, doesn't check that the input string is valid.
 
-        The overload taking @c std::string is only available starting with
-        wxWidgets 3.1.1.
-
         @since 2.8.4
     */
     static wxString FromUTF8(const char* s);
     static wxString FromUTF8(const char* s, size_t len);
-    static wxString FromUTF8(const std::string& s);
     //@}
 
     //@{
@@ -1856,14 +1840,10 @@ public:
         string to this function will result in creating a corrupted wxString
         and all the subsequent operations on it will be undefined.
 
-        The overload taking @c std::string is only available starting with
-        wxWidgets 3.1.1.
-
         @since 2.8.9
     */
     static wxString FromUTF8Unchecked(const char* s);
     static wxString FromUTF8Unchecked(const char* s, size_t len);
-    static wxString FromUTF8Unchecked(const std::string& s);
     //@}
 };
 
@@ -1969,7 +1949,7 @@ public:
         Basically, this is equivalent to calling wxString::GetWriteBuf and
         saving the result.
     */
-    wxStringBufferLength(wxString& str, size_t len);
+    wxStringBufferLength(const wxString& str, size_t len);
 
     /**
         Restores the string passed to the constructor to the usable state by calling
@@ -2030,7 +2010,7 @@ public:
         Basically, this is equivalent to calling wxString::GetWriteBuf() and
         saving the result.
     */
-    wxStringBuffer(wxString& str, size_t len);
+    wxStringBuffer(const wxString& str, size_t len);
 
     /**
         Restores the string passed to the constructor to the usable state by calling

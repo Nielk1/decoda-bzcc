@@ -14,16 +14,16 @@
 
 #if wxUSE_XRC
 
-class WXDLLIMPEXP_FWD_CORE wxPropertySheetDialog;
+class WXDLLIMPEXP_FWD_ADV wxPropertySheetDialog;
 
 class WXDLLIMPEXP_XRC wxPropertySheetDialogXmlHandler : public wxXmlResourceHandler
 {
-    wxDECLARE_DYNAMIC_CLASS(wxPropertySheetDialogXmlHandler);
+    DECLARE_DYNAMIC_CLASS(wxPropertySheetDialogXmlHandler)
 
 public:
     wxPropertySheetDialogXmlHandler();
-    virtual wxObject *DoCreateResource() wxOVERRIDE;
-    virtual bool CanHandle(wxXmlNode *node) wxOVERRIDE;
+    virtual wxObject *DoCreateResource();
+    virtual bool CanHandle(wxXmlNode *node);
 
 private:
     bool m_isInside;

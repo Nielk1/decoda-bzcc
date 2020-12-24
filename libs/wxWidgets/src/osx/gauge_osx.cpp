@@ -14,7 +14,6 @@
 
 #include "wx/gauge.h"
 
-#include "wx/appprogress.h"
 #include "wx/osx/private.h"
 
 bool wxGauge::Create( wxWindow *parent,
@@ -67,9 +66,6 @@ int wxGauge::GetValue() const
 void wxGauge::Pulse()
 {
     GetPeer()->PulseGauge();
-
-    if ( m_appProgressIndicator )
-        m_appProgressIndicator->Pulse();
 }
 
 #endif // wxUSE_GAUGE

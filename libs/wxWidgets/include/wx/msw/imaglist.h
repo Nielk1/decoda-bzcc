@@ -46,9 +46,6 @@ public:
   // Returns the size (same for all images) of the images in the list
   bool GetSize(int index, int &width, int &height) const;
 
-  // Returns the overall size
-  wxSize GetSize() const { return m_size; }
-
   // Operations
   ////////////////////////////////////////////////////////////////////////////
 
@@ -75,6 +72,13 @@ public:
   // Note that wxImageList creates new bitmaps, so you may delete
   // 'bitmap' and 'mask' after calling Replace.
   bool Replace(int index, const wxBitmap& bitmap, const wxBitmap& mask = wxNullBitmap);
+
+/* Not supported by Win95
+  // Replacing a bitmap, using the specified colour to create the mask bitmap
+  // Note that wxImageList creates new bitmaps, so you may delete
+  // 'bitmap'.
+  bool Replace(int index, const wxBitmap& bitmap, const wxColour& maskColour);
+*/
 
   // Replaces a bitmap and mask from an icon.
   // You can delete 'icon' after calling Replace.
@@ -157,7 +161,7 @@ public:
   // window to be updated.
   static bool DragLeave( wxWindow *lockWindow );
 
-  /* Here's roughly how you'd use these functions:
+  /* Here's roughly how you'd use these functions if implemented in this Win95-like way:
 
   1) Starting to drag:
 
@@ -193,9 +197,8 @@ public:
 
 protected:
   WXHIMAGELIST m_hImageList;
-  wxSize m_size;
 
-  wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxImageList);
+  DECLARE_DYNAMIC_CLASS_NO_COPY(wxImageList)
 };
 
 #endif

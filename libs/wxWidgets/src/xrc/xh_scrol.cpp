@@ -22,7 +22,7 @@
     #include "wx/scrolbar.h"
 #endif
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxScrollBarXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxScrollBarXmlHandler, wxXmlResourceHandler)
 
 wxScrollBarXmlHandler::wxScrollBarXmlHandler()
 : wxXmlResourceHandler()

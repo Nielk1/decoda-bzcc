@@ -51,8 +51,10 @@ class WXDLLIMPEXP_FWD_BASE wxArrayString;
 
 // not all compilers can deal with template Read/Write() methods, define this
 // symbol if the template functions are available
-#if !defined( __VMS ) && \
-    !(defined(__HP_aCC) && defined(__hppa))
+#if (!defined(__VISUALC__) || __VISUALC__ > 1200) && \
+    !defined( __VMS ) && \
+    !(defined(__HP_aCC) && defined(__hppa)) && \
+    !defined (__DMC__)
     #define wxHAS_CONFIG_TEMPLATE_RW
 #endif
 
@@ -211,7 +213,7 @@ public:
       if ( !found )
       {
           if (IsRecordingDefaults())
-              const_cast<wxConfigBase*>(this)->Write(key, defVal);
+              ((wxConfigBase *)this)->Write(key, defVal);
           *value = defVal;
       }
       return found;
@@ -225,10 +227,8 @@ public:
 
   // we have to provide a separate version for C strings as otherwise the
   // template Read() would be used
-#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
   wxString Read(const wxString& key, const char* defVal) const
     { return Read(key, wxString(defVal)); }
-#endif
   wxString Read(const wxString& key, const wchar_t* defVal) const
     { return Read(key, wxString(defVal)); }
 
@@ -270,12 +270,10 @@ public:
 
   // we have to provide a separate version for C strings as otherwise they
   // would be converted to bool and not to wxString as expected!
-#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
   bool Write(const wxString& key, const char *value)
     { return Write(key, wxString(value)); }
   bool Write(const wxString& key, const unsigned char *value)
     { return Write(key, wxString(value)); }
-#endif
   bool Write(const wxString& key, const wchar_t *value)
     { return Write(key, wxString(value)); }
 
@@ -305,10 +303,10 @@ public:
     { return DoWriteLong(key, value); }
 
   bool Write(const wxString& key, float value)
-    { return DoWriteDouble(key, double(value)); }
+    { return DoWriteDouble(key, value); }
 
-  // Causes ambiguities in under OpenVMS
-#if !defined( __VMS )
+  // Causes ambiguities in VC++ 6 and OpenVMS (at least)
+#if ( (!defined(__VISUALC__) || __VISUALC__ > 1200) && !defined( __VMS ) && !defined (__DMC__))
   // for other types, use wxToString()
   template <typename T>
   bool Write(const wxString& key, T const& value)
@@ -405,7 +403,7 @@ private:
   // Style flag
   long              m_style;
 
-  wxDECLARE_ABSTRACT_CLASS(wxConfigBase);
+  DECLARE_ABSTRACT_CLASS(wxConfigBase)
 };
 
 // a handy little class which changes current path to the path of given entry

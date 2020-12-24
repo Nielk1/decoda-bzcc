@@ -39,7 +39,7 @@ protected:
                                   const wxSize& size);
 };
 
-wxIMPLEMENT_APP(hvApp);
+IMPLEMENT_APP(hvApp)
 
 hvApp::hvApp()
 {
@@ -55,6 +55,11 @@ bool hvApp::OnInit()
 #endif
 
     wxArtProvider::Push(new AlternateArtProvider);
+
+#if defined( __WXOSX_MAC__ ) && wxOSX_USE_CARBON
+    wxApp::s_macAboutMenuItemId = wxID_ABOUT;
+    wxFileName::MacRegisterDefaultTypeAndCreator( wxT("htb") , 'HTBD' , 'HTBA' ) ;
+#endif
 
     int istyle = wxHF_DEFAULT_STYLE;
 
@@ -119,15 +124,15 @@ bool hvApp::OnInit()
         }
         else if ( argStr.Find( wxT("--Style") )  >= 0 )
         {
-            long style;
+            long i;
             wxString numb = argStr.AfterLast(wxT('e'));
-            if ( !(numb.ToLong(&style) ) )
+            if ( !(numb.ToLong(&i) ) )
             {
                 wxLogError( wxT("Integer conversion failed for --Style") );
             }
             else
             {
-                istyle = style;
+                istyle = i;
             }
         }
         else

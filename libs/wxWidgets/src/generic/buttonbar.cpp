@@ -95,13 +95,13 @@ private:
 // wxButtonToolBar implementation
 // ============================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxButtonToolBar, wxControl);
+IMPLEMENT_DYNAMIC_CLASS(wxButtonToolBar, wxControl)
 
-wxBEGIN_EVENT_TABLE(wxButtonToolBar, wxControl)
+BEGIN_EVENT_TABLE(wxButtonToolBar, wxControl)
     EVT_BUTTON(wxID_ANY, wxButtonToolBar::OnCommand)
     EVT_PAINT(wxButtonToolBar::OnPaint)
     EVT_LEFT_UP(wxButtonToolBar::OnLeftUp)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
 // wxButtonToolBar creation
@@ -389,7 +389,7 @@ void wxButtonToolBar::DoLayout()
             if (!tool->GetButton())
             {
                 wxBitmapButton* bmpButton = new wxBitmapButton(this, tool->GetId(), tool->GetNormalBitmap(), wxPoint(tool->m_x, tool->m_y), wxDefaultSize,
-                                                               wxBORDER_NONE);
+                                                               wxBU_AUTODRAW|wxBORDER_NONE);
                 if (!tool->GetShortHelp().empty())
                     bmpButton->SetLabel(tool->GetShortHelp());
 
@@ -500,7 +500,7 @@ void wxButtonToolBar::OnPaint(wxPaintEvent& WXUNUSED(event))
     wxPaintDC dc(this);
 
     dc.SetFont(GetFont());
-    dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
+    dc.SetBackgroundMode(wxTRANSPARENT);
 
     for ( wxToolBarToolsList::compatibility_iterator node = m_tools.GetFirst();
           node;

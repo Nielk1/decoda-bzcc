@@ -15,7 +15,7 @@
 
 #include "wx/fontdata.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxFontData, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxFontData, wxObject)
 
 wxFontData::wxFontData()
 {
@@ -26,7 +26,6 @@ wxFontData::wxFontData()
     m_maxSize = 0;
 
     m_encoding = wxFONTENCODING_SYSTEM;
-    m_restrictSelection = wxFONTRESTRICT_NONE;
 }
 
 wxFontData::~wxFontData()
@@ -44,8 +43,7 @@ wxFontData::wxFontData(const wxFontData& data)
       m_minSize(data.m_minSize),
       m_maxSize(data.m_maxSize),
       m_encoding(data.m_encoding),
-      m_encodingInfo(data.m_encodingInfo),
-      m_restrictSelection(data.m_restrictSelection)
+      m_encodingInfo(data.m_encodingInfo)
 {
 }
 
@@ -54,17 +52,16 @@ wxFontData& wxFontData::operator=(const wxFontData& data)
     if (&data != this)
     {
         wxObject::operator=(data);
-        m_fontColour        = data.m_fontColour;
-        m_showHelp          = data.m_showHelp;
-        m_allowSymbols      = data.m_allowSymbols;
-        m_enableEffects     = data.m_enableEffects;
-        m_initialFont       = data.m_initialFont;
-        m_chosenFont        = data.m_chosenFont;
-        m_minSize           = data.m_minSize;
-        m_maxSize           = data.m_maxSize;
-        m_encoding          = data.m_encoding;
-        m_encodingInfo      = data.m_encodingInfo;
-        m_restrictSelection = data.m_restrictSelection;
+        m_fontColour     = data.m_fontColour;
+        m_showHelp       = data.m_showHelp;
+        m_allowSymbols   = data.m_allowSymbols;
+        m_enableEffects  = data.m_enableEffects;
+        m_initialFont    = data.m_initialFont;
+        m_chosenFont     = data.m_chosenFont;
+        m_minSize        = data.m_minSize;
+        m_maxSize        = data.m_maxSize;
+        m_encoding       = data.m_encoding;
+        m_encodingInfo   = data.m_encodingInfo;
     }
     return *this;
 }

@@ -12,14 +12,6 @@
 #include "wx/colour.h"
 #include "wx/encinfo.h"
 
-// Possible values for RestrictSelection() flags.
-enum
-{
-    wxFONTRESTRICT_NONE         = 0,
-    wxFONTRESTRICT_SCALABLE     = 1 << 0,
-    wxFONTRESTRICT_FIXEDPITCH   = 1 << 1
-};
-
 class WXDLLIMPEXP_CORE wxFontData : public wxObject
 {
 public:
@@ -40,9 +32,6 @@ public:
 
     void EnableEffects(bool flag) { m_enableEffects = flag; }
     bool GetEnableEffects() const { return m_enableEffects; }
-
-    void RestrictSelection(int flags) { m_restrictSelection = flags; }
-    int  GetRestrictSelection() const { return m_restrictSelection; }
 
     void SetInitialFont(const wxFont& font) { m_initialFont = font; }
     wxFont GetInitialFont() const { return m_initialFont; }
@@ -74,9 +63,8 @@ public:
 private:
     wxFontEncoding       m_encoding;
     wxNativeEncodingInfo m_encodingInfo;
-    int                  m_restrictSelection;
 
-    wxDECLARE_DYNAMIC_CLASS(wxFontData);
+    DECLARE_DYNAMIC_CLASS(wxFontData)
 };
 
 #endif // _WX_FONTDATA_H_

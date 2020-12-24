@@ -541,7 +541,7 @@ bool wxListBox::Create( wxWindow *parent, wxWindowID id,
     if ( style & wxLB_SORT )
     {
         // this will change Append() behaviour
-        m_strings = new wxSortedArrayString(wxDictionaryStringSortAscending);
+        m_strings = new wxSortedArrayString;
     }
     else
     {
@@ -1102,7 +1102,9 @@ wxSize wxListBox::DoGetBestSize() const
     // make it too small neither
     lbHeight = (cy+4) * wxMin(wxMax(GetCount(), 3), 10);
 
-    return wxSize(lbWidth, lbHeight);
+    wxSize best(lbWidth, lbHeight);
+    CacheBestSize(best);
+    return best;
 }
 
 void wxListBox::FixUpMouseEvent(GtkWidget *widget, wxCoord& x, wxCoord& y)

@@ -26,7 +26,7 @@ public:
             int n = 0, const wxString choices[] = (const wxString *) NULL,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxASCII_STR(wxChoiceNameStr) )
+            const wxString& name = wxChoiceNameStr )
     {
         m_strings = NULL;
 
@@ -38,7 +38,7 @@ public:
             const wxArrayString& choices,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxASCII_STR(wxChoiceNameStr) )
+            const wxString& name = wxChoiceNameStr )
     {
         m_strings = NULL;
 
@@ -51,14 +51,14 @@ public:
             int n = 0, const wxString choices[] = NULL,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxASCII_STR(wxChoiceNameStr) );
+            const wxString& name = wxChoiceNameStr );
     bool Create( wxWindow *parent, wxWindowID id,
             const wxPoint& pos,
             const wxSize& size,
             const wxArrayString& choices,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxASCII_STR(wxChoiceNameStr) );
+            const wxString& name = wxChoiceNameStr );
 
     // implement base class pure virtuals
     void DoDeleteOneItem(unsigned int n);
@@ -104,7 +104,7 @@ public:
     int m_selection_hack;
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxChoice);
+    DECLARE_DYNAMIC_CLASS(wxChoice)
 };
 
 

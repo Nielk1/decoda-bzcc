@@ -13,7 +13,7 @@
 // wxGauge
 //-----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxGauge: public wxGaugeBase
+class WXDLLIMPEXP_CORE wxGauge: public wxControl
 {
 public:
     wxGauge() { Init(); }
@@ -25,7 +25,7 @@ public:
              const wxSize& size = wxDefaultSize,
              long style = wxGA_HORIZONTAL,
              const wxValidator& validator = wxDefaultValidator,
-             const wxString& name = wxASCII_STR(wxGaugeNameStr) )
+             const wxString& name = wxGaugeNameStr )
     {
         Init();
 
@@ -38,21 +38,29 @@ public:
                  const wxSize& size = wxDefaultSize,
                  long style = wxGA_HORIZONTAL,
                  const wxValidator& validator = wxDefaultValidator,
-                 const wxString& name = wxASCII_STR(wxGaugeNameStr) );
+                 const wxString& name = wxGaugeNameStr );
 
-    // implement base class virtual methods
-    void SetRange(int range) wxOVERRIDE;
-    int GetRange() const wxOVERRIDE;
+    void SetShadowWidth( int WXUNUSED(w) ) { }
+    void SetBezelFace( int WXUNUSED(w) ) { }
+    int GetShadowWidth() const { return 0; }
+    int GetBezelFace() const { return 0; }
 
-    void SetValue(int pos) wxOVERRIDE;
-    int GetValue() const wxOVERRIDE;
+    // determinate mode API
+    void SetRange( int r );
+    void SetValue( int pos );
 
-    virtual void Pulse() wxOVERRIDE;
+    int GetRange() const;
+    int GetValue() const;
+
+    // indeterminate mode API
+    virtual void Pulse();
+
+    bool IsVertical() const { return HasFlag(wxGA_VERTICAL); }
 
     static wxVisualAttributes
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
 
-    virtual wxVisualAttributes GetDefaultAttributes() const wxOVERRIDE;
+    virtual wxVisualAttributes GetDefaultAttributes() const;
 
     // implementation
     // -------------
@@ -65,10 +73,12 @@ protected:
     // set the gauge value to the value of m_gaugePos
     void DoSetGauge();
 
+    virtual wxSize DoGetBestSize() const;
+
 private:
     void Init() { m_rangeMax = m_gaugePos = 0; }
 
-    wxDECLARE_DYNAMIC_CLASS(wxGauge);
+    DECLARE_DYNAMIC_CLASS(wxGauge)
 };
 
 #endif

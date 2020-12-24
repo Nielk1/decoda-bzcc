@@ -93,12 +93,12 @@ protected:
 private:
     wxNotebook *m_nb;
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
 };
 
-wxBEGIN_EVENT_TABLE(wxNotebookSpinBtn, wxSpinButton)
+BEGIN_EVENT_TABLE(wxNotebookSpinBtn, wxSpinButton)
     EVT_SPIN(wxID_ANY, wxNotebookSpinBtn::OnSpin)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // ============================================================================
 // implementation
@@ -304,7 +304,7 @@ bool wxNotebook::InsertPage(size_t nPage,
                  wxT("invalid notebook page in InsertPage()") );
 
     // modify the data
-    m_pages.insert(m_pages.begin() + nPage, pPage);
+    m_pages.Insert(pPage, nPage);
 
     wxString label;
     m_accels.Insert(FindAccelIndex(strText, &label), nPage);
@@ -378,7 +378,7 @@ wxNotebookPage *wxNotebook::DoRemovePage(size_t nPage)
     wxCHECK_MSG( IS_VALID_PAGE(nPage), NULL, wxT("invalid notebook page") );
 
     wxNotebookPage *page = m_pages[nPage];
-    m_pages.erase(m_pages.begin() + nPage);
+    m_pages.RemoveAt(nPage);
     m_titles.RemoveAt(nPage);
     m_accels.RemoveAt(nPage);
     m_widths.RemoveAt(nPage);
@@ -475,7 +475,7 @@ void wxNotebook::DoDrawTab(wxDC& dc, const wxRect& rect, size_t n)
         bmp.Create(w, h);
         wxMemoryDC dc;
         dc.SelectObject(bmp);
-        dc.SetBackground(wxBrush(GetBackgroundColour(), wxBRUSHSTYLE_SOLID));
+        dc.SetBackground(wxBrush(GetBackgroundColour(), wxSOLID));
         GetImageList()->Draw(image, dc, 0, 0, wxIMAGELIST_DRAW_NORMAL, true);
         dc.SelectObject(wxNullBitmap);
 #else

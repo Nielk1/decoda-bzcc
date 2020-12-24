@@ -30,7 +30,7 @@
  * wxEffectsImpl: various 3D effects
  */
 
-wxIMPLEMENT_CLASS(wxEffectsImpl, wxObject);
+IMPLEMENT_CLASS(wxEffectsImpl, wxObject)
 
 // Assume system colours
 wxEffectsImpl::wxEffectsImpl()

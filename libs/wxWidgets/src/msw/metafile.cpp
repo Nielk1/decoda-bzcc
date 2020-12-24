@@ -43,8 +43,8 @@
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxMetafile, wxObject);
-wxIMPLEMENT_ABSTRACT_CLASS(wxMetafileDC, wxDC);
+IMPLEMENT_DYNAMIC_CLASS(wxMetafile, wxObject)
+IMPLEMENT_ABSTRACT_CLASS(wxMetafileDC, wxDC)
 
 // ============================================================================
 // implementation
@@ -236,7 +236,7 @@ void wxMetafileDCImpl::DoGetTextExtent(const wxString& string,
 
     SIZE sizeRect;
     TEXTMETRIC tm;
-    ::GetTextExtentPoint32(dc, string.c_str(), string.length(), &sizeRect);
+    ::GetTextExtentPoint32(dc, WXSTRINGCAST string, wxStrlen(WXSTRINGCAST string), &sizeRect);
     ::GetTextMetrics(dc, &tm);
 
     if ( x )
@@ -326,6 +326,7 @@ void wxMetafileDCImpl::SetMapMode(wxMappingMode mode)
 // wxMakeMetafilePlaceable
 // ----------------------------------------------------------------------------
 
+#ifdef __WIN32__
 struct RECT32
 {
   short left;
@@ -342,6 +343,16 @@ struct mfPLACEABLEHEADER {
     DWORD    reserved;
     WORD    checksum;
 };
+#else
+struct mfPLACEABLEHEADER {
+    DWORD    key;
+    HANDLE    hmf;
+    RECT    bbox;
+    WORD    inch;
+    DWORD    reserved;
+    WORD    checksum;
+};
+#endif
 
 /*
  * Pass filename of existing non-placeable metafile, and bounding box.
@@ -456,7 +467,7 @@ bool wxMakeMetafilePlaceable(const wxString& filename, int x1, int y1, int x2, i
 }
 
 
-#if wxUSE_DATAOBJ
+#if wxUSE_DRAG_AND_DROP
 
 // ----------------------------------------------------------------------------
 // wxMetafileDataObject
@@ -515,6 +526,6 @@ bool wxMetafileDataObject::SetData(size_t WXUNUSED(len), const void *buf)
     return true;
 }
 
-#endif // wxUSE_DATAOBJ
+#endif // wxUSE_DRAG_AND_DROP
 
 #endif // wxUSE_METAFILE

@@ -1,12 +1,4 @@
 /*
-    This file is used on systems not using configure only and contains
-    hardcoded definitions for MSVC, Xcode and MinGW when using makefiles.
-
-    As an additional twist, the settings that ought to be in this file are in
-    tif_config.h when using Xcode (__APPLE__ defined).
- */
-
-/*
   Configuration defines for installed libtiff.
   This file maintained for backward compatibility. Do not use definitions
   from this file in your programs.
@@ -14,10 +6,6 @@
 
 #ifndef _TIFFCONF_
 #define _TIFFCONF_
-
-#ifdef __APPLE__
-#include "tif_config.h"
-#else
 
 #ifdef __MINGW32__
 #include <basetyps.h>
@@ -163,7 +151,6 @@
 #define PHOTOSHOP_SUPPORT
 #define IPTC_SUPPORT
 
-#endif /* __APPLE__/!__APPLE__ */
 #endif /* _TIFFCONF_ */
 /*
  * Local Variables:

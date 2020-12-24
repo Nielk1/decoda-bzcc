@@ -33,16 +33,13 @@ extern WXDLLIMPEXP_DATA_CORE(const char) wxFontPickerCtrlNameStr[];
 class WXDLLIMPEXP_CORE wxFontPickerWidgetBase
 {
 public:
-    wxFontPickerWidgetBase() : m_selectedFont(*wxNORMAL_FONT) { }
+    wxFontPickerWidgetBase() { m_selectedFont = *wxNORMAL_FONT; }
     virtual ~wxFontPickerWidgetBase() {}
 
     wxFont GetSelectedFont() const
         { return m_selectedFont; }
     virtual void SetSelectedFont(const wxFont &f)
         { m_selectedFont = f; UpdateFont(); }
-
-    virtual wxColour GetSelectedColour() const = 0;
-    virtual void SetSelectedColour(const wxColour &colour) = 0;
 
 protected:
 
@@ -88,8 +85,7 @@ protected:
 #define wxFNTP_USE_TEXTCTRL       (wxPB_USE_TEXTCTRL)
 #define wxFNTP_DEFAULT_STYLE      (wxFNTP_FONTDESC_AS_LABEL|wxFNTP_USEFONT_FOR_LABEL)
 
-// not a style but rather the default value of the minimum/maximum pointsize allowed
-#define wxFNTP_MINPOINT_SIZE      0
+// not a style but rather the default value of the maximum pointsize allowed
 #define wxFNTP_MAXPOINT_SIZE      100
 
 
@@ -102,8 +98,8 @@ protected:
 class WXDLLIMPEXP_CORE wxFontPickerCtrl : public wxPickerBase
 {
 public:
-     wxFontPickerCtrl()
-        : m_nMinPointSize(wxFNTP_MINPOINT_SIZE), m_nMaxPointSize(wxFNTP_MAXPOINT_SIZE)
+    wxFontPickerCtrl()
+        : m_nMaxPointSize(wxFNTP_MAXPOINT_SIZE)
     {
     }
 
@@ -117,8 +113,8 @@ public:
                      const wxSize& size = wxDefaultSize,
                      long style = wxFNTP_DEFAULT_STYLE,
                      const wxValidator& validator = wxDefaultValidator,
-                     const wxString& name = wxASCII_STR(wxFontPickerCtrlNameStr))
-        : m_nMinPointSize(wxFNTP_MINPOINT_SIZE), m_nMaxPointSize(wxFNTP_MAXPOINT_SIZE)
+                     const wxString& name = wxFontPickerCtrlNameStr)
+        : m_nMaxPointSize(wxFNTP_MAXPOINT_SIZE)
     {
         Create(parent, id, initial, pos, size, style, validator, name);
     }
@@ -130,40 +126,28 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = wxFNTP_DEFAULT_STYLE,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxASCII_STR(wxFontPickerCtrlNameStr));
+                const wxString& name = wxFontPickerCtrlNameStr);
 
 
 public:         // public API
 
     // get the font chosen
     wxFont GetSelectedFont() const
-        { return GetPickerWidget()->GetSelectedFont(); }
+        { return ((wxFontPickerWidget *)m_picker)->GetSelectedFont(); }
 
     // sets currently displayed font
     void SetSelectedFont(const wxFont& f);
 
-    // returns the selected color
-    wxColour GetSelectedColour() const
-        { return GetPickerWidget()->GetSelectedColour(); }
-
-    // sets the currently selected color
-    void SetSelectedColour(const wxColour& colour)
-        { GetPickerWidget()->SetSelectedColour(colour); }
-
-    // set/get the min point size
-    void SetMinPointSize(unsigned int min);
-    unsigned int GetMinPointSize() const
-        { return m_nMinPointSize; }
-
-    // set/get the max point size
-    void SetMaxPointSize(unsigned int max);
+    // set/get the max pointsize
+    void SetMaxPointSize(unsigned int max)
+        { m_nMaxPointSize=max; }
     unsigned int GetMaxPointSize() const
         { return m_nMaxPointSize; }
 
 public:        // internal functions
 
-    void UpdatePickerFromTextCtrl() wxOVERRIDE;
-    void UpdateTextCtrlFromPicker() wxOVERRIDE;
+    void UpdatePickerFromTextCtrl();
+    void UpdateTextCtrlFromPicker();
 
     // event handler for our picker
     void OnFontChange(wxFontPickerEvent &);
@@ -175,20 +159,14 @@ public:        // internal functions
 protected:
 
     // extracts the style for our picker from wxFontPickerCtrl's style
-    long GetPickerStyle(long style) const wxOVERRIDE
+    long GetPickerStyle(long style) const
         { return (style & (wxFNTP_FONTDESC_AS_LABEL|wxFNTP_USEFONT_FOR_LABEL)); }
-
-    // the minimum pointsize allowed to the user
-    unsigned int m_nMinPointSize;
 
     // the maximum pointsize allowed to the user
     unsigned int m_nMaxPointSize;
 
 private:
-    wxFontPickerWidget* GetPickerWidget() const
-        { return static_cast<wxFontPickerWidget*>(m_picker); }
-
-    wxDECLARE_DYNAMIC_CLASS(wxFontPickerCtrl);
+    DECLARE_DYNAMIC_CLASS(wxFontPickerCtrl)
 };
 
 
@@ -213,12 +191,12 @@ public:
     void SetFont(const wxFont &c) { m_font = c; }
 
     // default copy ctor, assignment operator and dtor are ok
-    virtual wxEvent *Clone() const wxOVERRIDE { return new wxFontPickerEvent(*this); }
+    virtual wxEvent *Clone() const { return new wxFontPickerEvent(*this); }
 
 private:
     wxFont m_font;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxFontPickerEvent);
+    DECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxFontPickerEvent)
 };
 
 // ----------------------------------------------------------------------------

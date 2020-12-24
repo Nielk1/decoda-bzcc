@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1988-1997 Sam Leffler
  * Copyright (c) 1991-1997 Silicon Graphics, Inc.
@@ -67,10 +68,8 @@ main(int argc, char* argv[])
 	int dirnum = -1, multiplefiles, c;
 	uint16 order = 0;
 	TIFF* tif;
-#if !HAVE_DECL_OPTARG
 	extern int optind;
 	extern char* optarg;
-#endif
 	long flags = 0;
 	uint64 diroff = 0;
 	int chopstrips = 0;		/* disable strip chopping */
@@ -84,7 +83,7 @@ main(int argc, char* argv[])
 			break;
 		case 'd':
 			showdata++;
-			/* fall through... */
+			/* fall thru... */
 		case 'D':
 			readdata++;
 			break;
@@ -145,7 +144,7 @@ main(int argc, char* argv[])
 					tiffinfo(tif, order, flags, 1);
 			} else {
 				do {
-					toff_t offset=0;
+					toff_t offset;
 
 					tiffinfo(tif, order, flags, 1);
 					if (TIFFGetField(tif, TIFFTAG_EXIFIFD,
@@ -245,9 +244,9 @@ TIFFReadSeparateStripData(TIFF* tif)
 
 	buf = (unsigned char *)_TIFFmalloc(TIFFStripSize(tif));
 	if (buf) {
-		uint32 row, h=0;
+		uint32 row, h;
 		uint32 rowsperstrip = (uint32)-1;
-		tsample_t s, samplesperpixel=0;
+		tsample_t s, samplesperpixel;
 
 		TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
 		TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
@@ -292,24 +291,17 @@ void
 TIFFReadContigTileData(TIFF* tif)
 {
 	unsigned char *buf;
-	tmsize_t rowsize = TIFFTileRowSize(tif);
-        tmsize_t tilesize = TIFFTileSize(tif);
+	tsize_t rowsize = TIFFTileRowSize(tif);
 
-	buf = (unsigned char *)_TIFFmalloc(tilesize);
+	buf = (unsigned char *)_TIFFmalloc(TIFFTileSize(tif));
 	if (buf) {
-		uint32 tw=0, th=0, w=0, h=0;
+		uint32 tw, th, w, h;
 		uint32 row, col;
 
 		TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
 		TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
 		TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tw);
 		TIFFGetField(tif, TIFFTAG_TILELENGTH, &th);
-                if ( rowsize == 0 || th > (size_t) (tilesize / rowsize) )
-        {
-            fprintf(stderr, "Cannot display data: th * rowsize > tilesize\n");
-            _TIFFfree(buf);
-            return;
-        }
 		for (row = 0; row < h; row += th) {
 			for (col = 0; col < w; col += tw) {
 				if (TIFFReadTile(tif, buf, col, row, 0, 0) < 0) {
@@ -327,26 +319,19 @@ void
 TIFFReadSeparateTileData(TIFF* tif)
 {
 	unsigned char *buf;
-        tmsize_t rowsize = TIFFTileRowSize(tif);
-        tmsize_t tilesize = TIFFTileSize(tif);
+	tsize_t rowsize = TIFFTileRowSize(tif);
 
-	buf = (unsigned char *)_TIFFmalloc(tilesize);
+	buf = (unsigned char *)_TIFFmalloc(TIFFTileSize(tif));
 	if (buf) {
-		uint32 tw=0, th=0, w=0, h=0;
+		uint32 tw, th, w, h;
 		uint32 row, col;
-		tsample_t s, samplesperpixel=0;
+		tsample_t s, samplesperpixel;
 
 		TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
 		TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
 		TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tw);
 		TIFFGetField(tif, TIFFTAG_TILELENGTH, &th);
 		TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel);
-                if ( rowsize == 0 || th > (size_t) (tilesize / rowsize) )
-        {
-            fprintf(stderr, "Cannot display data: th * rowsize > tilesize\n");
-            _TIFFfree(buf);
-            return;
-        }
 		for (row = 0; row < h; row += th) {
 			for (col = 0; col < w; col += tw) {
 				for (s = 0; s < samplesperpixel; s++) {
@@ -412,10 +397,10 @@ TIFFReadRawData(TIFF* tif, int bitrev)
 {
 	tstrip_t nstrips = TIFFNumberOfStrips(tif);
 	const char* what = TIFFIsTiled(tif) ? "Tile" : "Strip";
-	uint64* stripbc=NULL;
+	uint64* stripbc;
 
 	TIFFGetField(tif, TIFFTAG_STRIPBYTECOUNTS, &stripbc);
-	if (stripbc != NULL && nstrips > 0) {
+	if (nstrips > 0) {
 		uint32 bufsize = (uint32) stripbc[0];
 		tdata_t buf = _TIFFmalloc(bufsize);
 		tstrip_t s;

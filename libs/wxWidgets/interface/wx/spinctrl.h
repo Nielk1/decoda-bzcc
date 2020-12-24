@@ -21,12 +21,12 @@
         for dialog navigation (e.g. activating the default button in the
         dialog) under MSW.
     @style{wxALIGN_LEFT}
-        Same as wxTE_LEFT for wxTextCtrl: the text is left aligned (this is the
-        default).
+        Same as wxTE_LEFT for wxTextCtrl: the text is left aligned.
     @style{wxALIGN_CENTRE_HORIZONTAL}
         Same as wxTE_CENTRE for wxTextCtrl: the text is centered.
     @style{wxALIGN_RIGHT}
-        Same as wxTE_RIGHT for wxTextCtrl: the text is right aligned.
+        Same as wxTE_RIGHT for wxTextCtrl: the text is right aligned (this is
+        the default).
     @endStyleTable
 
 
@@ -110,8 +110,7 @@ public:
                 const wxString& value = wxEmptyString,
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
-                long style = wxSP_ARROW_KEYS,
-                int min = 0, int max = 100,
+                long style = wxSP_ARROW_KEYS, int min = 0, int max = 100,
                 int initial = 0, const wxString& name = "wxSpinCtrl");
 
     /**
@@ -149,15 +148,11 @@ public:
         the numbers in the specified base when they are changed using the spin
         control arrows.
 
-        @note Setting a base to 16 is allowed only if current range does not
-        include negative values.
-
         @param base
             Numeric base, currently only 10 and 16 are supported.
         @return
             @true if the base was successfully changed or @false if it failed,
-            usually meaning that either the base is not 10 or 16 or that
-            the base is not supported for values in the current range.
+            usually meaning that either the base is not 10 or 16.
 
         @since 2.9.5
      */
@@ -170,9 +165,6 @@ public:
         it's not inside the new valid range, e.g. it will become @a minVal if
         it is less than it now. However no @c wxEVT_SPINCTRL
         event is generated, even if it the value does change.
-
-        @note Setting a range including negative values is silently ignored
-        if current base is set to 16.
     */
     void SetRange(int minVal, int maxVal);
 
@@ -268,10 +260,6 @@ public:
         @param name
             Window name.
 
-        The precision (number of digits after the decimal point) of the value
-        of the spin control is derived from the precision of @a inc.
-        If necessary, default precision can be adjusted by call to SetDigits().
-
         @see Create()
     */
     wxSpinCtrlDouble(wxWindow* parent, wxWindowID id = -1,
@@ -296,7 +284,7 @@ public:
                 const wxString& name = "wxSpinCtrlDouble");
 
     /**
-        Gets precision of the value of the spin control.
+        Gets the number of digits in the display.
     */
     unsigned int GetDigits() const;
 
@@ -321,15 +309,14 @@ public:
     double GetValue() const;
 
     /**
-        Sets precision of the value of the spin control.
-        Up to 20 digits are allowed after the decimal point.
+        Sets the number of digits in the display.
     */
     void SetDigits(unsigned int digits);
 
     /**
         Sets the increment value.
-        @note You may also need to change the precision of the value
-        using SetDigits().
+        @note You may also need to increase the number of visible digits
+        using SetDigits
     */
     void SetIncrement(double inc);
 

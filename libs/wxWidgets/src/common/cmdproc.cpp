@@ -36,17 +36,17 @@
 // implementation
 // ============================================================================
 
-wxIMPLEMENT_CLASS(wxCommand, wxObject);
-wxIMPLEMENT_DYNAMIC_CLASS(wxCommandProcessor, wxObject);
+IMPLEMENT_CLASS(wxCommand, wxObject)
+IMPLEMENT_DYNAMIC_CLASS(wxCommandProcessor, wxObject)
 
 // ----------------------------------------------------------------------------
 // wxCommand
 // ----------------------------------------------------------------------------
 
 wxCommand::wxCommand(bool canUndoIt, const wxString& name)
-    : m_commandName(name)
 {
     m_canUndo = canUndoIt;
+    m_commandName = name;
 }
 
 // ----------------------------------------------------------------------------
@@ -54,15 +54,19 @@ wxCommand::wxCommand(bool canUndoIt, const wxString& name)
 // ----------------------------------------------------------------------------
 
 wxCommandProcessor::wxCommandProcessor(int maxCommands)
-#if wxUSE_ACCEL
-    : m_undoAccelerator('\t' + wxAcceleratorEntry(wxACCEL_CTRL, 'Z').ToString())
-    , m_redoAccelerator('\t' + wxAcceleratorEntry(wxACCEL_CTRL, 'Y').ToString())
-#endif // wxUSE_ACCEL
 {
     m_maxNoCommands = maxCommands;
 #if wxUSE_MENUS
     m_commandEditMenu = NULL;
 #endif // wxUSE_MENUS
+
+#if wxUSE_ACCEL
+    m_undoAccelerator = '\t' + wxAcceleratorEntry(wxACCEL_CTRL, 'Z').ToString();
+    m_redoAccelerator = '\t' + wxAcceleratorEntry(wxACCEL_CTRL, 'Y').ToString();
+#endif // wxUSE_ACCEL
+
+    m_lastSavedCommand =
+    m_currentCommand = wxList::compatibility_iterator();
 }
 
 wxCommandProcessor::~wxCommandProcessor()

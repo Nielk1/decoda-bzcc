@@ -166,7 +166,7 @@ wxWindow *wxButton::SetDefault()
 }
 
 /* static */
-wxSize wxButtonBase::GetDefaultSize(wxWindow* WXUNUSED(win))
+wxSize wxButtonBase::GetDefaultSize()
 {
     return wxSize(80,26);
 }
@@ -238,6 +238,7 @@ wxSize wxButton::DoGetBestSize() const
         if (ret.y < defaultSize.y) ret.y = defaultSize.y;
     }
 
+    CacheBestSize(ret);
     return ret;
 }
 

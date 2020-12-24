@@ -49,7 +49,7 @@ const char * const EDITLBOX_ITEM_NAME = "item";
 // implementation
 // ============================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxEditableListBoxXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxEditableListBoxXmlHandler, wxXmlResourceHandler)
 
 wxEditableListBoxXmlHandler::wxEditableListBoxXmlHandler()
 {
@@ -99,7 +99,10 @@ wxObject *wxEditableListBoxXmlHandler::DoCreateResource()
     }
     else if ( m_insideBox && m_node->GetName() == EDITLBOX_ITEM_NAME )
     {
-        m_items.push_back(GetNodeText(m_node, wxXRC_TEXT_NO_ESCAPE));
+        wxString str = GetNodeContent(m_node);
+        if ( m_resource->GetFlags() & wxXRC_USE_LOCALE )
+            str = wxGetTranslation(str, m_resource->GetDomain());
+        m_items.push_back(str);
 
         return NULL;
     }

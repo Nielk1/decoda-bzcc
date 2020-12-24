@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     31.05.03
-// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -159,11 +159,9 @@ private:
 class wxHtmlListBoxStyle : public wxDefaultHtmlRenderingStyle
 {
 public:
-    wxHtmlListBoxStyle(const wxHtmlListBox& hlbox)
-        : wxDefaultHtmlRenderingStyle(&hlbox), m_hlbox(hlbox)
-    { }
+    wxHtmlListBoxStyle(const wxHtmlListBox& hlbox) : m_hlbox(hlbox) { }
 
-    virtual wxColour GetSelectedTextColour(const wxColour& colFg) wxOVERRIDE
+    virtual wxColour GetSelectedTextColour(const wxColour& colFg)
     {
         // by default wxHtmlListBox doesn't implement GetSelectedTextColour()
         // and returns wxNullColour from it, so use the default HTML colour for
@@ -177,7 +175,7 @@ public:
         return col;
     }
 
-    virtual wxColour GetSelectedTextBgColour(const wxColour& colBg) wxOVERRIDE
+    virtual wxColour GetSelectedTextBgColour(const wxColour& colBg)
     {
         wxColour col = m_hlbox.GetSelectedTextBgColour(colBg);
         if ( !col.IsOk() )
@@ -198,17 +196,17 @@ private:
 // event tables
 // ----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxHtmlListBox, wxVListBox)
+BEGIN_EVENT_TABLE(wxHtmlListBox, wxVListBox)
     EVT_SIZE(wxHtmlListBox::OnSize)
     EVT_MOTION(wxHtmlListBox::OnMouseMove)
     EVT_LEFT_DOWN(wxHtmlListBox::OnLeftDown)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // ============================================================================
 // implementation
 // ============================================================================
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlListBox, wxVListBox);
+IMPLEMENT_ABSTRACT_CLASS(wxHtmlListBox, wxVListBox)
 
 
 // ----------------------------------------------------------------------------
@@ -297,40 +295,37 @@ wxString wxHtmlListBox::OnGetItemMarkup(size_t n) const
 // wxHtmlListBox cache handling
 // ----------------------------------------------------------------------------
 
-wxHtmlCell* wxHtmlListBox::CreateCellForItem(size_t n) const
-{
-    if ( !m_htmlParser )
-    {
-        wxHtmlListBox *self = wxConstCast(this, wxHtmlListBox);
-
-        self->m_htmlParser = new wxHtmlWinParser(self);
-        m_htmlParser->SetDC(new wxClientDC(self));
-        m_htmlParser->SetFS(&self->m_filesystem);
-#if !wxUSE_UNICODE
-        if (GetFont().IsOk())
-            m_htmlParser->SetInputEncoding(GetFont().GetEncoding());
-#endif
-        // use system's default GUI font by default:
-        m_htmlParser->SetStandardFonts();
-    }
-
-    wxHtmlContainerCell *cell = (wxHtmlContainerCell *)m_htmlParser->
-            Parse(OnGetItemMarkup(n));
-    wxCHECK_MSG( cell, NULL, wxT("wxHtmlParser::Parse() returned NULL?") );
-
-    // set the cell's ID to item's index so that CellCoordsToPhysical()
-    // can quickly find the item:
-    cell->SetId(wxString::Format(wxT("%lu"), (unsigned long)n));
-
-    cell->Layout(GetClientSize().x - 2*GetMargins().x);
-
-    return cell;
-}
-
 void wxHtmlListBox::CacheItem(size_t n) const
 {
     if ( !m_cache->Has(n) )
-        m_cache->Store(n, CreateCellForItem(n));
+    {
+        if ( !m_htmlParser )
+        {
+            wxHtmlListBox *self = wxConstCast(this, wxHtmlListBox);
+
+            self->m_htmlParser = new wxHtmlWinParser(self);
+            m_htmlParser->SetDC(new wxClientDC(self));
+            m_htmlParser->SetFS(&self->m_filesystem);
+#if !wxUSE_UNICODE
+            if (GetFont().IsOk())
+                m_htmlParser->SetInputEncoding(GetFont().GetEncoding());
+#endif
+            // use system's default GUI font by default:
+            m_htmlParser->SetStandardFonts();
+        }
+
+        wxHtmlContainerCell *cell = (wxHtmlContainerCell *)m_htmlParser->
+                Parse(OnGetItemMarkup(n));
+        wxCHECK_RET( cell, wxT("wxHtmlParser::Parse() returned NULL?") );
+
+        // set the cell's ID to item's index so that CellCoordsToPhysical()
+        // can quickly find the item:
+        cell->SetId(wxString::Format(wxT("%lu"), (unsigned long)n));
+
+        cell->Layout(GetClientSize().x - 2*GetMargins().x);
+
+        m_cache->Store(n, cell);
+    }
 }
 
 void wxHtmlListBox::OnSize(wxSizeEvent& event)
@@ -430,18 +425,12 @@ void wxHtmlListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 
 wxCoord wxHtmlListBox::OnMeasureItem(size_t n) const
 {
-    // Notice that we can't cache the cell here because we could be called from
-    // some code updating an existing cell which could be displaced from the
-    // cache if we called CacheItem() and destroyed -- resulting in a crash
-    // when we return to its method from here, see #16651.
-    wxHtmlCell * const cell = CreateCellForItem(n);
-    if ( !cell )
-        return 0;
+    CacheItem(n);
 
-    const wxCoord h = cell->GetHeight() + cell->GetDescent() + 4;
-    delete cell;
+    wxHtmlCell *cell = m_cache->Get(n);
+    wxCHECK_MSG( cell, 0, wxT("this cell should be cached!") );
 
-    return h;
+    return cell->GetHeight() + cell->GetDescent() + 4;
 }
 
 // ----------------------------------------------------------------------------
@@ -609,7 +598,7 @@ void wxHtmlListBox::OnLeftDown(wxMouseEvent& event)
 // wxSimpleHtmlListBox
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxSimpleHtmlListBox, wxHtmlListBox);
+IMPLEMENT_ABSTRACT_CLASS(wxSimpleHtmlListBox, wxHtmlListBox)
 
 
 bool wxSimpleHtmlListBox::Create(wxWindow *parent, wxWindowID id,
@@ -674,18 +663,6 @@ void wxSimpleHtmlListBox::Clear()
 
 void wxSimpleHtmlListBox::DoDeleteOneItem(unsigned int n)
 {
-    // For consistency with the other wxItemContainer-derived classes, deselect
-    // the currently selected item if it, or any item before it, is being
-    // deleted, from a single-selection control.
-    if ( !HasMultipleSelection() )
-    {
-        const int sel = GetSelection();
-        if ( sel != wxNOT_FOUND && static_cast<unsigned>(sel) >= n )
-        {
-            SetSelection(wxNOT_FOUND);
-        }
-    }
-
     m_items.RemoveAt(n);
 
     m_HTMLclientData.RemoveAt(n);

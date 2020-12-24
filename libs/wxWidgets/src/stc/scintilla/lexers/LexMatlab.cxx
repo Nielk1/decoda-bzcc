@@ -6,18 +6,6 @@
  ** Changes by Christoph Dalitz 2003/12/04:
  **   - added support for Octave
  **   - Strings can now be included both in single or double quotes
- **
- ** Changes by John Donoghue 2012/04/02
- **   - added block comment (and nested block comments)
- **   - added ... displayed as a comment
- **   - removed unused IsAWord functions
- **   - added some comments
- **
- ** Changes by John Donoghue 2014/08/01
- **   - fix allowed transpose ' after {} operator
- **
- ** Changes by John Donoghue 2016/11/15
- **   - update matlab code folding
  **/
 // Copyright 1998-2001 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
@@ -52,73 +40,37 @@ static bool IsOctaveCommentChar(int c) {
 	return (c == '%' || c == '#') ;
 }
 
-static inline int LowerCase(int c) {
-	if (c >= 'A' && c <= 'Z')
-		return 'a' + c - 'A';
-	return c;
+static bool IsMatlabComment(Accessor &styler, int pos, int len) {
+	return len > 0 && IsMatlabCommentChar(styler[pos]) ;
 }
 
-static int CheckKeywordFoldPoint(char *str) {
-	if (strcmp ("if", str) == 0 ||
-		strcmp ("for", str) == 0 ||
-		strcmp ("switch", str) == 0 ||
-		strcmp ("try", str) == 0 ||
-		strcmp ("do", str) == 0 ||
-		strcmp ("parfor", str) == 0 ||
-		strcmp ("function", str) == 0)
-		return 1;
-	if (strncmp("end", str, 3) == 0 ||
-		strcmp("until", str) == 0)
-		return -1;
-	return 0;
+static bool IsOctaveComment(Accessor &styler, int pos, int len) {
+	return len > 0 && IsOctaveCommentChar(styler[pos]) ;
 }
 
+static inline bool IsAWordChar(const int ch) {
+	return (ch < 0x80) && (isalnum(ch) || ch == '_');
+}
+
+static inline bool IsAWordStart(const int ch) {
+	return (ch < 0x80) && (isalnum(ch) || ch == '_');
+}
 
 static void ColouriseMatlabOctaveDoc(
-            Sci_PositionU startPos, Sci_Position length, int initStyle,
+            unsigned int startPos, int length, int initStyle,
             WordList *keywordlists[], Accessor &styler,
-            bool (*IsCommentChar)(int),
-            bool ismatlab) {
+            bool (*IsCommentChar)(int)) {
 
 	WordList &keywords = *keywordlists[0];
 
 	styler.StartAt(startPos);
 
-	// boolean for when the ' is allowed to be transpose vs the start/end
-	// of a string
 	bool transpose = false;
-
-	// approximate position of first non space character in a line
-	int nonSpaceColumn = -1;
-	// approximate column position of the current character in a line
-	int column = 0;
-
-        // use the line state of each line to store the block comment depth
-	Sci_Position curLine = styler.GetLine(startPos);
-        int commentDepth = curLine > 0 ? styler.GetLineState(curLine-1) : 0;
-
 
 	StyleContext sc(startPos, length, initStyle, styler);
 
-	for (; sc.More(); sc.Forward(), column++) {
+	for (; sc.More(); sc.Forward()) {
 
-               	if(sc.atLineStart) {
-			// set the line state to the current commentDepth
-			curLine = styler.GetLine(sc.currentPos);
-                        styler.SetLineState(curLine, commentDepth);
-
-			// reset the column to 0, nonSpace to -1 (not set)
-			column = 0;
-			nonSpaceColumn = -1;
-		}
-
-		// save the column position of first non space character in a line
-		if((nonSpaceColumn == -1) && (! IsASpace(sc.ch)))
-		{
-			nonSpaceColumn = column;
-		}
-
-		// check for end of states
 		if (sc.state == SCE_MATLAB_OPERATOR) {
 			if (sc.chPrev == '.') {
 				if (sc.ch == '*' || sc.ch == '/' || sc.ch == '\\' || sc.ch == '^') {
@@ -127,10 +79,6 @@ static void ColouriseMatlabOctaveDoc(
 				} else if (sc.ch == '\'') {
 					sc.ForwardSetState(SCE_MATLAB_DEFAULT);
 					transpose = true;
-                                } else if(sc.ch == '.' && sc.chNext == '.') {
-                                        // we werent an operator, but a '...'
-                                        sc.ChangeState(SCE_MATLAB_COMMENT);
-                                        transpose = false;
 				} else {
 					sc.SetState(SCE_MATLAB_DEFAULT);
 				}
@@ -173,58 +121,18 @@ static void ColouriseMatlabOctaveDoc(
 			} else if (sc.ch == '\"') {
 				sc.ForwardSetState(SCE_MATLAB_DEFAULT);
 			}
-		} else if (sc.state == SCE_MATLAB_COMMAND) {
+		} else if (sc.state == SCE_MATLAB_COMMENT || sc.state == SCE_MATLAB_COMMAND) {
 			if (sc.atLineEnd) {
 				sc.SetState(SCE_MATLAB_DEFAULT);
 				transpose = false;
 			}
-		} else if (sc.state == SCE_MATLAB_COMMENT) {
-			// end or start of a nested a block comment?
-			if( IsCommentChar(sc.ch) && sc.chNext == '}' && nonSpaceColumn == column) {
-                           	if(commentDepth > 0) commentDepth --;
-
-				curLine = styler.GetLine(sc.currentPos);
-				styler.SetLineState(curLine, commentDepth);
-				sc.Forward();
-
-				if (commentDepth == 0) {
-					sc.ForwardSetState(SCE_D_DEFAULT);
-					transpose = false;
-				}
-                        }
-                        else if( IsCommentChar(sc.ch) && sc.chNext == '{' && nonSpaceColumn == column)
-                        {
- 				commentDepth ++;
-
-				curLine = styler.GetLine(sc.currentPos);
-				styler.SetLineState(curLine, commentDepth);
-				sc.Forward();
-				transpose = false;
-
-                        } else if(commentDepth == 0) {
-				// single line comment
-				if (sc.atLineEnd || sc.ch == '\r' || sc.ch == '\n') {
-					sc.SetState(SCE_MATLAB_DEFAULT);
-					transpose = false;
-				}
-			}
 		}
 
-		// check start of a new state
 		if (sc.state == SCE_MATLAB_DEFAULT) {
 			if (IsCommentChar(sc.ch)) {
-				// ncrement depth if we are a block comment
-				if(sc.chNext == '{' && nonSpaceColumn == column)
-					commentDepth ++;
-				curLine = styler.GetLine(sc.currentPos);
-				styler.SetLineState(curLine, commentDepth);
 				sc.SetState(SCE_MATLAB_COMMENT);
 			} else if (sc.ch == '!' && sc.chNext != '=' ) {
-				if(ismatlab) {
-					sc.SetState(SCE_MATLAB_COMMAND);
-				} else {
-					sc.SetState(SCE_MATLAB_OPERATOR);
-				}
+				sc.SetState(SCE_MATLAB_COMMAND);
 			} else if (sc.ch == '\'') {
 				if (transpose) {
 					sc.SetState(SCE_MATLAB_OPERATOR);
@@ -238,7 +146,7 @@ static void ColouriseMatlabOctaveDoc(
 			} else if (isalpha(sc.ch)) {
 				sc.SetState(SCE_MATLAB_KEYWORD);
 			} else if (isoperator(static_cast<char>(sc.ch)) || sc.ch == '@' || sc.ch == '\\') {
-				if (sc.ch == ')' || sc.ch == ']' || sc.ch == '}') {
+				if (sc.ch == ')' || sc.ch == ']') {
 					transpose = true;
 				} else {
 					transpose = false;
@@ -252,92 +160,68 @@ static void ColouriseMatlabOctaveDoc(
 	sc.Complete();
 }
 
-static void ColouriseMatlabDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
+static void ColouriseMatlabDoc(unsigned int startPos, int length, int initStyle,
                                WordList *keywordlists[], Accessor &styler) {
-	ColouriseMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsMatlabCommentChar, true);
+	ColouriseMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsMatlabCommentChar);
 }
 
-static void ColouriseOctaveDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
+static void ColouriseOctaveDoc(unsigned int startPos, int length, int initStyle,
                                WordList *keywordlists[], Accessor &styler) {
-	ColouriseMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsOctaveCommentChar, false);
+	ColouriseMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsOctaveCommentChar);
 }
 
-static void FoldMatlabOctaveDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
+static void FoldMatlabOctaveDoc(unsigned int startPos, int length, int,
                                 WordList *[], Accessor &styler,
-                                bool (*IsComment)(int ch)) {
+                                bool (*IsComment)(Accessor&, int, int)) {
 
-	Sci_PositionU endPos = startPos + length;
-	int visibleChars = 0;
-	Sci_Position lineCurrent = styler.GetLine(startPos);
-	int levelCurrent = SC_FOLDLEVELBASE;
-	if (lineCurrent > 0)
-		levelCurrent = styler.LevelAt(lineCurrent-1) >> 16;
-	int levelNext = levelCurrent;
+	int endPos = startPos + length;
+
+	// Backtrack to previous line in case need to fix its fold status
+	int lineCurrent = styler.GetLine(startPos);
+	if (startPos > 0) {
+		if (lineCurrent > 0) {
+			lineCurrent--;
+			startPos = styler.LineStart(lineCurrent);
+		}
+	}
+	int spaceFlags = 0;
+	int indentCurrent = styler.IndentAmount(lineCurrent, &spaceFlags, IsComment);
 	char chNext = styler[startPos];
-	int styleNext = styler.StyleAt(startPos);
-	int style = initStyle;
-	char word[100];
-	int wordlen = 0;
-	for (Sci_PositionU i = startPos; i < endPos; i++) {
+	for (int i = startPos; i < endPos; i++) {
 		char ch = chNext;
 		chNext = styler.SafeGetCharAt(i + 1);
-		style = styleNext;
-		styleNext = styler.StyleAt(i + 1);
-		bool atEOL = (ch == '\r' && chNext != '\n') || (ch == '\n');
 
-		// a line that starts with a comment
-		if (style == SCE_MATLAB_COMMENT && IsComment(ch) && visibleChars == 0) {
-			// start/end of block comment
-			if (chNext == '{')
-				levelNext ++;
-			if (chNext == '}')
-				levelNext --;
-		}
-		// keyword
-		if(style == SCE_MATLAB_KEYWORD) {
-			word[wordlen++] = static_cast<char>(LowerCase(ch));
-			if (wordlen == 100) {  // prevent overflow
-				word[0] = '\0';
-				wordlen = 1;
+		if ((ch == '\r' && chNext != '\n') || (ch == '\n') || (i == endPos)) {
+			int lev = indentCurrent;
+			int indentNext = styler.IndentAmount(lineCurrent + 1, &spaceFlags, IsComment);
+			if (!(indentCurrent & SC_FOLDLEVELWHITEFLAG)) {
+				// Only non whitespace lines can be headers
+				if ((indentCurrent & SC_FOLDLEVELNUMBERMASK) < (indentNext & SC_FOLDLEVELNUMBERMASK)) {
+					lev |= SC_FOLDLEVELHEADERFLAG;
+				} else if (indentNext & SC_FOLDLEVELWHITEFLAG) {
+					// Line after is blank so check the next - maybe should continue further?
+					int spaceFlags2 = 0;
+					int indentNext2 = styler.IndentAmount(lineCurrent + 2, &spaceFlags2, IsComment);
+					if ((indentCurrent & SC_FOLDLEVELNUMBERMASK) < (indentNext2 & SC_FOLDLEVELNUMBERMASK)) {
+						lev |= SC_FOLDLEVELHEADERFLAG;
+					}
+				}
 			}
-			if (styleNext !=  SCE_MATLAB_KEYWORD) {
-				word[wordlen] = '\0';
-				wordlen = 0;
-
-				levelNext += CheckKeywordFoldPoint(word);
-			}
-		}
-		if (!IsASpace(ch))
-			visibleChars++;
-		if (atEOL || (i == endPos-1)) {
-			int levelUse = levelCurrent;
-			int lev = levelUse | levelNext << 16;
-			if (visibleChars == 0)
-				lev |= SC_FOLDLEVELWHITEFLAG;
-			if (levelUse < levelNext)
-				lev |= SC_FOLDLEVELHEADERFLAG;
-			if (lev != styler.LevelAt(lineCurrent)) {
-				styler.SetLevel(lineCurrent, lev);
-			}
+			indentCurrent = indentNext;
+			styler.SetLevel(lineCurrent, lev);
 			lineCurrent++;
-			levelCurrent = levelNext;
-			if (atEOL && (i == static_cast<Sci_PositionU>(styler.Length() - 1))) {
-				// There is an empty line at end of file so give it same level and empty
-				styler.SetLevel(lineCurrent, (levelCurrent | levelCurrent << 16) | SC_FOLDLEVELWHITEFLAG);
-			}
-			visibleChars = 0;
 		}
 	}
 }
 
-static void FoldMatlabDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
+static void FoldMatlabDoc(unsigned int startPos, int length, int initStyle,
                           WordList *keywordlists[], Accessor &styler) {
-	FoldMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsMatlabCommentChar);
+	FoldMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsMatlabComment);
 }
 
-static void FoldOctaveDoc(Sci_PositionU startPos, Sci_Position length, int initStyle,
+static void FoldOctaveDoc(unsigned int startPos, int length, int initStyle,
                           WordList *keywordlists[], Accessor &styler) {
-	FoldMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsOctaveCommentChar);
+	FoldMatlabOctaveDoc(startPos, length, initStyle, keywordlists, styler, IsOctaveComment);
 }
 
 static const char * const matlabWordListDesc[] = {

@@ -28,7 +28,6 @@
 #endif
 
 #include "wx/msw/private.h"
-#include "wx/msw/private/winstyle.h"
 
 bool wxStaticText::Create(wxWindow *parent,
                           wxWindowID id,
@@ -50,6 +49,7 @@ bool wxStaticText::Create(wxWindow *parent,
 
     // as we didn't pass the correct label to MSWCreateControl(), it didn't set
     // the initial size correctly -- do it now
+    InvalidateBestSize();
     SetInitialSize(size);
 
     // NOTE: if the label contains ampersand characters which are interpreted as
@@ -76,14 +76,18 @@ WXDWORD wxStaticText::MSWGetStyle(long style, WXDWORD *exstyle) const
         msStyle |= SS_LEFT;
 
 #ifdef SS_ENDELLIPSIS
-    // for now, add the SS_ENDELLIPSIS style if wxST_ELLIPSIZE_END is given;
-    // we may need to remove it later in ::SetLabel() if the given label
-    // has newlines
-    if ( style & wxST_ELLIPSIZE_END )
-        msStyle |= SS_ENDELLIPSIS;
+    // this style is necessary to receive mouse events
+    // Win NT and later have the SS_ENDELLIPSIS style which is useful to us:
+    if (wxGetOsVersion() == wxOS_WINDOWS_NT)
+    {
+        // for now, add the SS_ENDELLIPSIS style if wxST_ELLIPSIZE_END is given;
+        // we may need to remove it later in ::SetLabel() if the given label
+        // has newlines
+        if ( style & wxST_ELLIPSIZE_END )
+            msStyle |= SS_ENDELLIPSIS;
+    }
 #endif // SS_ENDELLIPSIS
 
-    // this style is necessary to receive mouse events
     msStyle |= SS_NOTIFY;
 
     return msStyle;
@@ -100,6 +104,11 @@ wxSize wxStaticText::DoGetBestClientSize() const
 
     wxCoord widthTextMax, heightTextTotal;
     dc.GetMultiLineTextExtent(GetLabelText(), &widthTextMax, &heightTextTotal);
+
+#ifdef __WXWINCE__
+    if ( widthTextMax )
+        widthTextMax += 2;
+#endif // __WXWINCE__
 
     // This extra pixel is a hack we use to ensure that a wxStaticText
     // vertically centered around the same position as a wxTextCtrl shows its
@@ -121,16 +130,8 @@ wxSize wxStaticText::DoGetBestClientSize() const
 
 void wxStaticText::DoSetSize(int x, int y, int w, int h, int sizeFlags)
 {
-    // Keep track of the size before so we can see if it changed
-    const wxSize sizeBefore = GetSize();
-
     // note: we first need to set the size and _then_ call UpdateLabel
     wxStaticTextBase::DoSetSize(x, y, w, h, sizeFlags);
-
-    // Avoid flicker by not refreshing or updating the label if the size didn't
-    // change.
-    if ( sizeBefore == GetSize() )
-        return;
 
 #ifdef SS_ENDELLIPSIS
     // do we need to ellipsize the contents?
@@ -151,26 +152,27 @@ void wxStaticText::DoSetSize(int x, int y, int w, int h, int sizeFlags)
 
 void wxStaticText::SetLabel(const wxString& label)
 {
-    // If the label doesn't really change, avoid flicker by not doing anything.
-    if ( label == m_labelOrig )
-        return;
-
 #ifdef SS_ENDELLIPSIS
-    wxMSWWinStyleUpdater updateStyle(GetHwnd());
-    if ( HasFlag(wxST_ELLIPSIZE_END) )
+    long styleReal = ::GetWindowLong(GetHwnd(), GWL_STYLE);
+    if ( HasFlag(wxST_ELLIPSIZE_END) &&
+          wxGetOsVersion() == wxOS_WINDOWS_NT )
     {
         // adding SS_ENDELLIPSIS or SS_ENDELLIPSIS "disables" the correct
         // newline handling in static texts: the newlines in the labels are
         // shown as square. Thus we don't use it even on newer OS when
         // the static label contains a newline.
-        updateStyle.TurnOnOrOff(!label.Contains(wxT('\n')), SS_ENDELLIPSIS);
+        if ( label.Contains(wxT('\n')) )
+            styleReal &= ~SS_ENDELLIPSIS;
+        else
+            styleReal |= SS_ENDELLIPSIS;
+
+        ::SetWindowLong(GetHwnd(), GWL_STYLE, styleReal);
     }
     else // style not supported natively
     {
-        updateStyle.TurnOff(SS_ENDELLIPSIS);
+        styleReal &= ~SS_ENDELLIPSIS;
+        ::SetWindowLong(GetHwnd(), GWL_STYLE, styleReal);
     }
-
-    updateStyle.Apply();
 #endif // SS_ENDELLIPSIS
 
     // save the label in m_labelOrig with both the markup (if any) and
@@ -178,37 +180,49 @@ void wxStaticText::SetLabel(const wxString& label)
     m_labelOrig = label;
 
 #ifdef SS_ENDELLIPSIS
-    if ( updateStyle.IsOn(SS_ENDELLIPSIS) )
-        WXSetVisibleLabel(GetLabel());
+    if ( styleReal & SS_ENDELLIPSIS )
+        DoSetLabel(GetLabel());
     else
 #endif // SS_ENDELLIPSIS
-        WXSetVisibleLabel(GetEllipsizedLabel());
+        DoSetLabel(GetEllipsizedLabel());
 
-    AutoResizeIfNecessary();
+    // adjust the size of the window to fit to the label unless autoresizing is
+    // disabled
+    if ( !HasFlag(wxST_NO_AUTORESIZE) &&
+         !IsEllipsized() )  // if ellipsize is ON, then we don't want to get resized!
+    {
+        InvalidateBestSize();
+        DoSetSize(wxDefaultCoord, wxDefaultCoord, wxDefaultCoord, wxDefaultCoord,
+                  wxSIZE_AUTO_WIDTH | wxSIZE_AUTO_HEIGHT);
+    }
 }
 
 bool wxStaticText::SetFont(const wxFont& font)
 {
-    if ( !wxControl::SetFont(font) )
-        return false;
+    bool ret = wxControl::SetFont(font);
 
-    AutoResizeIfNecessary();
+    // adjust the size of the window to fit to the label unless autoresizing is
+    // disabled
+    if ( !HasFlag(wxST_NO_AUTORESIZE) )
+    {
+        InvalidateBestSize();
+        DoSetSize(wxDefaultCoord, wxDefaultCoord, wxDefaultCoord, wxDefaultCoord,
+                  wxSIZE_AUTO_WIDTH | wxSIZE_AUTO_HEIGHT);
+    }
 
-    return true;
+    return ret;
 }
 
-// These functions are used by wxST_ELLIPSIZE_* supporting code in
-// wxStaticTextBase which requires us to implement them, but actually the base
-// wxWindow methods already do exactly what we need under this platform.
+// for wxST_ELLIPSIZE_* support:
 
-wxString wxStaticText::WXGetVisibleLabel() const
+wxString wxStaticText::DoGetLabel() const
 {
-    return wxWindow::GetLabel();
+    return wxGetWindowText(GetHwnd());
 }
 
-void wxStaticText::WXSetVisibleLabel(const wxString& str)
+void wxStaticText::DoSetLabel(const wxString& str)
 {
-    wxWindow::SetLabel(str);
+    SetWindowText(GetHwnd(), str.c_str());
 }
 
 

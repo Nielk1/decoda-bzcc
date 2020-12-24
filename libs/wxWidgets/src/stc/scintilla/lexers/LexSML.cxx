@@ -33,8 +33,8 @@ inline int issmld(int c) {return isdigit(c) || c == '_';}
 using namespace Scintilla;
 #endif
 
-static void ColouriseSMLDoc(
-	Sci_PositionU startPos, Sci_Position length,
+void ColouriseSMLDoc(
+	unsigned int startPos, int length,
 	int initStyle,
 	WordList *keywordlists[],
 	Accessor &styler)
@@ -46,8 +46,7 @@ static void ColouriseSMLDoc(
 	if (sc.state >= SCE_SML_COMMENT)
 		nesting = (sc.state & 0x0f) - SCE_SML_COMMENT;
 
-	Sci_PositionU chToken = 0;
-	int chBase = 0, chLit = 0;
+	int chBase = 0, chToken = 0, chLit = 0;
 	WordList& keywords  = *keywordlists[0];
 	WordList& keywords2 = *keywordlists[1];
 	WordList& keywords3 = *keywordlists[2];
@@ -55,7 +54,7 @@ static void ColouriseSMLDoc(
 
 	while (sc.More()) {
 		int state2 = -1;
-		Sci_Position chColor = sc.currentPos - 1;
+		int chColor = sc.currentPos - 1;
 		bool advance = true;
 
 		switch (sc.state & 0x0f) {
@@ -90,10 +89,10 @@ static void ColouriseSMLDoc(
 
 		case SCE_SML_IDENTIFIER:
 			if (!(issml(sc.ch) || sc.Match('\''))) {
-				const Sci_Position n = sc.currentPos - chToken;
+				const int n = sc.currentPos - chToken;
 				if (n < 24) {
 					char t[24];
-					for (Sci_Position i = -n; i < 0; i++)
+					for (int i = -n; i < 0; i++)
 						t[n + i] = static_cast<char>(sc.GetRelative(i));
 					t[n] = '\0';
 					if ((n == 1 && sc.chPrev == '_') || keywords.InList(t))
@@ -205,8 +204,8 @@ static void ColouriseSMLDoc(
 	sc.Complete();
 }
 
-static void FoldSMLDoc(
-	Sci_PositionU, Sci_Position,
+void FoldSMLDoc(
+	unsigned int, int,
 	int,
 	WordList *[],
 	Accessor &)

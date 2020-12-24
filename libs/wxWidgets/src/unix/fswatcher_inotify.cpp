@@ -61,7 +61,7 @@ public:
         delete m_handler;
     }
 
-    bool Init() wxOVERRIDE
+    bool Init()
     {
         wxCHECK_MSG( !IsOk(), false, "Inotify already initialized" );
 
@@ -75,7 +75,7 @@ public:
             return false;
         }
 
-        m_source = wxEventLoopBase::AddSourceForFD
+        m_source = loop->AddSourceForFD
                          (
                           m_ifd,
                           m_handler,
@@ -98,7 +98,7 @@ public:
         }
     }
 
-    virtual bool DoAdd(wxSharedPtr<wxFSWatchEntryUnix> watch) wxOVERRIDE
+    virtual bool DoAdd(wxSharedPtr<wxFSWatchEntryUnix> watch)
     {
         wxCHECK_MSG( IsOk(), false,
                     "Inotify not initialized or invalid inotify descriptor" );
@@ -121,7 +121,7 @@ public:
         return true;
     }
 
-    virtual bool DoRemove(wxSharedPtr<wxFSWatchEntryUnix> watch) wxOVERRIDE
+    virtual bool DoRemove(wxSharedPtr<wxFSWatchEntryUnix> watch)
     {
         wxCHECK_MSG( IsOk(), false,
                     "Inotify not initialized or invalid inotify descriptor" );
@@ -157,7 +157,7 @@ public:
         return true;
     }
 
-    virtual bool RemoveAll() wxOVERRIDE
+    virtual bool RemoveAll()
     {
         wxFSWatchEntries::iterator it = m_watches.begin();
         for ( ; it != m_watches.end(); ++it )
@@ -446,7 +446,7 @@ protected:
                 // If there's a filespec, assume he's not
                 if ( watch.GetFilespec().empty() )
                 {
-                    // The only way to know the path for the first event,
+                    // The the only way to know the path for the first event,
                     // normally the IN_MOVED_FROM, is to retrieve the watch
                     // corresponding to oldinevt. This is needed for a move
                     // within a watch.
@@ -703,7 +703,8 @@ wxInotifyFileSystemWatcher::wxInotifyFileSystemWatcher(const wxFileName& path,
 {
     if (!Init())
     {
-        delete m_service;
+        if (m_service)
+            delete m_service;
         return;
     }
 

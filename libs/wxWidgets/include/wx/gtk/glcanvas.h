@@ -19,18 +19,7 @@
 
 class WXDLLIMPEXP_GL wxGLCanvas : public wxGLCanvasX11
 {
-    typedef wxGLCanvasX11 BaseType;
 public:
-    wxGLCanvas(wxWindow *parent,
-               const wxGLAttributes& dispAttrs,
-               wxWindowID id = wxID_ANY,
-               const wxPoint& pos = wxDefaultPosition,
-               const wxSize& size = wxDefaultSize,
-               long style = 0,
-               const wxString& name = wxGLCanvasName,
-               const wxPalette& palette = wxNullPalette);
-
-    explicit // avoid implicitly converting a wxWindow* to wxGLCanvas
     wxGLCanvas(wxWindow *parent,
                wxWindowID id = wxID_ANY,
                const int *attribList = NULL,
@@ -41,15 +30,6 @@ public:
                const wxPalette& palette = wxNullPalette);
 
     bool Create(wxWindow *parent,
-                const wxGLAttributes& dispAttrs,
-                wxWindowID id = wxID_ANY,
-                const wxPoint& pos = wxDefaultPosition,
-                const wxSize& size = wxDefaultSize,
-                long style = 0,
-                const wxString& name = wxGLCanvasName,
-                const wxPalette& palette = wxNullPalette);
-
-    bool Create(wxWindow *parent,
                 wxWindowID id = wxID_ANY,
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
@@ -58,12 +38,12 @@ public:
                 const int *attribList = NULL,
                 const wxPalette& palette = wxNullPalette);
 
-    virtual bool SetBackgroundStyle(wxBackgroundStyle style) wxOVERRIDE;
+    virtual bool SetBackgroundStyle(wxBackgroundStyle style);
 
     // implement wxGLCanvasX11 methods
     // --------------------------------
 
-    virtual unsigned long GetXWindow() const wxOVERRIDE;
+    virtual Window GetXWindow() const;
 
 
     // deprecated methods
@@ -110,11 +90,13 @@ public:
 #endif // WXWIN_COMPATIBILITY_2_8
 
     // implementation from now on
-    virtual void GTKHandleRealized() wxOVERRIDE;
+    void OnInternalIdle();
 
+    bool              m_exposed;
 #ifdef __WXGTK3__
-    wxSize m_size;
+    cairo_t* m_cairoPaintContext;
 #endif
+
 #if WXWIN_COMPATIBILITY_2_8
     wxGLContext      *m_sharedContext;
     wxGLCanvas       *m_sharedContextOf;
@@ -122,7 +104,7 @@ public:
 #endif // WXWIN_COMPATIBILITY_2_8
 
 private:
-    wxDECLARE_CLASS(wxGLCanvas);
+    DECLARE_CLASS(wxGLCanvas)
 };
 
 #endif // _WX_GLCANVAS_H_

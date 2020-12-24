@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1988-1997 Sam Leffler
  * Copyright (c) 1991-1997 Silicon Graphics, Inc.
@@ -70,12 +71,6 @@ static int NotConfigured(TIFF*, int);
 #ifndef LZMA_SUPPORT
 #define TIFFInitLZMA NotConfigured
 #endif
-#ifndef ZSTD_SUPPORT
-#define TIFFInitZSTD NotConfigured
-#endif
-#ifndef WEBP_SUPPORT
-#define TIFFInitWebP NotConfigured
-#endif
 
 /*
  * Compression schemes statically built into the library.
@@ -103,8 +98,6 @@ TIFFCodec _TIFFBuiltinCODECS[] = {
     { "SGILog",		COMPRESSION_SGILOG,	TIFFInitSGILog },
     { "SGILog24",	COMPRESSION_SGILOG24,	TIFFInitSGILog },
     { "LZMA",		COMPRESSION_LZMA,	TIFFInitLZMA },
-    { "ZSTD",		COMPRESSION_ZSTD,	TIFFInitZSTD },
-    { "WEBP",		COMPRESSION_WEBP,	TIFFInitWebP },
     { NULL,             0,                      NULL }
 };
 
@@ -114,7 +107,7 @@ _notConfigured(TIFF* tif)
 	const TIFFCodec* c = TIFFFindCODEC(tif->tif_dir.td_compression);
         char compression_code[20];
         
-        sprintf(compression_code, "%d",tif->tif_dir.td_compression );
+        sprintf( compression_code, "%d", tif->tif_dir.td_compression );
 	TIFFErrorExt(tif->tif_clientdata, tif->tif_name,
                      "%s compression support is not configured", 
                      c ? c->name : compression_code );

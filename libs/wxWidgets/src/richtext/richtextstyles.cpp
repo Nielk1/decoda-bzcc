@@ -30,11 +30,11 @@
 
 #include "wx/richtext/richtextctrl.h"
 
-wxIMPLEMENT_CLASS(wxRichTextStyleDefinition, wxObject);
-wxIMPLEMENT_CLASS(wxRichTextCharacterStyleDefinition, wxRichTextStyleDefinition);
-wxIMPLEMENT_CLASS(wxRichTextParagraphStyleDefinition, wxRichTextStyleDefinition);
-wxIMPLEMENT_CLASS(wxRichTextListStyleDefinition, wxRichTextParagraphStyleDefinition);
-wxIMPLEMENT_CLASS(wxRichTextBoxStyleDefinition, wxRichTextStyleDefinition);
+IMPLEMENT_CLASS(wxRichTextStyleDefinition, wxObject)
+IMPLEMENT_CLASS(wxRichTextCharacterStyleDefinition, wxRichTextStyleDefinition)
+IMPLEMENT_CLASS(wxRichTextParagraphStyleDefinition, wxRichTextStyleDefinition)
+IMPLEMENT_CLASS(wxRichTextListStyleDefinition, wxRichTextParagraphStyleDefinition)
+IMPLEMENT_CLASS(wxRichTextBoxStyleDefinition, wxRichTextStyleDefinition)
 
 /*!
  * A definition
@@ -71,7 +71,7 @@ wxRichTextAttr wxRichTextStyleDefinition::GetStyleMergedWithBase(const wxRichTex
     const wxRichTextStyleDefinition* def = this;
     while (def)
     {
-        styles.Insert(const_cast<wxRichTextStyleDefinition*>(def));
+        styles.Insert((wxObject*) def);
         styleNames.Add(def->GetName());
 
         wxString baseStyleName = def->GetBaseStyle();
@@ -96,8 +96,8 @@ wxRichTextAttr wxRichTextStyleDefinition::GetStyleMergedWithBase(const wxRichTex
     wxList::compatibility_iterator node = styles.GetFirst();
     while (node)
     {
-        wxRichTextStyleDefinition* nodeDef = (wxRichTextStyleDefinition*) node->GetData();
-        attr.Apply(nodeDef->GetStyle(), NULL);
+        wxRichTextStyleDefinition* def = (wxRichTextStyleDefinition*) node->GetData();
+        attr.Apply(def->GetStyle(), NULL);
         node = node->GetNext();
     }
 
@@ -290,7 +290,7 @@ bool wxRichTextListStyleDefinition::IsNumbered(int i) const
  * The style manager
  */
 
-wxIMPLEMENT_CLASS(wxRichTextStyleSheet, wxObject);
+IMPLEMENT_CLASS(wxRichTextStyleSheet, wxObject)
 
 wxRichTextStyleSheet::~wxRichTextStyleSheet()
 {
@@ -327,10 +327,10 @@ bool wxRichTextStyleSheet::RemoveStyle(wxList& list, wxRichTextStyleDefinition* 
     wxList::compatibility_iterator node = list.Find(def);
     if (node)
     {
-        wxRichTextStyleDefinition* nodeDef = (wxRichTextStyleDefinition*) node->GetData();
+        wxRichTextStyleDefinition* def = (wxRichTextStyleDefinition*) node->GetData();
         list.Erase(node);
         if (deleteStyle)
-            delete nodeDef;
+            delete def;
         return true;
     }
     else
@@ -554,13 +554,13 @@ static wxString wxGetRichTextStyle(const wxString& style)
  * wxRichTextStyleListBox: a listbox to display styles.
  */
 
-wxIMPLEMENT_CLASS(wxRichTextStyleListBox, wxHtmlListBox);
+IMPLEMENT_CLASS(wxRichTextStyleListBox, wxHtmlListBox)
 
-wxBEGIN_EVENT_TABLE(wxRichTextStyleListBox, wxHtmlListBox)
+BEGIN_EVENT_TABLE(wxRichTextStyleListBox, wxHtmlListBox)
     EVT_LEFT_DOWN(wxRichTextStyleListBox::OnLeftDown)
     EVT_LEFT_DCLICK(wxRichTextStyleListBox::OnLeftDoubleClick)
     EVT_IDLE(wxRichTextStyleListBox::OnIdle)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxRichTextStyleListBox::wxRichTextStyleListBox(wxWindow* parent, wxWindowID id, const wxPoint& pos,
     const wxSize& size, long style)
@@ -756,7 +756,7 @@ wxString wxRichTextStyleListBox::CreateHTML(wxRichTextStyleDefinition* def) cons
 
     if (attr.GetLeftIndent() > 0)
     {
-        wxClientDC dc(const_cast<wxRichTextStyleListBox*>(this));
+        wxClientDC dc((wxWindow*) this);
 
         str << wxT("<td width=") << wxMin(50, (ConvertTenthsMMToPixels(dc, attr.GetLeftIndent())/2)) << wxT("></td>");
     }
@@ -842,7 +842,7 @@ wxString wxRichTextStyleListBox::CreateHTML(wxRichTextStyleDefinition* def) cons
     if (!attr.GetFontFaceName().IsEmpty())
         str << wxT(" face=\"") << attr.GetFontFaceName() << wxT("\"");
 
-    if (attr.GetTextColour().IsOk() && attr.GetTextColour() != attr.GetBackgroundColour() && !(!attr.HasBackgroundColour() && attr.GetTextColour() == *wxWHITE))
+    if (attr.GetTextColour().IsOk())
         str << wxT(" color=\"#") << ColourToHexString(attr.GetTextColour()) << wxT("\"");
 
     if (attr.GetBackgroundColour().Ok())
@@ -868,11 +868,7 @@ wxString wxRichTextStyleListBox::CreateHTML(wxRichTextStyleDefinition* def) cons
     if (hasUnderline)
         str << wxT("<u>");
 
-    wxString name(def->GetName());
-    if (attr.HasTextEffects() && (attr.GetTextEffects() & (wxTEXT_ATTR_EFFECT_CAPITALS|wxTEXT_ATTR_EFFECT_SMALL_CAPITALS)))
-        name = name.Upper();
-
-    str += name;
+    str += def->GetName();
 
     if (hasUnderline)
         str << wxT("</u>");
@@ -1017,12 +1013,12 @@ void wxRichTextStyleListBox::ApplyStyle(int item)
  * switch shown style types
  */
 
-wxIMPLEMENT_CLASS(wxRichTextStyleListCtrl, wxControl);
+IMPLEMENT_CLASS(wxRichTextStyleListCtrl, wxControl)
 
-wxBEGIN_EVENT_TABLE(wxRichTextStyleListCtrl, wxControl)
+BEGIN_EVENT_TABLE(wxRichTextStyleListCtrl, wxControl)
     EVT_CHOICE(wxID_ANY, wxRichTextStyleListCtrl::OnChooseType)
     EVT_SIZE(wxRichTextStyleListCtrl::OnSize)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxRichTextStyleListCtrl::wxRichTextStyleListCtrl(wxWindow* parent, wxWindowID id, const wxPoint& pos,
     const wxSize& size, long style)
@@ -1230,10 +1226,10 @@ void wxRichTextStyleListCtrl::UpdateStyles()
  */
 
 
-wxBEGIN_EVENT_TABLE(wxRichTextStyleComboPopup, wxRichTextStyleListBox)
+BEGIN_EVENT_TABLE(wxRichTextStyleComboPopup, wxRichTextStyleListBox)
     EVT_MOTION(wxRichTextStyleComboPopup::OnMouseMove)
     EVT_LEFT_DOWN(wxRichTextStyleComboPopup::OnMouseClick)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 bool wxRichTextStyleComboPopup::Create( wxWindow* parent )
 {
@@ -1300,11 +1296,11 @@ void wxRichTextStyleComboPopup::OnMouseClick(wxMouseEvent& WXUNUSED(event))
  * A combo for applying styles.
  */
 
-wxIMPLEMENT_CLASS(wxRichTextStyleComboCtrl, wxComboCtrl);
+IMPLEMENT_CLASS(wxRichTextStyleComboCtrl, wxComboCtrl)
 
-wxBEGIN_EVENT_TABLE(wxRichTextStyleComboCtrl, wxComboCtrl)
+BEGIN_EVENT_TABLE(wxRichTextStyleComboCtrl, wxComboCtrl)
     EVT_IDLE(wxRichTextStyleComboCtrl::OnIdle)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 bool wxRichTextStyleComboCtrl::Create(wxWindow* parent, wxWindowID id, const wxPoint& pos,
         const wxSize& size, long style)

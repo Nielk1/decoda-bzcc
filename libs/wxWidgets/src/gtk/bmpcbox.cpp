@@ -29,6 +29,7 @@
     #include "wx/log.h"
 #endif
 
+#include <gtk/gtk.h>
 #include "wx/gtk/private.h"
 
 // ============================================================================
@@ -36,7 +37,7 @@
 // ============================================================================
 
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapComboBox, wxComboBox);
+IMPLEMENT_DYNAMIC_CLASS(wxBitmapComboBox, wxComboBox)
 
 
 // ----------------------------------------------------------------------------
@@ -175,8 +176,10 @@ wxSize wxBitmapComboBox::DoGetBestSize() const
 
     int delta = GetBitmapSize().y - GetCharHeight();
     if ( delta > 0 )
+    {
         best.y += delta;
-
+        CacheBestSize(best);
+    }
     return best;
 }
 

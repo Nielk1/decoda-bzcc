@@ -10,9 +10,6 @@
 #ifndef _WX_TEXTCOMPLETER_H_
 #define _WX_TEXTCOMPLETER_H_
 
-#include "wx/defs.h"
-#include "wx/arrstr.h"
-
 // ----------------------------------------------------------------------------
 // wxTextCompleter: used by wxTextEnter::AutoComplete()
 // ----------------------------------------------------------------------------
@@ -47,8 +44,8 @@ public:
     // Must be implemented to return all the completions for the given prefix.
     virtual void GetCompletions(const wxString& prefix, wxArrayString& res) = 0;
 
-    virtual bool Start(const wxString& prefix) wxOVERRIDE;
-    virtual wxString GetNext() wxOVERRIDE;
+    virtual bool Start(const wxString& prefix);
+    virtual wxString GetNext();
 
 private:
     wxArrayString m_completions;
@@ -75,7 +72,7 @@ public:
     }
 
     virtual void GetCompletions(const wxString& WXUNUSED(prefix),
-                                wxArrayString& res) wxOVERRIDE
+                                wxArrayString& res)
     {
         res = m_strings;
     }

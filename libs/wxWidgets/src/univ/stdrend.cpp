@@ -3,7 +3,7 @@
 // Purpose:     implementation of wxStdRenderer
 // Author:      Vadim Zeitlin
 // Created:     2006-09-16
-// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -71,7 +71,8 @@ wxStdRenderer::wxStdRenderer(const wxColourScheme *scheme)
 void
 wxStdRenderer::DrawSolidRect(wxDC& dc, const wxColour& col, const wxRect& rect)
 {
-    dc.SetBrush(col);
+    wxBrush brush(col, wxSOLID);
+    dc.SetBrush(brush);
     dc.SetPen(*wxTRANSPARENT_PEN);
     dc.DrawRectangle(rect);
 }
@@ -199,7 +200,7 @@ void wxStdRenderer::DrawButtonSurface(wxDC& dc,
 void
 wxStdRenderer::DrawFocusRect(wxWindow* WXUNUSED(win), wxDC& dc, const wxRect& rect, int WXUNUSED(flags))
 {
-    // draw the pixels manually because the "dots" in wxPen with wxPENSTYLE_DOT style
+    // draw the pixels manually because the "dots" in wxPen with wxDOT style
     // may be short traits and not really dots
     //
     // note that to behave in the same manner as DrawRect(), we must exclude
@@ -774,13 +775,13 @@ void wxStdRenderer::DrawTextLine(wxDC& dc,
                      colBg = dc.GetTextBackground();
             dc.SetTextForeground(wxSCHEME_COLOUR(m_scheme, HIGHLIGHT_TEXT));
             dc.SetTextBackground(wxSCHEME_COLOUR(m_scheme, HIGHLIGHT));
-            dc.SetBackgroundMode(wxBRUSHSTYLE_SOLID);
+            dc.SetBackgroundMode(wxSOLID);
 
             dc.DrawText(s, x, rect.y);
             dc.GetTextExtent(s, &width, NULL);
             x += width;
 
-            dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
+            dc.SetBackgroundMode(wxTRANSPARENT);
             dc.SetTextBackground(colBg);
             dc.SetTextForeground(colFg);
         }

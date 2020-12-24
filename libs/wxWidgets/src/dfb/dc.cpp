@@ -43,13 +43,18 @@
 // wxDFBDCImpl
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxDFBDCImpl, wxDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxDFBDCImpl, wxDCImpl)
 
 void wxDFBDCImpl::DFBInit(const wxIDirectFBSurfacePtr& surface)
 {
     m_surface = surface;
 
     wxCHECK_RET( surface != NULL, "invalid surface" );
+
+    m_mm_to_pix_x = (double)wxGetDisplaySize().GetWidth() /
+                    (double)wxGetDisplaySizeMM().GetWidth();
+    m_mm_to_pix_y = (double)wxGetDisplaySize().GetHeight() /
+                    (double)wxGetDisplaySizeMM().GetHeight();
 
     SetFont(DEFAULT_FONT);
     SetPen(DEFAULT_PEN);
@@ -110,7 +115,7 @@ void wxDFBDCImpl::DestroyClippingRegion()
 
     m_surface->SetClip(NULL);
 
-    wxDCImpl::DestroyClippingRegion();
+    ResetClipping();
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +135,7 @@ void wxDFBDCImpl::Clear()
 {
     wxCHECK_RET( IsOk(), wxT("invalid dc") );
 
-    if ( m_backgroundBrush.GetStyle() == wxBRUSHSTYLE_TRANSPARENT )
+    if ( m_backgroundBrush.GetStyle() == wxTRANSPARENT )
         return;
 
     wxColour clr = m_backgroundBrush.GetColour();
@@ -176,7 +181,7 @@ void wxDFBDCImpl::DoDrawLine(wxCoord x1, wxCoord y1, wxCoord x2, wxCoord y2)
 {
     wxCHECK_RET( IsOk(), wxT("invalid dc") );
 
-    if ( m_pen.GetStyle() == wxPENSTYLE_TRANSPARENT )
+    if ( m_pen.GetStyle() == wxTRANSPARENT )
         return;
 
     wxCoord xx1 = XLOG2DEV(x1);
@@ -273,7 +278,7 @@ void wxDFBDCImpl::DoDrawRectangle(wxCoord x, wxCoord y, wxCoord width, wxCoord h
         yy = yy - hh;
     }
 
-    if ( m_brush.GetStyle() != wxBRUSHSTYLE_TRANSPARENT )
+    if ( m_brush.GetStyle() != wxTRANSPARENT )
     {
         SelectColour(m_brush.GetColour());
         m_surface->FillRectangle(xx, yy, ww, hh);
@@ -282,7 +287,7 @@ void wxDFBDCImpl::DoDrawRectangle(wxCoord x, wxCoord y, wxCoord width, wxCoord h
         SelectColour(m_pen.GetColour());
     }
 
-    if ( m_pen.GetStyle() != wxPENSTYLE_TRANSPARENT )
+    if ( m_pen.GetStyle() != wxTRANSPARENT )
     {
         m_surface->DrawRectangle(xx, yy, ww, hh);
     }
@@ -338,7 +343,7 @@ void wxDFBDCImpl::DoDrawText(const wxString& text, wxCoord x, wxCoord y)
     CalcBoundingBox(x + w, y + h);
 
     // if background mode is solid, DrawText must paint text's background:
-    if ( m_backgroundMode == wxBRUSHSTYLE_SOLID )
+    if ( m_backgroundMode == wxSOLID )
     {
         wxCHECK_RET( m_textBackgroundColour.IsOk(),
                      wxT("invalid background color") );
@@ -558,15 +563,15 @@ void wxDFBDCImpl::DoGetSizeMM(int *width, int *height) const
     int w = 0;
     int h = 0;
     GetSize(&w, &h);
-    if ( width ) *width = int(double(w) / (m_userScaleX*GetMMToPXx()));
-    if ( height ) *height = int(double(h) / (m_userScaleY*GetMMToPXy()));
+    if ( width ) *width = int(double(w) / (m_userScaleX*m_mm_to_pix_x));
+    if ( height ) *height = int(double(h) / (m_userScaleY*m_mm_to_pix_y));
 }
 
 wxSize wxDFBDCImpl::GetPPI() const
 {
     #warning "move this to common code?"
-    return wxSize(int(double(GetMMToPXx()) * inches2mm),
-                  int(double(GetMMToPXy()) * inches2mm));
+    return wxSize(int(double(m_mm_to_pix_x) * inches2mm),
+                  int(double(m_mm_to_pix_y) * inches2mm));
 }
 
 

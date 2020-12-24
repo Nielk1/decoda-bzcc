@@ -54,6 +54,33 @@ public:
         Returns the text currently shown in this pane.
      */
     wxString GetText() const;
+
+    
+    bool IsEllipsized() const;
+    void SetIsEllipsized(bool isEllipsized);
+
+    void SetWidth(int width);
+    void SetStyle(int style);
+
+    /**
+       Set text. Returns true if it changed or false if it was already set to
+       this value.
+    */
+    bool SetText(const wxString& text);
+
+    /**
+       Save the existing text on top of a stack and make the new text
+       current. Returns true if the text really changed.
+    */
+    bool PushText(const wxString& text);
+
+    /**
+       Restore the message saved by the last call to Push() (unless it was
+       changed by an intervening call to SetText()) and return true if we
+       really restored anything.
+    */
+    bool PopText();
+
 };
 
 /**
@@ -96,9 +123,10 @@ public:
 
     @remarks
     Notice that only the first 127 characters of a string will be shown in
-    status bar fields under Windows if a proper manifest indicating that the
-    program uses version 6 of common controls library is not used. This is a
-    limitation of the native control on these platforms.
+    status bar fields under pre-XP MSW systems (or even under later systems if
+    a proper manifest indicating that the program uses version 6 of common
+    controls library is not used). This is a limitation of the native control
+    on these platforms.
 
     @library{wxcore}
     @category{miscwnd}
@@ -279,9 +307,7 @@ public:
     /**
         Sets the status text for the @a i-th field.
 
-        The given text will replace the current text. The display of the status
-        bar is updated immediately, so there is no need to call
-        wxWindow::Update() after calling this function.
+        The given text will replace the current text.
 
         Note that if PushStatusText() had been called before the new text will
         also replace the last saved value to make sure that the next call to

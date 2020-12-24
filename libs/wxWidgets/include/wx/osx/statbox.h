@@ -11,18 +11,21 @@
 #ifndef _WX_STATBOX_H_
 #define _WX_STATBOX_H_
 
-class WXDLLIMPEXP_CORE wxStaticBox : public wxStaticBoxBase
-{
-    wxDECLARE_DYNAMIC_CLASS(wxStaticBox);
+#include "wx/control.h"
 
-public:
-    wxStaticBox() {}
-    wxStaticBox(wxWindow *parent, wxWindowID id,
+// Group box
+class WXDLLIMPEXP_CORE wxStaticBox: public wxControl
+{
+  DECLARE_DYNAMIC_CLASS(wxStaticBox)
+
+ public:
+    inline wxStaticBox() {}
+    inline wxStaticBox(wxWindow *parent, wxWindowID id,
            const wxString& label,
            const wxPoint& pos = wxDefaultPosition,
            const wxSize& size = wxDefaultSize,
            long style = 0,
-           const wxString& name = wxASCII_STR(wxStaticBoxNameStr))
+           const wxString& name = wxStaticBoxNameStr)
     {
         Create(parent, id, label, pos, size, style, name);
     }
@@ -32,17 +35,17 @@ public:
            const wxPoint& pos = wxDefaultPosition,
            const wxSize& size = wxDefaultSize,
            long style = 0,
-           const wxString& name = wxASCII_STR(wxStaticBoxNameStr));
+           const wxString& name = wxStaticBoxNameStr);
 
-    virtual void Command(wxCommandEvent& WXUNUSED(event)) wxOVERRIDE {}
+    virtual void Command(wxCommandEvent& WXUNUSED(event)) {}
     virtual void ProcessCommand(wxCommandEvent& WXUNUSED(event)) {}
 
-    virtual void GetBordersForSizer(int *borderTop, int *borderOther) const wxOVERRIDE;
+    virtual void GetBordersForSizer(int *borderTop, int *borderOther) const;
 
-    virtual bool AcceptsFocus() const wxOVERRIDE { return false; }
+    virtual bool AcceptsFocus() const { return false; }
 
     // protect native font of box
-    virtual bool SetFont( const wxFont &font ) wxOVERRIDE;
+    virtual bool SetFont( const wxFont &font );
 };
 
 #endif

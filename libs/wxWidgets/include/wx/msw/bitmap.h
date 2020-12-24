@@ -81,7 +81,7 @@ public:
 
 #if wxUSE_IMAGE
     // Convert from wxImage
-    wxBitmap(const wxImage& image, int depth = -1, double WXUNUSED(scale) = 1.0)
+    wxBitmap(const wxImage& image, int depth = -1)
         { (void)CreateFromImage(image, depth); }
 
     // Create a DDB compatible with the given DC from wxImage
@@ -97,19 +97,6 @@ public:
         CopyFromIcon(icon, transp);
     }
 
-    // Convert from wxCursor
-    explicit wxBitmap(const wxCursor& cursor)
-    {
-        (void)CopyFromCursor(cursor, wxBitmapTransparency_Auto);
-    }
-
-#if wxUSE_IMAGE
-    wxBitmap& operator=(const wxImage& image)
-    {
-        return *this = wxBitmap(image);
-    }
-#endif // wxUSE_IMAGE
-
     wxBitmap& operator=(const wxIcon& icon)
     {
         (void)CopyFromIcon(icon);
@@ -117,17 +104,12 @@ public:
         return *this;
     }
 
-#if WXWIN_COMPATIBILITY_3_0
-    // This assignment operator is not portable as it is not implemented in any
-    // other ports.
-    wxDEPRECATED_MSG("Don't assign wxCursor to an existing wxBitmap, create a new wxBitmap from wxCursor instead.")
     wxBitmap& operator=(const wxCursor& cursor)
     {
         (void)CopyFromCursor(cursor);
 
         return *this;
     }
-#endif // WXWIN_COMPATIBILITY_3_0
 
     virtual ~wxBitmap();
 
@@ -188,8 +170,8 @@ public:
     // these functions are internal and shouldn't be used, they risk to
     // disappear in the future
     bool HasAlpha() const;
-    void UseAlpha(bool use = true);
-    void ResetAlpha() { UseAlpha(false); }
+    void UseAlpha();
+    void ResetAlpha();
 
     // support for scaled bitmaps
     virtual double GetScaleFactor() const { return 1.0; }
@@ -205,23 +187,16 @@ public:
     // values in its alpha channel.
     void MSWUpdateAlpha();
 
-    // Blend mask with alpha channel and remove the mask
-    void MSWBlendMaskWithAlpha();
-
 public:
-#if WXWIN_COMPATIBILITY_3_0
-    wxDEPRECATED_INLINE(void SetHBITMAP(WXHBITMAP bmp), SetHandle((WXHANDLE)bmp); )
-#endif // WXWIN_COMPATIBILITY_3_0
+    void SetHBITMAP(WXHBITMAP bmp) { SetHandle((WXHANDLE)bmp); }
     WXHBITMAP GetHBITMAP() const { return (WXHBITMAP)GetHandle(); }
-    bool InitFromHBITMAP(WXHBITMAP bmp, int width, int height, int depth);
-    void ResetHBITMAP() { InitFromHBITMAP(NULL, 0, 0, 0); }
 
     void SetSelectedInto(wxDC *dc);
     wxDC *GetSelectedInto() const;
 
 protected:
-    virtual wxGDIImageRefData *CreateData() const wxOVERRIDE;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const wxOVERRIDE;
+    virtual wxGDIImageRefData *CreateData() const;
+    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
     // creates an uninitialized bitmap, called from Create()s above
     bool DoCreate(int w, int h, int depth, WXHDC hdc);
@@ -244,7 +219,7 @@ private:
                          wxBitmapTransparency transp = wxBitmapTransparency_Auto);
 
 
-    wxDECLARE_DYNAMIC_CLASS(wxBitmap);
+    DECLARE_DYNAMIC_CLASS(wxBitmap)
 };
 
 // ----------------------------------------------------------------------------
@@ -288,7 +263,7 @@ public:
 protected:
     WXHBITMAP m_maskBitmap;
 
-    wxDECLARE_DYNAMIC_CLASS(wxMask);
+    DECLARE_DYNAMIC_CLASS(wxMask)
 };
 
 
@@ -309,14 +284,14 @@ public:
     virtual bool Create(wxGDIImage *image,
                         const void* data,
                         wxBitmapType type,
-                        int width, int height, int depth = 1) wxOVERRIDE;
+                        int width, int height, int depth = 1);
     virtual bool Load(wxGDIImage *image,
                       const wxString& name,
                       wxBitmapType type,
-                      int desiredWidth, int desiredHeight) wxOVERRIDE;
+                      int desiredWidth, int desiredHeight);
     virtual bool Save(const wxGDIImage *image,
                       const wxString& name,
-                      wxBitmapType type) const wxOVERRIDE;
+                      wxBitmapType type) const;
 
 
     // make wxBitmapHandler compatible with the wxBitmapHandler interface
@@ -336,7 +311,7 @@ public:
                           const wxPalette *palette = NULL) const;
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxBitmapHandler);
+    DECLARE_DYNAMIC_CLASS(wxBitmapHandler)
 };
 
 #endif

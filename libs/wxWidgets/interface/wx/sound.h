@@ -17,13 +17,10 @@
     This class represents a short sound (loaded from Windows WAV file), that
     can be stored in memory and played.
 
-    Currently this class is implemented on Windows and Unix and can use either
-    Open Sound System (OSS) or Simple DirectMedia Layer (SDL) under the latter.
-    Notice that OSS is not provided any more by most, and maybe even all,
-    Linux systems in 2017 and osspd (OSS Proxy Daemon) package typically needs
-    to be installed to make it work.
+    Currently this class is implemented on Windows and Unix (and uses either
+    Open Sound System or Simple DirectMedia Layer).
 
-    @library{wxcore}
+    @library{wxadv}
     @category{media}
 */
 class wxSound : public wxObject

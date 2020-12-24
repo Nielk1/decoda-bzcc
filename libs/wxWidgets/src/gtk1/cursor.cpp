@@ -58,7 +58,7 @@ wxCursorRefData::~wxCursorRefData()
 
 #define M_CURSORDATA ((wxCursorRefData *)m_refData)
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxCursor, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxCursor,wxObject)
 
 wxCursor::wxCursor()
 {

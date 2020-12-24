@@ -138,7 +138,7 @@ public:
     void OnExit();
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxGnomeVFSModule);
+    DECLARE_DYNAMIC_CLASS(wxGnomeVFSModule)
 };
 
 bool wxGnomeVFSModule::OnInit()
@@ -160,6 +160,6 @@ void wxGnomeVFSModule::OnExit()
     delete gs_lgvfs;
 }
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGnomeVFSModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxGnomeVFSModule, wxModule)
 
 #endif // wxUSE_LIBGNOMEVFS && wxUSE_MIMETYPE

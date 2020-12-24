@@ -1,11 +1,12 @@
 /////////////////////////////////////////////////////////////////////////////
 // Name:        src/richtext/richtextsizepage.cpp
-// Purpose:     Implements the rich text formatting dialog size page.
+// Purpose:
 // Author:      Julian Smart
 // Modified by:
 // Created:     20/10/2010 10:23:24
+// RCS-ID:
 // Copyright:   (c) Julian Smart
-// Licence:     wxWindows licence
+// Licence:
 /////////////////////////////////////////////////////////////////////////////
 
 #include "wx/richtext/richtextsizepage.h"
@@ -13,18 +14,19 @@
 ////@begin XPM images
 ////@end XPM images
 
+
 /*!
  * wxRichTextSizePage type definition
  */
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxRichTextSizePage, wxRichTextDialogPage);
+IMPLEMENT_DYNAMIC_CLASS( wxRichTextSizePage, wxRichTextDialogPage )
 
 
 /*!
  * wxRichTextSizePage event table definition
  */
 
-wxBEGIN_EVENT_TABLE(wxRichTextSizePage, wxRichTextDialogPage)
+BEGIN_EVENT_TABLE( wxRichTextSizePage, wxRichTextDialogPage )
 
 ////@begin wxRichTextSizePage event table entries
     EVT_UPDATE_UI( ID_RICHTEXT_VERTICAL_ALIGNMENT_COMBOBOX, wxRichTextSizePage::OnRichtextVerticalAlignmentComboboxUpdate )
@@ -52,7 +54,7 @@ wxBEGIN_EVENT_TABLE(wxRichTextSizePage, wxRichTextDialogPage)
     EVT_BUTTON( ID_RICHTEXT_PARA_DOWN, wxRichTextSizePage::OnRichtextParaDownClick )
 ////@end wxRichTextSizePage event table entries
 
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 IMPLEMENT_HELP_PROVISION(wxRichTextSizePage)
 
@@ -65,7 +67,6 @@ bool wxRichTextSizePage::sm_showAlignmentControls = true;
 bool wxRichTextSizePage::sm_showFloatingAndAlignmentControls = true;
 bool wxRichTextSizePage::sm_enablePositionAndSizeUnits = true;
 bool wxRichTextSizePage::sm_enablePositionAndSizeCheckboxes = true;
-bool wxRichTextSizePage::sm_showMoveObjectControls = true;
 
 /*!
  * wxRichTextSizePage constructors
@@ -118,7 +119,6 @@ wxRichTextSizePage::~wxRichTextSizePage()
     sm_showMinMaxSizeControls = true;
     sm_enablePositionAndSizeUnits = true;
     sm_enablePositionAndSizeCheckboxes = true;
-    sm_showMoveObjectControls = true;
     
 ////@begin wxRichTextSizePage destruction
 ////@end wxRichTextSizePage destruction
@@ -227,7 +227,7 @@ void wxRichTextSizePage::CreateControls()
     itemBoxSizer6->Add(itemBoxSizer7, 0, wxGROW, 5);
 
     wxStaticText* itemStaticText8 = new wxStaticText( itemRichTextDialogPage1, wxID_STATIC, _("Floating"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemStaticText8->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxFONTWEIGHT_BOLD));
+    itemStaticText8->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxBOLD, false, wxT("")));
     itemBoxSizer7->Add(itemStaticText8, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
     wxStaticLine* itemStaticLine9 = new wxStaticLine( itemRichTextDialogPage1, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
@@ -264,7 +264,7 @@ void wxRichTextSizePage::CreateControls()
     m_alignmentSizer->Add(itemBoxSizer17, 0, wxGROW, 5);
 
     wxStaticText* itemStaticText18 = new wxStaticText( itemRichTextDialogPage1, wxID_STATIC, _("Alignment"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemStaticText18->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxFONTWEIGHT_BOLD));
+    itemStaticText18->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxBOLD, false, wxT("")));
     itemBoxSizer17->Add(itemStaticText18, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
     wxStaticLine* itemStaticLine19 = new wxStaticLine( itemRichTextDialogPage1, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
@@ -297,7 +297,7 @@ void wxRichTextSizePage::CreateControls()
     m_parentSizer->Add(itemBoxSizer24, 0, wxGROW, 5);
 
     wxStaticText* itemStaticText25 = new wxStaticText( itemRichTextDialogPage1, wxID_STATIC, _("Size"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemStaticText25->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxFONTWEIGHT_BOLD));
+    itemStaticText25->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxBOLD, false, wxT("")));
     itemBoxSizer24->Add(itemStaticText25, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
     wxStaticLine* itemStaticLine26 = new wxStaticLine( itemRichTextDialogPage1, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
@@ -494,7 +494,7 @@ void wxRichTextSizePage::CreateControls()
     m_positionControls->Add(itemBoxSizer59, 0, wxGROW, 5);
 
     wxStaticText* itemStaticText60 = new wxStaticText( itemRichTextDialogPage1, wxID_STATIC, _("Position"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemStaticText60->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxFONTWEIGHT_BOLD));
+    itemStaticText60->SetFont(wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetPointSize(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetFamily(), wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).GetStyle(), wxBOLD, false, wxT("")));
     itemBoxSizer59->Add(itemStaticText60, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 
     wxStaticLine* itemStaticLine61 = new wxStaticLine( itemRichTextDialogPage1, wxID_STATIC, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
@@ -745,9 +745,6 @@ void wxRichTextSizePage::CreateControls()
 
     if (!sm_showPositionModeControls)
         m_moveObjectParentSizer->Show(m_positionModeSizer, false);
-
-    if (!sm_showMoveObjectControls)
-        m_moveObjectParentSizer->Show(m_moveObjectSizer, false);
 }
 
 wxRichTextAttr* wxRichTextSizePage::GetAttributes()
@@ -761,7 +758,7 @@ wxRichTextAttr* wxRichTextSizePage::GetAttributes()
 
 bool wxRichTextSizePage::ShowToolTips()
 {
-    return wxRichTextFormattingDialog::ShowToolTips();
+    return true;
 }
 
 bool wxRichTextSizePage::TransferDataToWindow()

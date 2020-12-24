@@ -49,7 +49,7 @@
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxToolBar, wxControl);
+IMPLEMENT_DYNAMIC_CLASS(wxToolBar, wxControl)
 
 // ----------------------------------------------------------------------------
 // private functions

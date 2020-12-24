@@ -5,7 +5,7 @@
 // Modified by:
 // Created:     23.09.98
 // Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
-// Licence:     wxWidgets licence (part of base library)
+// Licence:     wxWindows licence (part of wxExtra library)
 /////////////////////////////////////////////////////////////////////////////
 
 // for compilers that support precompilation, includes "wx.h".
@@ -34,27 +34,11 @@
 #include "wx/file.h"
 #include "wx/iconloc.h"
 #include "wx/confbase.h"
-#include "wx/dynlib.h"
 
 #ifdef __WINDOWS__
     #include "wx/msw/registry.h"
     #include "wx/msw/private.h"
-    #include <shlwapi.h>
-    #include "wx/msw/wrapshl.h"
-
-    // For MSVC we can link in the required library explicitly, for the other
-    // compilers (e.g. MinGW) this needs to be done at makefiles level.
-    #ifdef __VISUALC__
-        #pragma comment(lib, "shlwapi")
-    #endif
 #endif // OS
-
-// Unfortunately the corresponding SDK constants are absent from the headers
-// shipped with some old MinGW versions (e.g. 4.2.1 from Debian) and we can't
-// even test whether they're defined or not, as they're enum elements and not
-// preprocessor constants. So we have to always use our own constants.
-#define wxASSOCF_NOTRUNCATE (static_cast<ASSOCF>(0x20))
-#define wxASSOCSTR_DEFAULTICON (static_cast<ASSOCSTR>(15))
 
 // other standard headers
 #include <ctype.h>
@@ -147,8 +131,6 @@ void wxFileTypeImpl::Init(const wxString& strFileType, const wxString& ext)
     if ( !strFileType ) {
         m_strFileType = m_ext.AfterFirst('.') + wxT("_auto_file");
     }
-
-    m_suppressNotify = false;
 }
 
 wxString wxFileTypeImpl::GetVerbPath(const wxString& verb) const
@@ -213,17 +195,6 @@ size_t wxFileTypeImpl::GetAllCommands(wxArrayString *verbs,
     return count;
 }
 
-void wxFileTypeImpl::MSWNotifyShell()
-{
-    if (!m_suppressNotify)
-        SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST | SHCNF_FLUSHNOWAIT, NULL, NULL);
-}
-
-void wxFileTypeImpl::MSWSuppressNotifications(bool supress)
-{
-    m_suppressNotify = supress;
-}
-
 // ----------------------------------------------------------------------------
 // modify the registry database
 // ----------------------------------------------------------------------------
@@ -248,109 +219,157 @@ bool wxFileTypeImpl::EnsureExtKeyExists()
 // get the command to use
 // ----------------------------------------------------------------------------
 
-// Helper wrapping AssocQueryString() Win32 function: returns the value of the
-// given associated string for the specified extension (which may or not have
-// the leading period).
-//
-// Returns empty string if the association is not found.
-static
-wxString wxAssocQueryString(ASSOCSTR assoc,
-                            wxString ext,
-                            const wxString& verb = wxString())
+static wxString wxFileTypeImplGetCurVer(const wxString& progId)
 {
-    DWORD dwSize = MAX_PATH;
-    TCHAR bufOut[MAX_PATH] = { 0 };
-
-    if ( ext.empty() || ext[0] != '.' )
-        ext.Prepend('.');
-
-    HRESULT hr = ::AssocQueryString
-                 (
-                    wxASSOCF_NOTRUNCATE,// Fail if buffer is too small.
-                    assoc,              // The association to retrieve.
-                    ext.t_str(),        // The extension to retrieve it for.
-                    verb.empty() ? NULL
-                                 : static_cast<const TCHAR*>(verb.t_str()),
-                    bufOut,             // The buffer for output value.
-                    &dwSize             // And its size
-                 );
-
-    // Do not use SUCCEEDED() here as S_FALSE could, in principle, be returned
-    // but would still be an error in this context.
-    if ( hr != S_OK )
+    wxRegKey key(wxRegKey::HKCR, progId + wxT("\\CurVer"));
+    if (key.Exists())
     {
-        // The only really expected error here is that no association is
-        // defined, anything else is not expected. The confusing thing is that
-        // different errors are returned for this expected error under
-        // different Windows versions: XP returns ERROR_FILE_NOT_FOUND while 7
-        // returns ERROR_NO_ASSOCIATION. Just check for both to be sure.
-        if ( hr != HRESULT_FROM_WIN32(ERROR_NO_ASSOCIATION) &&
-                hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) )
-        {
-            wxLogApiError("AssocQueryString", hr);
-        }
-
-        return wxString();
+        wxString value;
+        if (key.QueryValue(wxEmptyString, value))
+            return value;
     }
-
-    return wxString(bufOut);
+    return progId;
 }
-
 
 wxString wxFileTypeImpl::GetCommand(const wxString& verb) const
 {
-    wxString command = wxAssocQueryString(ASSOCSTR_COMMAND, m_ext, verb);
-    bool foundFilename = CanonicalizeParams(command);
+    // suppress possible error messages
+    wxLogNull nolog;
+    wxString strKey;
+
+    // Since Windows Vista the association used by Explorer is different from
+    // the association information stored in the traditional part of the
+    // registry. Unfortunately the new schema doesn't seem to be documented
+    // anywhere so using it involves a bit of guesswork:
+    //
+    // The information is stored under Explorer-specific key whose path is
+    // below. The interesting part is UserChoice subkey which is the only one
+    // we use so far but there is also OpenWithProgids subkey which can exist
+    // even if UserChoice doesn't. However in practice there doesn't seem to be
+    // any cases when OpenWithProgids values for the given extension are
+    // different from those found directly under HKCR\.ext, so for now we don't
+    // bother to use this, apparently the programs registering their file type
+    // associations do it in both places. We do use UserChoice because when the
+    // association is manually changed by the user it's only recorded there and
+    // so must override whatever value was created under HKCR by the setup
+    // program.
+
+    {
+        wxRegKey explorerKey
+                 (
+                    wxRegKey::HKCU,
+                    wxT("Software\\Microsoft\\Windows\\CurrentVersion\\")
+                    wxT("Explorer\\FileExts\\") +
+                    m_ext +
+                    wxT("\\UserChoice")
+                 );
+        if ( explorerKey.Open(wxRegKey::Read) &&
+                explorerKey.QueryValue(wxT("Progid"), strKey) )
+        {
+            strKey = wxFileTypeImplGetCurVer(strKey);
+        }
+    }
+
+    if (!strKey && wxRegKey(wxRegKey::HKCR, m_ext + wxT("\\shell")).Exists())
+        strKey = m_ext;
+
+    if ( !strKey && !m_strFileType.empty())
+    {
+        wxString fileType = wxFileTypeImplGetCurVer(m_strFileType);
+        if (wxRegKey(wxRegKey::HKCR, fileType + wxT("\\shell")).Exists())
+            strKey = fileType;
+    }
+
+    if ( !strKey )
+    {
+        // no info
+        return wxEmptyString;
+    }
+
+    strKey << wxT("\\shell\\") << verb;
+    wxRegKey key(wxRegKey::HKCR, strKey + wxT("\\command"));
+    wxString command;
+    if ( key.Open(wxRegKey::Read) ) {
+        // it's the default value of the key
+        if ( key.QueryValue(wxEmptyString, command) ) {
+            bool foundFilename = CanonicalizeParams(command);
 
 #if wxUSE_IPC
-    wxString ddeCommand = wxAssocQueryString(ASSOCSTR_DDECOMMAND, m_ext);
-    wxString ddeTopic = wxAssocQueryString(ASSOCSTR_DDETOPIC, m_ext);
+            // look whether we must issue some DDE requests to the application
+            // (and not just launch it)
+            strKey += wxT("\\DDEExec");
+            wxRegKey keyDDE(wxRegKey::HKCR, strKey);
+            if ( keyDDE.Open(wxRegKey::Read) ) {
+                wxString ddeCommand, ddeServer, ddeTopic;
+                keyDDE.QueryValue(wxEmptyString, ddeCommand);
 
-    if ( !ddeCommand.empty() && !ddeTopic.empty() )
-    {
-        wxString ddeServer = wxAssocQueryString( ASSOCSTR_DDEAPPLICATION, m_ext );
+                // in some cases "DDEExec" subkey exists but has no value, we
+                // shouldn't use DDE in this case
+                if ( !ddeCommand.empty() ) {
+                    ddeCommand.Replace(wxT("%1"), wxT("%s"));
 
-        ddeCommand.Replace(wxT("%1"), wxT("%s"));
+                    wxRegKey keyServer(wxRegKey::HKCR, strKey + wxT("\\Application"));
+                    keyServer.QueryValue(wxEmptyString, ddeServer);
+                    wxRegKey keyTopic(wxRegKey::HKCR, strKey + wxT("\\Topic"));
+                    keyTopic.QueryValue(wxEmptyString, ddeTopic);
 
-        if ( ddeTopic.empty() )
-            ddeTopic = wxT("System");
+                    if (ddeTopic.empty())
+                        ddeTopic = wxT("System");
 
-        // HACK: we use a special feature of wxExecute which exists
-        //       just because we need it here: it will establish DDE
-        //       conversation with the program it just launched
-        command.Prepend(wxT("WX_DDE#"));
-        command << wxT('#') << ddeServer
-                << wxT('#') << ddeTopic
-                << wxT('#') << ddeCommand;
-    }
-    else
+                    // HACK: we use a special feature of wxExecute which exists
+                    //       just because we need it here: it will establish DDE
+                    //       conversation with the program it just launched
+                    command.Prepend(wxT("WX_DDE#"));
+                    command << wxT('#') << ddeServer
+                            << wxT('#') << ddeTopic
+                            << wxT('#') << ddeCommand;
+                }
+            }
+            else
 #endif // wxUSE_IPC
-    if ( !foundFilename && !command.empty() )
-    {
-        // we didn't find any '%1' - the application doesn't know which
-        // file to open (note that we only do it if there is no DDEExec
-        // subkey)
-        //
-        // HACK: append the filename at the end, hope that it will do
-        command << wxT(" %s");
+            if ( !foundFilename )
+            {
+                // we didn't find any '%1' - the application doesn't know which
+                // file to open (note that we only do it if there is no DDEExec
+                // subkey)
+                //
+                // HACK: append the filename at the end, hope that it will do
+                command << wxT(" %s");
+            }
+        }
     }
+    //else: no such file type or no value, will return empty string
 
     return command;
 }
 
-
-wxString
-wxFileTypeImpl::GetExpandedCommand(const wxString & verb,
-                                   const wxFileType::MessageParameters& params) const
+bool
+wxFileTypeImpl::GetOpenCommand(wxString *openCmd,
+                               const wxFileType::MessageParameters& params)
+                               const
 {
-    wxString cmd = GetCommand(verb);
+    wxString cmd = GetCommand(wxT("open"));
 
     // Some viewers don't define the "open" verb but do define "show" one, try
     // to use it as a fallback.
-    if ( cmd.empty() && (verb == wxT("open")) )
+    if ( cmd.empty() )
         cmd = GetCommand(wxT("show"));
 
-    return wxFileType::ExpandCommand(cmd, params);
+    *openCmd = wxFileType::ExpandCommand(cmd, params);
+
+    return !openCmd->empty();
+}
+
+bool
+wxFileTypeImpl::GetPrintCommand(wxString *printCmd,
+                                const wxFileType::MessageParameters& params)
+                                const
+{
+    wxString cmd = GetCommand(wxT("print"));
+
+    *printCmd = wxFileType::ExpandCommand(cmd, params);
+
+    return !printCmd->empty();
 }
 
 // ----------------------------------------------------------------------------
@@ -401,34 +420,39 @@ bool wxFileTypeImpl::GetMimeTypes(wxArrayString& mimeTypes) const
 
 bool wxFileTypeImpl::GetIcon(wxIconLocation *iconLoc) const
 {
-    wxString strIcon = wxAssocQueryString(wxASSOCSTR_DEFAULTICON, m_ext);
+    wxString strIconKey;
+    strIconKey << m_strFileType << wxT("\\DefaultIcon");
 
-    if ( !strIcon.empty() )
-    {
-        wxString strFullPath = strIcon.BeforeLast(wxT(',')),
-        strIndex = strIcon.AfterLast(wxT(','));
+    // suppress possible error messages
+    wxLogNull nolog;
+    wxRegKey key(wxRegKey::HKCR, strIconKey);
 
-        // index may be omitted, in which case BeforeLast(',') is empty and
-        // AfterLast(',') is the whole string
-        if ( strFullPath.empty() ) {
-            strFullPath = strIndex;
-            strIndex = wxT("0");
+    if ( key.Open(wxRegKey::Read) ) {
+        wxString strIcon;
+        // it's the default value of the key
+        if ( key.QueryValue(wxEmptyString, strIcon) ) {
+            // the format is the following: <full path to file>, <icon index>
+            // NB: icon index may be negative as well as positive and the full
+            //     path may contain the environment variables inside '%'
+            wxString strFullPath = strIcon.BeforeLast(wxT(',')),
+            strIndex = strIcon.AfterLast(wxT(','));
+
+            // index may be omitted, in which case BeforeLast(',') is empty and
+            // AfterLast(',') is the whole string
+            if ( strFullPath.empty() ) {
+                strFullPath = strIndex;
+                strIndex = wxT("0");
+            }
+
+            if ( iconLoc )
+            {
+                iconLoc->SetFileName(wxExpandEnvVars(strFullPath));
+
+                iconLoc->SetIndex(wxAtoi(strIndex));
+            }
+
+            return true;
         }
-
-        // if the path contains spaces, it can be enclosed in quotes but we
-        // must not pass a filename in that format to any file system function,
-        // so remove them here.
-        if ( strFullPath.StartsWith('"') && strFullPath.EndsWith('"') )
-            strFullPath = strFullPath.substr(1, strFullPath.length() - 2);
-
-        if ( iconLoc )
-        {
-            iconLoc->SetFileName(wxExpandEnvVars(strFullPath));
-
-            iconLoc->SetIndex(wxAtoi(strIndex));
-        }
-
-      return true;
     }
 
     // no such file type or no value or incorrect icon entry
@@ -676,15 +700,12 @@ wxFileType *wxMimeTypesManagerImpl::Associate(const wxFileTypeInfo& ftInfo)
 
     if (ft)
     {
-        ft->m_impl->MSWSuppressNotifications(true);
         if (! ftInfo.GetOpenCommand ().empty() ) ft->SetCommand (ftInfo.GetOpenCommand (), wxT("open"  ) );
         if (! ftInfo.GetPrintCommand().empty() ) ft->SetCommand (ftInfo.GetPrintCommand(), wxT("print" ) );
         // chris: I don't like the ->m_impl-> here FIX this ??
         if (! ftInfo.GetDescription ().empty() ) ft->m_impl->SetDescription (ftInfo.GetDescription ()) ;
         if (! ftInfo.GetIconFile().empty() ) ft->SetDefaultIcon (ftInfo.GetIconFile(), ftInfo.GetIconIndex() );
 
-        ft->m_impl->MSWSuppressNotifications(false);
-        ft->m_impl->MSWNotifyShell();
     }
 
     return ft;
@@ -705,12 +726,7 @@ bool wxFileTypeImpl::SetCommand(const wxString& cmd,
     // TODO:
     // 1. translate '%s' to '%1' instead of always adding it
     // 2. create DDEExec value if needed (undo GetCommand)
-    bool result = rkey.Create() && rkey.SetValue(wxEmptyString, cmd + wxT(" \"%1\"") );
-
-    if ( result )
-        MSWNotifyShell();
-
-    return result;
+    return rkey.Create() && rkey.SetValue(wxEmptyString, cmd + wxT(" \"%1\"") );
 }
 
 bool wxFileTypeImpl::SetDefaultIcon(const wxString& cmd, int index)
@@ -726,14 +742,9 @@ bool wxFileTypeImpl::SetDefaultIcon(const wxString& cmd, int index)
     wxRegKey rkey(wxRegKey::HKCU,
                   CLASSES_ROOT_KEY + m_strFileType + wxT("\\DefaultIcon"));
 
-    bool result = rkey.Create() &&
+    return rkey.Create() &&
            rkey.SetValue(wxEmptyString,
                          wxString::Format(wxT("%s,%d"), cmd.c_str(), index));
-
-    if ( result )
-        MSWNotifyShell();
-
-    return result;
 }
 
 bool wxFileTypeImpl::SetDescription (const wxString& desc)
@@ -756,7 +767,6 @@ bool wxFileTypeImpl::SetDescription (const wxString& desc)
 
 bool wxFileTypeImpl::Unassociate()
 {
-    MSWSuppressNotifications(true);
     bool result = true;
     if ( !RemoveOpenCommand() )
         result = false;
@@ -766,9 +776,6 @@ bool wxFileTypeImpl::Unassociate()
         result = false;
     if ( !RemoveDescription() )
         result = false;
-
-    MSWSuppressNotifications(false);
-    MSWNotifyShell();
 
     return result;
 }
@@ -786,12 +793,7 @@ bool wxFileTypeImpl::RemoveCommand(const wxString& verb)
     wxRegKey rkey(wxRegKey::HKCU, CLASSES_ROOT_KEY + GetVerbPath(verb));
 
     // if the key already doesn't exist, it's a success
-    bool result = !rkey.Exists() || rkey.DeleteSelf();
-
-    if ( result )
-        MSWNotifyShell();
-
-    return result;
+    return !rkey.Exists() || rkey.DeleteSelf();
 }
 
 bool wxFileTypeImpl::RemoveMimeType()
@@ -809,12 +811,7 @@ bool wxFileTypeImpl::RemoveDefaultIcon()
 
     wxRegKey rkey (wxRegKey::HKCU,
                    CLASSES_ROOT_KEY + m_strFileType  + wxT("\\DefaultIcon"));
-    bool result = !rkey.Exists() || rkey.DeleteSelf();
-
-    if ( result )
-        MSWNotifyShell();
-
-    return result;
+    return !rkey.Exists() || rkey.DeleteSelf();
 }
 
 bool wxFileTypeImpl::RemoveDescription()

@@ -43,7 +43,7 @@ wxDEFINE_EVENT( wxEVT_SPLITTER_SASH_POS_CHANGING, wxSplitterEvent );
 wxDEFINE_EVENT( wxEVT_SPLITTER_DOUBLECLICKED, wxSplitterEvent );
 wxDEFINE_EVENT( wxEVT_SPLITTER_UNSPLIT, wxSplitterEvent );
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxSplitterWindow, wxWindow);
+IMPLEMENT_DYNAMIC_CLASS(wxSplitterWindow, wxWindow)
 
 /*
     TODO PROPERTIES
@@ -54,9 +54,9 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxSplitterWindow, wxWindow);
         orientation
 */
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxSplitterEvent, wxNotifyEvent);
+IMPLEMENT_DYNAMIC_CLASS(wxSplitterEvent, wxNotifyEvent)
 
-wxBEGIN_EVENT_TABLE(wxSplitterWindow, wxWindow)
+BEGIN_EVENT_TABLE(wxSplitterWindow, wxWindow)
     EVT_PAINT(wxSplitterWindow::OnPaint)
     EVT_SIZE(wxSplitterWindow::OnSize)
     EVT_MOUSE_EVENTS(wxSplitterWindow::OnMouseEvent)
@@ -65,7 +65,7 @@ wxBEGIN_EVENT_TABLE(wxSplitterWindow, wxWindow)
 #if defined( __WXMSW__ ) || defined( __WXMAC__)
     EVT_SET_CURSOR(wxSplitterWindow::OnSetCursor)
 #endif // wxMSW
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 static bool IsLive(wxSplitterWindow* wnd)
 {
@@ -101,7 +101,7 @@ bool wxSplitterWindow::Create(wxWindow *parent, wxWindowID id,
 #if !defined(__WXGTK__) || defined(__WXGTK20__)
     // don't erase the splitter background, it's pointless as we overwrite it
     // anyhow
-    SetBackgroundStyle(wxBG_STYLE_PAINT);
+    SetBackgroundStyle(wxBG_STYLE_CUSTOM);
 #endif
 
     return true;
@@ -120,6 +120,7 @@ void wxSplitterWindow::Init()
     m_sashPosition = 0;
     m_requestedSashPosition = INT_MAX;
     m_sashGravity = 0.0;
+    m_lastSize = wxSize(0,0);
     m_minimumPaneSize = 0;
     m_sashCursorWE = wxCursor(wxCURSOR_SIZEWE);
     m_sashCursorNS = wxCursor(wxCURSOR_SIZENS);

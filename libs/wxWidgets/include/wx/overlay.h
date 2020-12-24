@@ -13,9 +13,9 @@
 
 #include "wx/defs.h"
 
-#if defined(__WXDFB__)
+#if defined(__WXMAC__) && wxOSX_USE_CARBON
     #define wxHAS_NATIVE_OVERLAY 1
-#elif defined(__WXOSX__) && wxOSX_USE_COCOA
+#elif defined(__WXDFB__)
     #define wxHAS_NATIVE_OVERLAY 1
 #else
     // don't define wxHAS_NATIVE_OVERLAY

@@ -50,6 +50,7 @@ bool wxStaticText::Create( wxWindow *parent,
         // Normally this is done in SetLabel() below but we avoid doing it when
         // this style is used, so we need to explicitly do it in the ctor in
         // this case or otherwise the control would retain its initial tiny size.
+        InvalidateBestSize();
         SetInitialSize(size);
     }
 
@@ -58,9 +59,6 @@ bool wxStaticText::Create( wxWindow *parent,
 
 void wxStaticText::SetLabel(const wxString& label)
 {
-    if ( label == m_labelOrig )
-        return;
-
     m_labelOrig = label;
 
     // middle/end ellipsization is handled by the OS:
@@ -71,14 +69,19 @@ void wxStaticText::SetLabel(const wxString& label)
     )
     {
         // leave ellipsization to the OS
-        WXSetVisibleLabel(GetLabel());
+        DoSetLabel(GetLabel());
     }
     else // not supported natively
     {
-        WXSetVisibleLabel(GetEllipsizedLabel());
+        DoSetLabel(GetEllipsizedLabel());
     }
 
-    AutoResizeIfNecessary();
+    if ( !(GetWindowStyle() & wxST_NO_AUTORESIZE) &&
+         !IsEllipsized() )  // don't resize if we adjust to current size
+    {
+        InvalidateBestSize();
+        SetSize( GetBestSize() );
+    }
 
     Refresh();
 
@@ -92,13 +95,17 @@ bool wxStaticText::SetFont(const wxFont& font)
 
     if ( ret )
     {
-        AutoResizeIfNecessary();
+        if ( !(GetWindowStyle() & wxST_NO_AUTORESIZE) )
+        {
+            InvalidateBestSize();
+            SetSize( GetBestSize() );
+        }
     }
 
     return ret;
 }
 
-void wxStaticText::WXSetVisibleLabel(const wxString& label)
+void wxStaticText::DoSetLabel(const wxString& label)
 {
     m_label = RemoveMnemonics(label);
     GetPeer()->SetLabel(m_label , GetFont().GetEncoding() );
@@ -118,7 +125,7 @@ bool wxStaticText::DoSetLabelMarkup(const wxString& markup)
 
 #endif // wxUSE_MARKUP && wxOSX_USE_COCOA
 
-wxString wxStaticText::WXGetVisibleLabel() const
+wxString wxStaticText::DoGetLabel() const
 {
     return m_label;
 }

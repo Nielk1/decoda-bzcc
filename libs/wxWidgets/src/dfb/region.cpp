@@ -16,8 +16,8 @@
 
 #include "wx/region.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxRegion, wxGDIObject);
-wxIMPLEMENT_DYNAMIC_CLASS(wxRegionIterator, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxRegion, wxGDIObject)
+IMPLEMENT_DYNAMIC_CLASS(wxRegionIterator, wxObject)
 
 //-----------------------------------------------------------------------------
 // wxRegionRefData
@@ -72,12 +72,6 @@ wxRegion::wxRegion(const wxPoint& topLeft, const wxPoint& bottomRight)
 wxRegion::wxRegion(const wxRect& r)
 {
     m_refData = new wxRegionRefData(r);
-}
-
-wxRegion::wxRegion(size_t n, const wxPoint *points, wxPolygonFillMode fillStyle)
-{
-#warning "implement this"
-    m_refData = NULL;
 }
 
 wxRegion::~wxRegion()

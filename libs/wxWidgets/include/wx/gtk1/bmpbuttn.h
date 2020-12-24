@@ -24,9 +24,9 @@ public:
                    const wxBitmap& bitmap,
                    const wxPoint& pos = wxDefaultPosition,
                    const wxSize& size = wxDefaultSize,
-                   long style = 0,
+                   long style = wxBU_AUTODRAW,
                    const wxValidator& validator = wxDefaultValidator,
-                   const wxString& name = wxASCII_STR(wxButtonNameStr))
+                   const wxString& name = wxButtonNameStr)
     {
         Init();
 
@@ -38,9 +38,9 @@ public:
                 const wxBitmap& bitmap,
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
-                long style = 0,
+                long style = wxBU_AUTODRAW,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxASCII_STR(wxButtonNameStr));
+                const wxString& name = wxButtonNameStr);
 
     void SetLabel( const wxString &label );
     virtual void SetLabel( const wxBitmap& bitmap ) { SetBitmapLabel(bitmap); }
@@ -66,7 +66,7 @@ protected:
     void Init();
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxBitmapButton);
+    DECLARE_DYNAMIC_CLASS(wxBitmapButton)
 };
 
 #endif // __BMPBUTTONH__

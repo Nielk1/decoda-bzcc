@@ -6,7 +6,7 @@
 # distribution and we don't need to maintain the list of them ourselves but we
 # also don't run the risk of including anything unwanted.
 #
-# See docs/contributing/how-to-release.md for usage instructions.
+# See docs/tech/tn0022.txt for usage instructions.
 
 version=$1
 if [ -z "$version" ]; then
@@ -37,14 +37,7 @@ trap cleanup INT TERM EXIT
 cleanup
 
 mkdir -p $destdir
-
-# We use GNU tar -i option to allow successfully extracting files from several
-# tar archives concatenated together, without it we'd have to pipe output of
-# each git-archive separately.
-(git archive --prefix=$prefix/ HEAD;
- git submodule foreach --quiet "cd $root/\$path && git archive --prefix=$prefix/\$path/ HEAD") |
-tar x -C $destdir -i
-
+git archive --prefix=$prefix/ HEAD | (cd $destdir; tar x)
 cd $destdir
 # All setup0.h files are supposed to be renamed to just setup.h when checked
 # out and in the distribution.
@@ -53,7 +46,7 @@ find $prefix/include/wx -type f -name setup0.h | while read f; do
 done
 
 # Compile gettext catalogs.
-make -C $prefix/locale -s MSGFMT=msgfmt allmo
+make -C $prefix/locale allmo
 
 tar cjf $prefix.tar.bz2 $prefix
 

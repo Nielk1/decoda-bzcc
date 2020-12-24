@@ -6,7 +6,7 @@
     name="Controls"
     type="win32"
 />
-<description>wxWidgets application</description>
+<description>wxWindows application</description>
 <dependency>
     <dependentAssembly>
         <assemblyIdentity

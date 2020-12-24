@@ -46,6 +46,10 @@
 #include "wx/printdlg.h"
 #include "wx/msw/printdlg.h"
 
+#ifndef __WIN32__
+    #include <print.h>
+#endif
+
 // mingw32 defines GDI_ERROR incorrectly
 #if defined(__GNUWIN32__) || !defined(GDI_ERROR)
     #undef GDI_ERROR
@@ -62,7 +66,7 @@
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxPrinterDCImpl, wxMSWDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxPrinterDCImpl, wxMSWDCImpl)
 
 // ============================================================================
 // implementation
@@ -137,8 +141,9 @@ wxPrinterDC::wxPrinterDC(const wxString& driver_name,
 
 wxPrinterDCImpl::wxPrinterDCImpl( wxPrinterDC *owner, const wxPrintData& printData ) :
     wxMSWDCImpl( owner )
-    , m_printData(printData)
 {
+    m_printData = printData;
+
     m_isInteractive = false;
 
     m_hDC = wxGetPrinterDC(printData);

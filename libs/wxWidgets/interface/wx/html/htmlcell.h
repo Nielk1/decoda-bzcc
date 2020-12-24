@@ -8,7 +8,7 @@
 
 /**
    @class wxHtmlRenderingStyle
-
+ 
    wxHtmlSelection is data holder with information about text selection.
    Selection is defined by two positions (beginning and end of the selection)
    and two leaf(!) cells at these positions.
@@ -187,31 +187,34 @@ public:
     wxHtmlCell();
 
     /**
-        This method is called when paginating HTML, e.g.\ when printing.
+        This method is used to adjust pagebreak position.
+        The first parameter is a variable that contains the y-coordinate of the page break
+        (= horizontal line that should not be crossed by words, images etc.).
+        If this cell cannot be divided into two pieces (each one on another page)
+        then it either moves the pagebreak a few pixels up, if possible, or, if
+        the cell cannot fit on the page at all, then the cell is forced to
+        split unconditionally.
 
-        User code should never call this function, but may need to override it
-        in custom HTML cell classes with any specific page breaking
-        requirements.
-
-        On input, @a pagebreak contains y-coordinate of page break (i.e. the
-        horizontal line that should not be crossed by words, images etc.)
-        relative to the parent cell on entry and may be modified to request a
-        page break at a position before it if this cell cannot be divided into
-        two pieces (each one on its own page).
-
-        Note that page break must still happen on the current page, i.e. the
-        returned value must be strictly greater than @code *pagebreak -
-        pageHeight @endcode and less or equal to @c *pagebreak for the value of
-        @a pagebreak on input.
+        Returns @true if pagebreak was modified, @false otherwise.
 
         @param pagebreak
-            position in pixels of the pagebreak.
-        @param pageHeight
-            the height in pixels of the page drawable area
+            position in pixel of the pagebreak.
 
-        @return @true if pagebreak was modified, @false otherwise.
+        @param known_pagebreaks
+            the list of the previous pagebreaks
+
+        @param pageHeight
+            the height in pixel of the page drawable area
+
+        Usage:
+        @code
+        while (container->AdjustPagebreak(&p, kp, ph)) {}
+        @endcode
+
     */
-    virtual bool AdjustPagebreak(int* pagebreak, int pageHeight) const;
+    virtual bool AdjustPagebreak(int* pagebreak,
+                                 const wxArrayInt& known_pagebreaks,
+                                 int pageHeight) const;
 
     /**
         Renders the cell.
@@ -471,21 +474,7 @@ public:
     /**
         Constructor. @a parent is pointer to parent container or @NULL.
     */
-    explicit wxHtmlContainerCell(wxHtmlContainerCell* parent);
-
-    /**
-        Detach a child cell.
-
-        Detaching a cell removes it from this container and allows reattaching
-        it to another one by using InsertCell(). Alternatively, this method can
-        be used to selectively remove some elements of the HTML document tree
-        by deleting the cell after calling it.
-
-        @param cell Must be non-null and an immediate child of this cell.
-
-        @since 3.1.2
-     */
-    void Detach(wxHtmlCell* cell);
+    wxHtmlContainerCell(wxHtmlContainerCell* parent);
 
     /**
         Returns container's horizontal alignment.
@@ -520,9 +509,6 @@ public:
 
     /**
         Inserts a new cell into the container.
-
-        Note that the container takes ownership of the cell and will delete it
-        when it itself is destroyed.
     */
     void InsertCell(wxHtmlCell* cell);
 

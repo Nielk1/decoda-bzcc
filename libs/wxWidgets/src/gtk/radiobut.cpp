@@ -13,7 +13,9 @@
 
 #include "wx/radiobut.h"
 
+#include <gtk/gtk.h>
 #include "wx/gtk/private.h"
+#include "wx/gtk/private/gtk2-compat.h"
 
 //-----------------------------------------------------------------------------
 // data
@@ -149,17 +151,17 @@ bool wxRadioButton::GetValue() const
     return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_widget)) != 0;
 }
 
-void wxRadioButton::DoEnable(bool enable)
+bool wxRadioButton::Enable( bool enable )
 {
-    if ( !m_widget )
-        return;
-
-    base_type::DoEnable(enable);
+    if (!base_type::Enable(enable))
+        return false;
 
     gtk_widget_set_sensitive(gtk_bin_get_child(GTK_BIN(m_widget)), enable);
 
     if (enable)
         GTKFixSensitivity();
+
+    return true;
 }
 
 void wxRadioButton::DoApplyWidgetStyle(GtkRcStyle *style)

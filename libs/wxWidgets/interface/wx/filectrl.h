@@ -180,9 +180,9 @@ public:
 
     /**
         Changes to a certain directory and selects a certain file.
-
-        If @a path includes the directory part, it must exist, otherwise @false
-        is returned and nothing else is done.
+        
+        In case the filename specified isn't found/couldn't be shown with
+        currently selected filter, false is returned.
 
         @return Returns @true on success, @false otherwise
     */

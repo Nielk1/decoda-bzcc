@@ -82,10 +82,11 @@ extern wxPrintPaperDatabase *wxThePrintPaperDatabase;
 // wxPostScriptNativeData
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPostScriptPrintNativeData, wxPrintNativeDataBase);
+IMPLEMENT_CLASS(wxPostScriptPrintNativeData, wxPrintNativeDataBase)
 
 wxPostScriptPrintNativeData::wxPostScriptPrintNativeData()
 {
+    m_previewCommand = wxEmptyString;
 #ifdef __VMS__
     m_printerCommand = wxT("print");
     m_printerOptions = wxT("/nonotify/queue=psqueue");
@@ -94,11 +95,14 @@ wxPostScriptPrintNativeData::wxPostScriptPrintNativeData()
 
 #ifdef __WXMSW__
     m_printerCommand = wxT("print");
+    m_printerOptions = wxEmptyString;
     m_afmPath = wxT("c:\\windows\\system\\");
 #endif
 
 #if !defined(__VMS__) && !defined(__WXMSW__)
     m_printerCommand = wxT("lpr");
+    m_printerOptions = wxEmptyString;
+    m_afmPath = wxEmptyString;
 #endif
 
     m_printerScaleX = 1.0;
@@ -125,13 +129,13 @@ bool wxPostScriptPrintNativeData::TransferFrom( const wxPrintData &WXUNUSED(data
 // Generic print dialog for non-Windows printing use.
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxGenericPrintDialog, wxPrintDialogBase);
+IMPLEMENT_CLASS(wxGenericPrintDialog, wxPrintDialogBase)
 
-wxBEGIN_EVENT_TABLE(wxGenericPrintDialog, wxPrintDialogBase)
+BEGIN_EVENT_TABLE(wxGenericPrintDialog, wxPrintDialogBase)
     EVT_BUTTON(wxID_OK, wxGenericPrintDialog::OnOK)
     EVT_BUTTON(wxPRINTID_SETUP, wxGenericPrintDialog::OnSetup)
     EVT_RADIOBOX(wxPRINTID_RANGE, wxGenericPrintDialog::OnRange)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxGenericPrintDialog::wxGenericPrintDialog(wxWindow *parent,
                                            wxPrintDialogData* data)
@@ -435,11 +439,11 @@ wxDC *wxGenericPrintDialog::GetPrintDC()
 // Generic print setup dialog
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxGenericPrintSetupDialog, wxDialog);
+IMPLEMENT_CLASS(wxGenericPrintSetupDialog, wxDialog)
 
-wxBEGIN_EVENT_TABLE(wxGenericPrintSetupDialog, wxDialog)
+BEGIN_EVENT_TABLE(wxGenericPrintSetupDialog, wxDialog)
     EVT_LIST_ITEM_ACTIVATED(wxPRINTID_PRINTER, wxGenericPrintSetupDialog::OnPrinter)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxGenericPrintSetupDialog::wxGenericPrintSetupDialog(wxWindow *parent, wxPrintData* data):
 wxDialog(parent, wxID_ANY, _("Print Setup"), wxPoint(0,0), wxSize(600, 600), wxDEFAULT_DIALOG_STYLE|wxTAB_TRAVERSAL)
@@ -569,7 +573,7 @@ void wxGenericPrintSetupDialog::Init(wxPrintData* data)
                 wxStringTokenizer tok2( tmp, wxT(" ") );
                 tmp = tok2.GetNextToken();  // "printer"
                 tmp = tok2.GetNextToken();  // "hp_deskjet930c"
-                tmp.clear();
+                tmp = wxEmptyString;
                 while (tok2.HasMoreTokens())
                 {
                     tmp += tok2.GetNextToken();
@@ -811,11 +815,11 @@ wxComboBox *wxGenericPrintSetupDialog::CreatePaperTypeChoice()
 // Generic page setup dialog
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxGenericPageSetupDialog, wxPageSetupDialogBase);
+IMPLEMENT_CLASS(wxGenericPageSetupDialog, wxPageSetupDialogBase)
 
-wxBEGIN_EVENT_TABLE(wxGenericPageSetupDialog, wxPageSetupDialogBase)
+BEGIN_EVENT_TABLE(wxGenericPageSetupDialog, wxPageSetupDialogBase)
     EVT_BUTTON(wxPRINTID_SETUP, wxGenericPageSetupDialog::OnPrinter)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxGenericPageSetupDialog::wxGenericPageSetupDialog( wxWindow *parent,
                                                     wxPageSetupDialogData* data)

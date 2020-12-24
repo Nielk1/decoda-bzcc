@@ -86,7 +86,7 @@ private:
 // implementation
 // ============================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxRadioBox, wxControl);
+IMPLEMENT_DYNAMIC_CLASS(wxRadioBox, wxControl)
 
 // ----------------------------------------------------------------------------
 // wxRadioBox creation
@@ -140,8 +140,28 @@ bool wxRadioBox::Create(wxWindow *parent,
                         const wxValidator& wxVALIDATOR_PARAM(val),
                         const wxString& name)
 {
-    if ( !(style & (wxRA_SPECIFY_ROWS | wxRA_SPECIFY_COLS)) )
-        style |= wxRA_SPECIFY_COLS;
+    // for compatibility with the other ports which don't handle (yet?)
+    // wxRA_LEFTTORIGHT and wxRA_TOPTOBOTTOM flags, we add them ourselves if
+    // not specified
+    if ( !(style & (wxRA_LEFTTORIGHT | wxRA_TOPTOBOTTOM)) )
+    {
+        // horizontal radiobox use left to right layout
+        if ( style & wxRA_SPECIFY_COLS )
+        {
+            style |= wxRA_LEFTTORIGHT;
+        }
+        else if ( style & wxRA_SPECIFY_ROWS )
+        {
+            style |= wxRA_TOPTOBOTTOM;
+        }
+        else
+        {
+            wxFAIL_MSG( wxT("you must specify wxRA_XXX style!") );
+
+            // use default
+            style = wxRA_SPECIFY_COLS | wxRA_LEFTTORIGHT;
+        }
+    }
 
     if ( !wxStaticBox::Create(parent, id, title, pos, size, style, name) )
         return false;
@@ -427,7 +447,7 @@ void wxRadioBox::DoMoveWindow(int x0, int y0, int width, int height)
     {
         m_buttons[n]->SetSize(x, y, sizeBtn.x, sizeBtn.y);
 
-        if ( GetWindowStyle() & wxRA_SPECIFY_ROWS )
+        if ( GetWindowStyle() & wxRA_TOPTOBOTTOM )
         {
             // from top to bottom
             if ( (n + 1) % GetRowCount() )
@@ -442,7 +462,7 @@ void wxRadioBox::DoMoveWindow(int x0, int y0, int width, int height)
                 y = y0;
             }
         }
-        else // wxRA_SPECIFY_COLS: mirror the code above
+        else // wxRA_LEFTTORIGHT: mirror the code above
         {
             // from left to right
             if ( (n + 1) % GetColumnCount() )

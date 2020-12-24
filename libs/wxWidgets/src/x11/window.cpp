@@ -66,11 +66,8 @@
 // global variables for this module
 // ----------------------------------------------------------------------------
 
-static wxWindowX11* g_captureWindow = NULL;
+static wxWindow* g_captureWindow = NULL;
 static GC g_eraseGC;
-// the window that is about to be focused after currently focused
-// one looses focus:
-static wxWindow* gs_toBeFocusedWindow = NULL;
 
 // ----------------------------------------------------------------------------
 // macros
@@ -84,11 +81,11 @@ static wxWindow* gs_toBeFocusedWindow = NULL;
 // event tables
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxWindowX11, wxWindowBase);
+IMPLEMENT_ABSTRACT_CLASS(wxWindowX11, wxWindowBase)
 
-wxBEGIN_EVENT_TABLE(wxWindowX11, wxWindowBase)
+BEGIN_EVENT_TABLE(wxWindowX11, wxWindowBase)
     EVT_SYS_COLOUR_CHANGED(wxWindowX11::OnSysColourChanged)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // ============================================================================
 // implementation
@@ -97,26 +94,6 @@ wxEND_EVENT_TABLE()
 // ----------------------------------------------------------------------------
 // helper functions
 // ----------------------------------------------------------------------------
-
-namespace
-{
-
-// Passing size with a 0 component to X11 functions results in a BadValue X
-// error, so ensure we never do it by using the smallest valid size instead.
-inline void EnsureValidXWindowSize(int& x, int& y)
-{
-    if ( x <= 0 )
-        x = 1;
-    if ( y <= 0 )
-        y = 1;
-}
-
-inline void EnsureValidXWindowSize(wxSize& size)
-{
-    EnsureValidXWindowSize(size.x, size.y);
-}
-
-} // anonymous namespace
 
 // ----------------------------------------------------------------------------
 // constructors
@@ -175,8 +152,13 @@ bool wxWindowX11::Create(wxWindow *parent, wxWindowID id,
         xparent = (Window) parent->X11GetMainWindow();
     }
 
+    // Size (not including the border) must be nonzero (or a Value error results)!
+    // Note: The Xlib manual doesn't mention this restriction of XCreateWindow.
     wxSize size2(size);
-    EnsureValidXWindowSize(size2);
+    if (size2.x <= 0)
+        size2.x = 20;
+    if (size2.y <= 0)
+        size2.y = 20;
 
     wxPoint pos2(pos);
     if (pos2.x == wxDefaultCoord)
@@ -193,7 +175,9 @@ bool wxWindowX11::Create(wxWindow *parent, wxWindowID id,
     bool need_two_windows = false;
 #endif
 
-#if !wxUSE_NANOX
+#if wxUSE_NANOX
+    long xattributes = 0;
+#else
     XSetWindowAttributes xattributes;
     long xattributes_mask = 0;
 
@@ -273,7 +257,10 @@ bool wxWindowX11::Create(wxWindow *parent, wxWindowID id,
         }
 
         // Make again sure the size is nonzero.
-        EnsureValidXWindowSize(size2);
+        if (size2.x <= 0)
+            size2.x = 1;
+        if (size2.y <= 0)
+            size2.y = 1;
 
 #if wxUSE_NANOX
         backColor = GR_RGB(m_backgroundColour.Red(), m_backgroundColour.Green(), m_backgroundColour.Blue());
@@ -364,14 +351,11 @@ wxWindowX11::~wxWindowX11()
     if (g_captureWindow == this)
         g_captureWindow = NULL;
 
-    if ( DoFindFocus() == this )
-        KillFocus();
-
     DestroyChildren();
 
     if (m_clientWindow != m_mainWindow)
     {
-        // Destroy the client window
+        // Destroy the cleint window
         Window xwindow = (Window) m_clientWindow;
         wxDeleteClientWindowFromTable( xwindow );
         XDestroyWindow( wxGlobalDisplay(), xwindow );
@@ -404,18 +388,6 @@ void wxWindowX11::SetFocus()
     if (!AcceptsFocus())
         return;
 
-    wxWindow* focusedWindow = DoFindFocus();
-
-    if ( focusedWindow == (wxWindow*)this )
-        return; // nothing to do, focused already
-
-    if ( focusedWindow )
-    {
-        gs_toBeFocusedWindow = (wxWindow*)this;
-        focusedWindow->KillFocus();
-        gs_toBeFocusedWindow = NULL;
-    }
-
 #if 0
     if (GetName() == "scrollBar")
     {
@@ -438,32 +410,6 @@ void wxWindowX11::SetFocus()
     {
         m_needsInputFocus = true;
     }
-
-    // notify the parent keeping track of focus for the kbd navigation
-    // purposes that we got it
-    wxChildFocusEvent eventFocus((wxWindow*)this);
-    HandleWindowEvent(eventFocus);
-
-    wxFocusEvent event(wxEVT_SET_FOCUS, GetId());
-    event.SetEventObject(this);
-    event.SetWindow((wxWindow*)xwindow);
-    HandleWindowEvent(event);
-
-}
-
-// Kill focus
-void wxWindowX11::KillFocus()
-{
-    wxCHECK_RET( DoFindFocus() == this,
-                 "killing focus on window that doesn't have it" );
-
-    if ( m_isBeingDeleted )
-        return; // don't send any events from dtor
-
-    wxFocusEvent event(wxEVT_KILL_FOCUS, GetId());
-    event.SetEventObject(this);
-    event.SetWindow(gs_toBeFocusedWindow);
-    HandleWindowEvent(event);
 }
 
 // Get the window with the focus
@@ -529,6 +475,17 @@ void wxWindowX11::Lower()
 {
     if (m_mainWindow)
         XLowerWindow( wxGlobalDisplay(), (Window) m_mainWindow );
+}
+
+void wxWindowX11::SetLabel(const wxString& WXUNUSED(label))
+{
+    // TODO
+}
+
+wxString wxWindowX11::GetLabel() const
+{
+    // TODO
+    return wxEmptyString;
 }
 
 void wxWindowX11::DoCaptureMouse()
@@ -932,13 +889,16 @@ void wxWindowX11::DoSetSize(int x, int y, int width, int height, int sizeFlags)
     if (width != wxDefaultCoord)
     {
         new_w = width;
+        if (new_w <= 0)
+            new_w = 20;
     }
     if (height != wxDefaultCoord)
     {
         new_h = height;
+        if (new_h <= 0)
+            new_h = 20;
     }
 
-    EnsureValidXWindowSize(new_w, new_h);
     DoMoveWindow( new_x, new_y, new_w, new_h );
 }
 
@@ -950,7 +910,6 @@ void wxWindowX11::DoSetClientSize(int width, int height)
 
     wxCHECK_RET( xwindow, wxT("invalid window") );
 
-    EnsureValidXWindowSize(width, height);
     XResizeWindow( wxGlobalDisplay(), xwindow, width, height );
 
     if (m_mainWindow != m_clientWindow)
@@ -966,7 +925,6 @@ void wxWindowX11::DoSetClientSize(int width, int height)
             height -= border.y + border.height;
         }
 
-        EnsureValidXWindowSize(width, height);
         XResizeWindow( wxGlobalDisplay(), xwindow, width, height );
     }
 }
@@ -1282,7 +1240,8 @@ void wxWindowX11::SendPaintEvents()
 
     m_clipPaintRegion = true;
 
-    wxPaintEvent paint_event( this );
+    wxPaintEvent paint_event( GetId() );
+    paint_event.SetEventObject( this );
     HandleWindowEvent( paint_event );
 
     m_updateRegion.Clear();
@@ -1323,7 +1282,8 @@ void wxWindowX11::SendNcPaintEvents()
         }
     }
 
-    wxNcPaintEvent nc_paint_event( this );
+    wxNcPaintEvent nc_paint_event( GetId() );
+    nc_paint_event.SetEventObject( this );
     HandleWindowEvent( nc_paint_event );
 
     m_updateNcArea = false;
@@ -1619,18 +1579,77 @@ bool wxTranslateKeyEvent(wxKeyEvent& wxevent, wxWindow *win, Window WXUNUSED(win
 
             KeySym keySym;
             (void) XLookupString ((XKeyEvent *) xevent, buf, 20, &keySym, NULL);
-#if wxUSE_UNICODE
-            int id = wxUnicodeCharXToWX(keySym);
-#else
-            int id = wxCharCodeXToWX(keySym);
-#endif
-            // id may be WXK_xxx code - these are outside ASCII range, so we
-            // can't just use toupper() on id.
-            // Only change this if we want the raw key that was pressed,
-            // and don't change it if we want an ASCII value.
-            if (!isAscii && (id >= 'a' && id <= 'z'))
+            int id = wxCharCodeXToWX (keySym);
+            if (isAscii)
             {
-                id = id + 'A' - 'a';
+                // fold keypad into normal character codes
+                if (id >= WXK_NUMPAD0 && id <= WXK_NUMPAD9)
+                {
+                    id = id - WXK_NUMPAD0 + '0';
+                }
+                else if (id >= WXK_NUMPAD_SPACE && id <= WXK_NUMPAD_DIVIDE)
+                {
+                    switch (id)
+                    {
+                        case WXK_NUMPAD_SPACE:
+                            id = ' ';
+                            break;
+                        case WXK_NUMPAD_TAB:
+                            id = WXK_TAB;
+                            break;
+                        case WXK_NUMPAD_ENTER:
+                            id = WXK_RETURN;
+                            break;
+                        case WXK_NUMPAD_F1:
+                        case WXK_NUMPAD_F2:
+                        case WXK_NUMPAD_F3:
+                        case WXK_NUMPAD_F4:
+                            id = id - WXK_NUMPAD_F1 + WXK_F1;
+                            break;
+                        case WXK_NUMPAD_END:
+                        case WXK_NUMPAD_HOME:
+                        case WXK_NUMPAD_LEFT:
+                        case WXK_NUMPAD_UP:
+                        case WXK_NUMPAD_RIGHT:
+                        case WXK_NUMPAD_DOWN:
+                            id = id - WXK_NUMPAD_END + WXK_END;
+                            break;
+                        case WXK_NUMPAD_PAGEUP:
+                            id = WXK_PAGEUP;
+                            break;
+                        case WXK_NUMPAD_PAGEDOWN:
+                            id = WXK_PAGEDOWN;
+                            break;
+                        case WXK_NUMPAD_INSERT:
+                        case WXK_NUMPAD_DELETE:
+                        case WXK_NUMPAD_EQUAL:
+                            id = id - WXK_NUMPAD_INSERT + WXK_INSERT;
+                            break;
+                        case WXK_NUMPAD_BEGIN:
+                            id = WXK_HOME;
+                            break;
+                        case WXK_NUMPAD_MULTIPLY:
+                        case WXK_NUMPAD_ADD:
+                        case WXK_NUMPAD_SEPARATOR:
+                        case WXK_NUMPAD_SUBTRACT:
+                        case WXK_NUMPAD_DECIMAL:
+                        case WXK_NUMPAD_DIVIDE:
+                            id = id - WXK_NUMPAD_MULTIPLY + WXK_MULTIPLY;
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                // Fold case for alphabetic characters. We can't just
+                // use toupper() on id, since id may be WXK_xxx code -
+                // these are outside ASCII range.  Only change this if
+                // we want the raw key that was pressed, and don't
+                // change it if we want an ASCII value.
+                if (id >= 'a' && id <= 'z')
+                {
+                    id = id + 'A' - 'a';
+                }
             }
 
             wxevent.m_shiftDown = XKeyEventShiftIsDown(xevent);
@@ -1638,11 +1657,7 @@ bool wxTranslateKeyEvent(wxKeyEvent& wxevent, wxWindow *win, Window WXUNUSED(win
             wxevent.m_altDown = XKeyEventAltIsDown(xevent);
             wxevent.m_metaDown = XKeyEventMetaIsDown(xevent);
             wxevent.SetEventObject(win);
-#if wxUSE_UNICODE
-            wxevent.m_uniChar = id;
-#endif
             wxevent.m_keyCode = id;
-
             wxevent.SetTimestamp(XKeyEventGetTime(xevent));
 
             wxevent.m_x = XKeyEventGetX(xevent);
@@ -1662,14 +1677,7 @@ bool wxTranslateKeyEvent(wxKeyEvent& wxevent, wxWindow *win, Window WXUNUSED(win
 
 bool wxWindowX11::SetBackgroundColour(const wxColour& col)
 {
-    if ( !wxWindowBase::SetBackgroundColour(col) )
-        return false;
-
-    if ( !m_backgroundColour.IsOk() )
-    {
-        // Reset to the default colour as we must have a valid background.
-        m_backgroundColour = wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE);
-    }
+    wxWindowBase::SetBackgroundColour(col);
 
     Display *xdisplay = (Display*) wxGlobalDisplay();
     int xscreen = DefaultScreen( xdisplay );
@@ -1794,10 +1802,10 @@ public:
     virtual void OnExit();
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxWinModule);
+    DECLARE_DYNAMIC_CLASS(wxWinModule)
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxWinModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxWinModule, wxModule)
 
 bool wxWinModule::OnInit()
 {

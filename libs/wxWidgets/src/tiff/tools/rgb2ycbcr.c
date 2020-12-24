@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1991-1997 Sam Leffler
  * Copyright (c) 1991-1997 Silicon Graphics, Inc.
@@ -70,10 +71,8 @@ main(int argc, char* argv[])
 {
 	TIFF *in, *out;
 	int c;
-#if !HAVE_DECL_OPTARG
 	extern int optind;
 	extern char *optarg;
-#endif
 
 	while ((c = getopt(argc, argv, "c:h:r:v:z")) != -1)
 		switch (c) {
@@ -93,13 +92,9 @@ main(int argc, char* argv[])
 			break;
 		case 'h':
 			horizSubSampling = atoi(optarg);
-            if( horizSubSampling != 1 && horizSubSampling != 2 && horizSubSampling != 4 )
-                usage(-1);
 			break;
 		case 'v':
 			vertSubSampling = atoi(optarg);
-            if( vertSubSampling != 1 && vertSubSampling != 2 && vertSubSampling != 4 )
-                usage(-1);
 			break;
 		case 'r':
 			rowsperstrip = atoi(optarg);
@@ -336,8 +331,7 @@ tiffcvt(TIFF* in, TIFF* out)
 	TIFFSetField(out, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 	{ char buf[2048];
 	  char *cp = strrchr(TIFFFileName(in), '/');
-	  snprintf(buf, sizeof(buf), "YCbCr conversion of %s",
-		   cp ? cp+1 : TIFFFileName(in));
+	  sprintf(buf, "YCbCr conversion of %s", cp ? cp+1 : TIFFFileName(in));
 	  TIFFSetField(out, TIFFTAG_IMAGEDESCRIPTION, buf);
 	}
 	TIFFSetField(out, TIFFTAG_SOFTWARE, TIFFGetVersion());

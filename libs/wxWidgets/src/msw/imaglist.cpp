@@ -47,7 +47,7 @@
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxImageList, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxImageList, wxObject)
 
 #define GetHImageList()     ((HIMAGELIST)m_hImageList)
 
@@ -75,7 +75,6 @@ wxImageList::wxImageList()
 // Creates an image list
 bool wxImageList::Create(int width, int height, bool mask, int initial)
 {
-    m_size = wxSize(width, height);
     UINT flags = 0;
 
     // as we want to be able to use 32bpp bitmaps in the image lists, we always
@@ -83,7 +82,11 @@ bool wxImageList::Create(int width, int height, bool mask, int initial)
     // will make the best effort to show the bitmap if we do this resulting in
     // quite acceptable display while using a lower depth ILC_COLOR constant
     // (e.g. ILC_COLOR16) shows completely broken bitmaps
+#ifdef __WXWINCE__
+    flags |= ILC_COLOR;
+#else
     flags |= ILC_COLOR32;
+#endif
 
     // For comctl32.dll < 6 always use masks as it doesn't support alpha.
     if ( mask || wxApp::GetComCtl32Version() < 600 )
@@ -229,19 +232,6 @@ int wxImageList::Add(const wxBitmap& bitmap, const wxColour& maskColour)
 // Adds a bitmap and mask from an icon.
 int wxImageList::Add(const wxIcon& icon)
 {
-    // ComCtl32 prior 6.0 doesn't support images with alpha
-    // channel so if we have 32-bit icon with transparency
-    // we need to add it as a wxBitmap via dedicated method
-    // where alpha channel will be converted to the mask.
-    if ( wxApp::GetComCtl32Version() < 600 )
-    {
-        wxBitmap bmp(icon);
-        if ( bmp.HasAlpha() )
-        {
-            return Add(bmp);
-        }
-    }
-
     int index = ImageList_AddIcon(GetHImageList(), GetHiconOf(icon));
     if ( index == -1 )
     {
@@ -304,19 +294,6 @@ bool wxImageList::Replace(int index,
 // Replaces a bitmap and mask from an icon.
 bool wxImageList::Replace(int i, const wxIcon& icon)
 {
-    // ComCtl32 prior 6.0 doesn't support images with alpha
-    // channel so if we have 32-bit icon with transparency
-    // we need to replace it as a wxBitmap via dedicated method
-    // where alpha channel will be converted to the mask.
-    if ( wxApp::GetComCtl32Version() < 600 )
-    {
-        wxBitmap bmp(icon);
-        if ( bmp.HasAlpha() )
-        {
-            return Replace(i, bmp);
-        }
-    }
-
     bool ok = ImageList_ReplaceIcon(GetHImageList(), i, GetHiconOf(icon)) != -1;
     if ( !ok )
     {
@@ -401,17 +378,16 @@ wxBitmap wxImageList::GetBitmap(int index) const
     GetSize(index, bmp_width, bmp_height);
 
     wxBitmap bitmap(bmp_width, bmp_height);
-
-#if wxUSE_WXDIB && wxUSE_IMAGE
     wxMemoryDC dc;
     dc.SelectObject(bitmap);
 
+#if wxUSE_WXDIB && wxUSE_IMAGE
     IMAGEINFO ii;
     ImageList_GetImageInfo(GetHImageList(), index, &ii);
     if ( ii.hbmMask )
     {
         // draw it the first time to find a suitable mask colour
-        const_cast<wxImageList*>(this)->Draw(index, dc, 0, 0, wxIMAGELIST_DRAW_TRANSPARENT);
+        ((wxImageList*)this)->Draw(index, dc, 0, 0, wxIMAGELIST_DRAW_TRANSPARENT);
         dc.SelectObject(wxNullBitmap);
 
         // find the suitable mask colour
@@ -426,7 +402,7 @@ wxBitmap wxImageList::GetBitmap(int index) const
 
         // redraw icon over the mask colour to actually draw it
         dc.SelectObject(bitmap);
-        const_cast<wxImageList*>(this)->Draw(index, dc, 0, 0, wxIMAGELIST_DRAW_TRANSPARENT);
+        ((wxImageList*)this)->Draw(index, dc, 0, 0, wxIMAGELIST_DRAW_TRANSPARENT);
         dc.SelectObject(wxNullBitmap);
 
         // get the image, set the mask colour and convert back to get transparent bitmap
@@ -437,7 +413,7 @@ wxBitmap wxImageList::GetBitmap(int index) const
     else // no mask
     {
         // Just draw it normally.
-        const_cast<wxImageList*>(this)->Draw(index, dc, 0, 0, wxIMAGELIST_DRAW_NORMAL);
+        ((wxImageList*)this)->Draw(index, dc, 0, 0, wxIMAGELIST_DRAW_NORMAL);
         dc.SelectObject(wxNullBitmap);
 
         // And adjust its alpha flag as the destination bitmap would get it if
@@ -449,6 +425,8 @@ wxBitmap wxImageList::GetBitmap(int index) const
         // even if it requires more work (and takes more time).
         bitmap.MSWUpdateAlpha();
     }
+#else
+    wxBitmap bitmap;
 #endif
     return bitmap;
 }
@@ -460,10 +438,11 @@ wxIcon wxImageList::GetIcon(int index) const
     if (hIcon)
     {
         wxIcon icon;
+        icon.SetHICON((WXHICON)hIcon);
 
         int iconW, iconH;
         GetSize(index, iconW, iconH);
-        icon.InitFromHICON((WXHICON)hIcon, iconW, iconH);
+        icon.SetSize(iconW, iconH);
 
         return icon;
     }

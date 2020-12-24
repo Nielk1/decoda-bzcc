@@ -13,7 +13,8 @@
 
 #if wxUSE_STATLINE
 
-#include "wx/gtk/private/wrapgtk.h"
+#include <gtk/gtk.h>
+#include "wx/gtk/private/gtk2-compat.h"
 
 //-----------------------------------------------------------------------------
 // wxStaticLine

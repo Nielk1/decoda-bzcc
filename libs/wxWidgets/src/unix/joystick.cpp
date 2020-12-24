@@ -52,7 +52,7 @@ enum {
 };
 
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxJoystick, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxJoystick, wxObject)
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -63,7 +63,7 @@ class wxJoystickThread : public wxThread
 {
 public:
     wxJoystickThread(int device, int joystick);
-    void* Entry() wxOVERRIDE;
+    void* Entry();
 
 private:
     void      SendEvent(wxEventType type, long ts, int change = 0);
@@ -141,6 +141,14 @@ void* wxJoystickThread::Entry()
 
             if ((j_evt.type & JS_EVENT_AXIS) && (j_evt.number < wxJS_MAX_AXES))
             {
+                // Ignore invalid axis.
+                if ( j_evt.number >= wxJS_MAX_AXES )
+                {
+                    wxLogDebug(wxS("Invalid axis index %d in joystick message."),
+                               j_evt.number);
+                    continue;
+                }
+
                 if (   (m_axe[j_evt.number] + m_threshold < j_evt.value)
                     || (m_axe[j_evt.number] - m_threshold > j_evt.value) )
             {
@@ -173,17 +181,18 @@ void* wxJoystickThread::Entry()
                 if (j_evt.value)
                 {
                     m_buttons |= (1 << j_evt.number);
-                    SendEvent(wxEVT_JOY_BUTTON_DOWN, j_evt.time, 1 << j_evt.number);
+                    SendEvent(wxEVT_JOY_BUTTON_DOWN, j_evt.time, j_evt.number);
                 }
                 else
                 {
                     m_buttons &= ~(1 << j_evt.number);
-                    SendEvent(wxEVT_JOY_BUTTON_UP, j_evt.time, 1 << j_evt.number);
+                    SendEvent(wxEVT_JOY_BUTTON_UP, j_evt.time, j_evt.number);
                 }
             }
         }
     }
 
+    close(m_device);
     return NULL;
 }
 
@@ -222,8 +231,7 @@ wxJoystick::~wxJoystick()
     ReleaseCapture();
     if (m_thread)
         m_thread->Delete();  // It's detached so it will delete itself
-    if (m_device != -1)
-        close(m_device);
+    m_device = -1;
 }
 
 
@@ -262,7 +270,7 @@ int wxJoystick::GetButtonState() const
 bool wxJoystick::GetButtonState(unsigned id) const
 {
     if (m_thread && (id < wxJS_MAX_BUTTONS))
-        return (m_thread->m_buttons & (1u << id)) != 0;
+        return (m_thread->m_buttons & (1 << id)) != 0;
     return false;
 }
 

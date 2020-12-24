@@ -34,7 +34,7 @@
 #include "wx/msw/private.h"
 #include "wx/msw/private/keyboard.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxAcceleratorTable, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxAcceleratorTable, wxObject)
 
 // ----------------------------------------------------------------------------
 // data defining wxAcceleratorTable

@@ -24,8 +24,7 @@ class wxScopedArray
 public:
     typedef T element_type;
 
-    explicit wxScopedArray(T * array = NULL) : m_array(array) { }
-    explicit wxScopedArray(size_t count) : m_array(new T[count]) { }
+    wxEXPLICIT wxScopedArray(T * array = NULL) : m_array(array) { }
 
     ~wxScopedArray() { delete [] m_array; }
 
@@ -60,7 +59,7 @@ public:
 private:
     T *m_array;
 
-    wxDECLARE_NO_COPY_TEMPLATE_CLASS(wxScopedArray, T);
+    DECLARE_NO_COPY_TEMPLATE_CLASS(wxScopedArray, T)
 };
 
 // ----------------------------------------------------------------------------
@@ -77,7 +76,7 @@ private:                            \
     name & operator=(name const &); \
                                     \
 public:                             \
-    explicit name(T * p = NULL) : m_ptr(p) \
+    wxEXPLICIT name(T * p = NULL) : m_ptr(p) \
     {}                              \
                                     \
     ~name();                        \

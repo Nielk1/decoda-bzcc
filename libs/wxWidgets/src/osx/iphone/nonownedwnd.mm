@@ -69,7 +69,7 @@ wxPoint wxFromNSPoint( UIView* parent, const CGPoint& p )
 // c++ impl
 //
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxNonOwnedWindowIPhoneImpl , wxNonOwnedWindowImpl);
+IMPLEMENT_DYNAMIC_CLASS( wxNonOwnedWindowIPhoneImpl , wxNonOwnedWindowImpl )
 
 wxNonOwnedWindowIPhoneImpl::wxNonOwnedWindowIPhoneImpl( wxNonOwnedWindow* nonownedwnd) :
     wxNonOwnedWindowImpl(nonownedwnd)
@@ -284,11 +284,6 @@ bool wxNonOwnedWindowIPhoneImpl::IsFullScreen() const
     return m_macFullScreenData != NULL ;
 }
 
-bool wxNonOwnedWindowIPhoneImpl::EnableFullScreenView(bool WXUNUSED(enable))
-{
-    return true;
-}
-
 bool wxNonOwnedWindowIPhoneImpl::ShowFullScreen(bool show, long style)
 {
     return true;
@@ -354,7 +349,7 @@ wxWidgetImpl* wxWidgetImpl::CreateContentView( wxNonOwnedWindow* now )
     [contentview setController:controller];
     [contentview setHidden:YES];
     
-    wxWidgetIPhoneImpl* impl = new wxWidgetIPhoneImpl( now, contentview, Widget_IsRoot );
+    wxWidgetIPhoneImpl* impl = new wxWidgetIPhoneImpl( now, contentview, true );
     impl->InstallEventHandler();
     
     if ([toplevelwindow respondsToSelector:@selector(setRootViewController:)])

@@ -39,7 +39,7 @@ WX_DECLARE_VOIDPTR_HASH_MAP( wxPerDisplayData*, wxPerDisplayDataMap );
 
 class WXDLLIMPEXP_CORE wxApp : public wxAppBase
 {
-    wxDECLARE_DYNAMIC_CLASS(wxApp);
+    DECLARE_DYNAMIC_CLASS(wxApp)
 
 public:
     wxApp();
@@ -80,7 +80,6 @@ public:
     virtual void   HandlePropertyChange(WXEvent *event);
 
     wxXVisualInfo* GetVisualInfo(WXDisplay* display);
-    virtual void* GetXVisualInfo() { return NULL; }
 
 private:
     // Motif-specific

@@ -242,7 +242,7 @@ bool wxGUIEventLoop::Dispatch()
     return true;
 }
 
-void wxGUIEventLoop::DoYieldFor(long eventsToProcess)
+bool wxGUIEventLoop::YieldFor(long eventsToProcess)
 {
     // Sometimes only 2 yields seem
     // to do the trick, e.g. in the
@@ -250,6 +250,9 @@ void wxGUIEventLoop::DoYieldFor(long eventsToProcess)
     int i;
     for (i = 0; i < 2; i++)
     {
+        m_isInsideYield = true;
+        m_eventsToProcessInsideYield = eventsToProcess;
+
         // Call dispatch at least once so that sockets
         // can be tested
         wxTheApp->Dispatch();
@@ -261,7 +264,10 @@ void wxGUIEventLoop::DoYieldFor(long eventsToProcess)
 #if wxUSE_TIMER
         wxGenericTimerImpl::NotifyTimers();
 #endif
+        ProcessIdle();
 
-        wxEventLoopBase::DoYieldFor(eventsToProcess);
+        m_isInsideYield = false;
     }
+
+    return true;
 }

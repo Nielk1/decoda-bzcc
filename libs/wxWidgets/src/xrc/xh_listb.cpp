@@ -25,7 +25,7 @@
 
 #include "wx/xml/xml.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxListBoxXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxListBoxXmlHandler, wxXmlResourceHandler)
 
 wxListBoxXmlHandler::wxListBoxXmlHandler()
                    : wxXmlResourceHandler(),
@@ -77,7 +77,10 @@ wxObject *wxListBoxXmlHandler::DoCreateResource()
         // handle <item>Label</item>
 
         // add to the list
-        strList.Add(GetNodeText(m_node, wxXRC_TEXT_NO_ESCAPE));
+        wxString str = GetNodeContent(m_node);
+        if (m_resource->GetFlags() & wxXRC_USE_LOCALE)
+            str = wxGetTranslation(str, m_resource->GetDomain());
+        strList.Add(str);
 
         return NULL;
     }

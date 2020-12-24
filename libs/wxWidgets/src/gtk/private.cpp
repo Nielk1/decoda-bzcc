@@ -27,6 +27,7 @@
     #include "wx/module.h"
 #endif
 
+#include <gtk/gtk.h>
 #include "wx/gtk/private.h"
 
 // ----------------------------------------------------------------------------
@@ -264,12 +265,12 @@ GtkWidget *GetTreeWidget()
 class WidgetsCleanupModule : public wxModule
 {
 public:
-    virtual bool OnInit() wxOVERRIDE
+    virtual bool OnInit()
     {
         return true;
     }
 
-    virtual void OnExit() wxOVERRIDE
+    virtual void OnExit()
     {
         if ( gs_container )
         {
@@ -279,9 +280,9 @@ public:
         }
     }
 
-    wxDECLARE_DYNAMIC_CLASS(WidgetsCleanupModule);
+    DECLARE_DYNAMIC_CLASS(WidgetsCleanupModule)
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(WidgetsCleanupModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(WidgetsCleanupModule, wxModule)
 
 } // wxGTKPrivate namespace

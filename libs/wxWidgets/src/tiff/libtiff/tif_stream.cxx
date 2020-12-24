@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1988-1996 Sam Leffler
  * Copyright (c) 1991-1996 Silicon Graphics, Inc.
@@ -338,16 +339,12 @@ _tiffisCloseProc(thandle_t fd)
 static int
 _tiffDummyMapProc(thandle_t , void** base, toff_t* size )
 {
-	(void) base;
-	(void) size;
 	return (0);
 }
 
 static void
 _tiffDummyUnmapProc(thandle_t , void* base, toff_t size )
 {
-	(void) base;
-	(void) size;
 }
 
 /*
@@ -373,9 +370,6 @@ _tiffStreamOpen(const char* name, const char* mode, void *fd)
 				_tiffosSizeProc,
 				_tiffDummyMapProc,
                                 _tiffDummyUnmapProc);
-		if (!tif) {
-			delete data;
-		}
 	} else {
 		tiffis_data	*data = new tiffis_data;
 		data->stream = reinterpret_cast<istream *>(fd);
@@ -390,9 +384,6 @@ _tiffStreamOpen(const char* name, const char* mode, void *fd)
 				_tiffisSizeProc,
 				_tiffDummyMapProc,
                                 _tiffDummyUnmapProc);
-		if (!tif) {
-			delete data;
-		}
 	}
 
 	return (tif);
@@ -425,10 +416,9 @@ TIFFStreamOpen(const char* name, istream *is)
 
 /* vim: set ts=8 sts=8 sw=8 noet: */
 /*
- * Local Variables:
- * mode: c
- * c-basic-offset: 8
- * fill-column: 78
- * End:
- */
-
+  Local Variables:
+  mode: c
+  indent-tabs-mode: true
+  c-basic-offset: 8
+  End:
+*/

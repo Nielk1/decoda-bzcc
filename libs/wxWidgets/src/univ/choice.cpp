@@ -30,9 +30,9 @@
     #include "wx/arrstr.h"
 #endif
 
-wxBEGIN_EVENT_TABLE(wxChoice, wxComboBox)
+BEGIN_EVENT_TABLE(wxChoice, wxComboBox)
     EVT_COMBOBOX(wxID_ANY, wxChoice::OnComboBox)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxChoice::wxChoice(wxWindow *parent, wxWindowID id,
                    const wxPoint& pos,
@@ -63,7 +63,7 @@ bool wxChoice::Create(wxWindow *parent, wxWindowID id,
                       const wxPoint& pos,
                       const wxSize& size,
                       int n, const wxString choices[],
-                      long style,
+                      long WXUNUSED(style),
                       const wxValidator& validator,
                       const wxString& name)
 {
@@ -72,7 +72,7 @@ bool wxChoice::Create(wxWindow *parent, wxWindowID id,
         value = choices[0];
     return wxComboBox::Create(parent, id, value,
                                  pos, size, n, choices,
-                                 wxCB_READONLY | style, validator, name);
+                                 wxCB_READONLY, validator, name);
 }
 
 

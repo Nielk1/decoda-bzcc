@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2004-10-19
-// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -12,6 +12,13 @@
 #define _WX_MSW_WRAPSHL_H_
 
 #include "wx/msw/wrapwin.h"
+
+#ifdef __WXWINCE__
+    #include <winreg.h>
+    #include <objbase.h>
+    #include <shlguid.h>
+    #include <shellapi.h>
+#endif
 
 #ifdef __VISUALC__
     // Disable a warning that we can do nothing about: we get it for

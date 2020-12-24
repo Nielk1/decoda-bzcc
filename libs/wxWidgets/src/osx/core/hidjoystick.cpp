@@ -77,7 +77,7 @@ public:
     virtual ~wxHIDJoystick();
 
     bool Create(int nWhich);
-    virtual void BuildCookies(CFArrayRef Array) wxOVERRIDE;
+    virtual void BuildCookies(CFArrayRef Array);
     void MakeCookies(CFArrayRef Array);
     IOHIDElementCookie* GetCookies();
     IOHIDQueueInterface** GetQueue();
@@ -95,7 +95,7 @@ class wxJoystickThread : public wxThread
 {
 public:
     wxJoystickThread(wxHIDJoystick* hid, int joystick);
-    void* Entry() wxOVERRIDE;
+    void* Entry();
     static void HIDCallback(void* target, IOReturn res, void* context, void* sender);
 
 private:
@@ -133,7 +133,7 @@ void wxGetIntFromCFDictionary(CFTypeRef cfDict, CFStringRef key, int* pOut)
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxJoystick, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxJoystick, wxObject)
 
 //---------------------------------------------------------------------------
 // wxJoystick Constructor
@@ -235,7 +235,7 @@ int wxJoystick::GetButtonState() const
 
 bool wxJoystick::GetButtonState(unsigned int id) const
 {
-    if (id >= sizeof(int) * 8)
+    if (id > sizeof(int) * 8)
         return false;
 
     return (GetButtonState() & (1 << id)) != 0;
@@ -808,21 +808,6 @@ void* wxJoystickThread::Entry()
 // 5) Sends the event to the polling window (if any)
 // 6) Gets the next event and goes back to (1)
 //---------------------------------------------------------------------------
-
-// from https://developer.apple.com/documentation/apple_silicon/addressing_architectural_differences_in_your_macos_code
-
-uint64_t MachTimeToNanoseconds(uint64_t machTime)
-{
-    uint64_t nanoseconds = 0;
-    static mach_timebase_info_data_t sTimebase;
-    if (sTimebase.denom == 0)
-        (void)mach_timebase_info(&sTimebase);
-
-    nanoseconds = ((machTime * sTimebase.numer) / sTimebase.denom);
-
-    return nanoseconds;
-}
-
 /*static*/ void wxJoystickThread::HIDCallback(void* WXUNUSED(target),
                                               IOReturn WXUNUSED(res),
                                               void* context,
@@ -874,20 +859,20 @@ uint64_t MachTimeToNanoseconds(uint64_t machTime)
 #endif
 
         //is the cookie a button?
-        if (nIndex < 32)
+        if (nIndex < 40)
         {
             if (hidevent.value)
             {
-                pThis->m_buttons |= (1u << nIndex);
+                pThis->m_buttons |= (1 << nIndex);
                 wxevent.SetEventType(wxEVT_JOY_BUTTON_DOWN);
             }
             else
             {
-                pThis->m_buttons &= ~(1u << nIndex);
+                pThis->m_buttons &= ~(1 << nIndex);
                 wxevent.SetEventType(wxEVT_JOY_BUTTON_UP);
             }
 
-            wxevent.SetButtonChange(1u << nIndex);
+            wxevent.SetButtonChange(nIndex+1);
         }
         else if (nIndex == wxJS_AXIS_X)
         {
@@ -909,9 +894,9 @@ uint64_t MachTimeToNanoseconds(uint64_t machTime)
         else
             wxevent.SetEventType(wxEVT_JOY_MOVE);
 
-        uint64_t timestamp = MachTimeToNanoseconds(*((uint64_t*) &hidevent.timestamp));
+        Nanoseconds timestamp = AbsoluteToNanoseconds(hidevent.timestamp);
 
-        wxULongLong llTime(timestamp);
+        wxULongLong llTime(timestamp.hi, timestamp.lo);
 
         llTime /= 1000000;
 

@@ -69,12 +69,12 @@ public:
     /**
      * From wxDropTarget.
      */
-    virtual wxDragResult OnEnter (wxCoord x, wxCoord y, wxDragResult def);
+    //virtual wxDragResult OnEnter (wxCoord x, wxCoord y, wxDragResult def);
     
     /**
      * From wxDropTarget.
      */
-    virtual void OnLeave();
+    //virtual void OnLeave();
 
 private:
 

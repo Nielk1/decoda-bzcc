@@ -15,7 +15,7 @@
 #include "wx/checkbox.h"
 #include "wx/osx/private.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapCheckBox, wxCheckBox);
+IMPLEMENT_DYNAMIC_CLASS(wxBitmapCheckBox, wxCheckBox)
 
 // Single check box item
 bool wxCheckBox::Create(wxWindow *parent,
@@ -169,6 +169,11 @@ void wxBitmapCheckBox::SetLabel(const wxBitmap *WXUNUSED(bitmap))
 {
     // TODO
     wxFAIL_MSG(wxT("wxBitmapCheckBox::SetLabel() not yet implemented"));
+}
+
+void wxBitmapCheckBox::SetSize(int x, int y, int width, int height, int sizeFlags)
+{
+    wxControl::SetSize( x , y , width , height , sizeFlags ) ;
 }
 
 void wxBitmapCheckBox::SetValue(bool WXUNUSED(val))

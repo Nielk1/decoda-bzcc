@@ -31,8 +31,6 @@
 #include "wx/tokenzr.h"
 #include "wx/renderer.h"
 
-#include "wx/generic/private/grid.h"
-#include "wx/private/window.h"
 
 // ----------------------------------------------------------------------------
 // wxGridCellRenderer
@@ -79,27 +77,28 @@ void wxGridCellRenderer::Draw(wxGrid& grid,
 
 #if wxUSE_DATETIME
 
-// Enables a grid cell to display a formatted date
+// Enables a grid cell to display a formatted date and or time
 
-wxGridCellDateRenderer::wxGridCellDateRenderer(const wxString& outformat)
+wxGridCellDateTimeRenderer::wxGridCellDateTimeRenderer(const wxString& outformat, const wxString& informat)
 {
-    if ( outformat.empty() )
-    {
-        m_oformat = "%x"; // Localized date representation.
-    }
-    else
-    {
-        m_oformat = outformat;
-    }
+    m_iformat = informat;
+    m_oformat = outformat;
     m_tz = wxDateTime::Local;
+    m_dateDef = wxDefaultDateTime;
 }
 
-wxGridCellRenderer *wxGridCellDateRenderer::Clone() const
+wxGridCellRenderer *wxGridCellDateTimeRenderer::Clone() const
 {
-    return new wxGridCellDateRenderer(*this);
+    wxGridCellDateTimeRenderer *renderer = new wxGridCellDateTimeRenderer;
+    renderer->m_iformat = m_iformat;
+    renderer->m_oformat = m_oformat;
+    renderer->m_dateDef = m_dateDef;
+    renderer->m_tz = m_tz;
+
+    return renderer;
 }
 
-wxString wxGridCellDateRenderer::GetString(const wxGrid& grid, int row, int col)
+wxString wxGridCellDateTimeRenderer::GetString(const wxGrid& grid, int row, int col)
 {
     wxGridTableBase *table = grid.GetTable();
 
@@ -122,7 +121,8 @@ wxString wxGridCellDateRenderer::GetString(const wxGrid& grid, int row, int col)
     if (!hasDatetime )
     {
         text = table->GetValue(row, col);
-        hasDatetime = Parse(text, val);
+        const char * const end = val.ParseFormat(text, m_iformat, m_dateDef);
+        hasDatetime = end && !*end;
     }
 
     if ( hasDatetime )
@@ -132,117 +132,43 @@ wxString wxGridCellDateRenderer::GetString(const wxGrid& grid, int row, int col)
     return text;
 }
 
-bool wxGridCellDateRenderer::Parse(const wxString& text, wxDateTime& result)
-{
-    wxString::const_iterator end;
-    return result.ParseDate(text, &end) && end == text.end();
-}
-
-void wxGridCellDateRenderer::Draw(wxGrid& grid,
-                                  wxGridCellAttr& attr,
-                                  wxDC& dc,
-                                  const wxRect& rectCell,
-                                  int row, int col,
-                                  bool isSelected)
+void wxGridCellDateTimeRenderer::Draw(wxGrid& grid,
+                                   wxGridCellAttr& attr,
+                                   wxDC& dc,
+                                   const wxRect& rectCell,
+                                   int row, int col,
+                                   bool isSelected)
 {
     wxGridCellRenderer::Draw(grid, attr, dc, rectCell, row, col, isSelected);
 
     SetTextColoursAndFont(grid, attr, dc, isSelected);
 
+    // draw the text right aligned by default
+    int hAlign = wxALIGN_RIGHT,
+        vAlign = wxALIGN_INVALID;
+    attr.GetNonDefaultAlignment(&hAlign, &vAlign);
+
     wxRect rect = rectCell;
     rect.Inflate(-1);
 
-    // draw the text right aligned by default
-    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, attr,
-                           wxALIGN_RIGHT);
+    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, hAlign, vAlign);
 }
 
-wxSize wxGridCellDateRenderer::GetBestSize(wxGrid& grid,
-                                           wxGridCellAttr& attr,
-                                           wxDC& dc,
-                                           int row, int col)
+wxSize wxGridCellDateTimeRenderer::GetBestSize(wxGrid& grid,
+                                            wxGridCellAttr& attr,
+                                            wxDC& dc,
+                                            int row, int col)
 {
     return DoGetBestSize(attr, dc, GetString(grid, row, col));
 }
 
-wxSize wxGridCellDateRenderer::GetMaxBestSize(wxGrid& WXUNUSED(grid),
-                                              wxGridCellAttr& attr,
-                                              wxDC& dc)
-{
-    wxSize size;
-
-    // Try to produce the longest string in the current format: as we don't
-    // know which month is the longest, we need to try all of them.
-    for ( int m = wxDateTime::Jan; m <= wxDateTime::Dec; ++m )
-    {
-        const wxDateTime d(28, static_cast<wxDateTime::Month>(m), 9999);
-
-        size.IncTo(DoGetBestSize(attr, dc, d.Format(m_oformat, m_tz)));
-    }
-
-    return size;
-}
-
-void wxGridCellDateRenderer::SetParameters(const wxString& params)
+void wxGridCellDateTimeRenderer::SetParameters(const wxString& params)
 {
     if (!params.empty())
         m_oformat=params;
 }
 
-
-// Enables a grid cell to display a formatted date and or time
-
-wxGridCellDateTimeRenderer::wxGridCellDateTimeRenderer(const wxString& outformat, const wxString& informat)
-    : wxGridCellDateRenderer(outformat)
-    , m_iformat(informat)
-    , m_dateDef(wxDefaultDateTime)
-{
-}
-
-wxGridCellRenderer *wxGridCellDateTimeRenderer::Clone() const
-{
-    return new wxGridCellDateTimeRenderer(*this);
-}
-
-bool wxGridCellDateTimeRenderer::Parse(const wxString& text, wxDateTime& result)
-{
-    const char * const end = result.ParseFormat(text, m_iformat, m_dateDef);
-    return end && !*end;
-}
-
 #endif // wxUSE_DATETIME
-
-// ----------------------------------------------------------------------------
-// wxGridCellChoiceRenderer
-// ----------------------------------------------------------------------------
-
-wxSize wxGridCellChoiceRenderer::GetMaxBestSize(wxGrid& WXUNUSED(grid),
-                                                wxGridCellAttr& attr,
-                                                wxDC& dc)
-{
-    wxSize size;
-
-    for ( size_t n = 0; n < m_choices.size(); ++n )
-    {
-        size.IncTo(DoGetBestSize(attr, dc, m_choices[n]));
-    }
-
-    return size;
-}
-
-void wxGridCellChoiceRenderer::SetParameters(const wxString& params)
-{
-    m_choices.clear();
-
-    if ( params.empty() )
-        return;
-
-    wxStringTokenizer tk(params, wxT(','));
-    while ( tk.HasMoreTokens() )
-    {
-        m_choices.Add(tk.GetNextToken());
-    }
-}
 
 // ----------------------------------------------------------------------------
 // wxGridCellEnumRenderer
@@ -294,12 +220,15 @@ void wxGridCellEnumRenderer::Draw(wxGrid& grid,
 
     SetTextColoursAndFont(grid, attr, dc, isSelected);
 
+    // draw the text right aligned by default
+    int hAlign = wxALIGN_RIGHT,
+        vAlign = wxALIGN_INVALID;
+    attr.GetNonDefaultAlignment(&hAlign, &vAlign);
+
     wxRect rect = rectCell;
     rect.Inflate(-1);
 
-    // draw the text right aligned by default
-    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, attr,
-                           wxALIGN_RIGHT);
+    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, hAlign, vAlign);
 }
 
 wxSize wxGridCellEnumRenderer::GetBestSize(wxGrid& grid,
@@ -309,6 +238,24 @@ wxSize wxGridCellEnumRenderer::GetBestSize(wxGrid& grid,
 {
     return DoGetBestSize(attr, dc, GetString(grid, row, col));
 }
+
+void wxGridCellEnumRenderer::SetParameters(const wxString& params)
+{
+    if ( !params )
+    {
+        // what can we do?
+        return;
+    }
+
+    m_choices.Empty();
+
+    wxStringTokenizer tk(params, wxT(','));
+    while ( tk.HasMoreTokens() )
+    {
+        m_choices.Add(tk.GetNextToken());
+    }
+}
+
 
 // ----------------------------------------------------------------------------
 // wxGridCellAutoWrapStringRenderer
@@ -335,8 +282,6 @@ wxGridCellAutoWrapStringRenderer::Draw(wxGrid& grid,
     wxRect rect = rectCell;
     rect.Inflate(-1);
 
-    // Do not use here the overload taking the attribute, as this would
-    // ellipsize the text, which is never necessary with this renderer.
     grid.DrawTextRectangle(dc, GetTextLines(grid,dc,attr,rect,row,col),
                            rect, horizAlign, vertAlign);
 }
@@ -491,57 +436,20 @@ wxGridCellAutoWrapStringRenderer::GetBestSize(wxGrid& grid,
                                               wxDC& dc,
                                               int row, int col)
 {
-    // We have to make a choice here and fix either width or height because we
-    // don't have any naturally best size. This choice is mostly arbitrary, but
-    // we need to be consistent about it, otherwise wxGrid auto-sizing code
-    // would get confused. For now we decide to use a single line of text and
-    // compute the width needed to fully display everything.
-    const int height = dc.GetCharHeight();
-
-    return wxSize(GetBestWidth(grid, attr, dc, row, col, height), height);
-}
-
-static const int AUTOWRAP_Y_MARGIN = 4;
-
-int
-wxGridCellAutoWrapStringRenderer::GetBestHeight(wxGrid& grid,
-                                                wxGridCellAttr& attr,
-                                                wxDC& dc,
-                                                int row, int col,
-                                                int width)
-{
     const int lineHeight = dc.GetCharHeight();
 
-    // Use as many lines as we need for this width and add a small border to
-    // improve the appearance.
-    return GetTextLines(grid, dc, attr, wxSize(width, lineHeight),
-                        row, col).size() * lineHeight + AUTOWRAP_Y_MARGIN;
-}
+    // Search for a shape no taller than the golden ratio.
+    wxSize size;
+    for ( size.x = 10; ; size.x += 10 )
+    {
+        const size_t
+            numLines = GetTextLines(grid, dc, attr, size, row, col).size();
+        size.y = numLines * lineHeight;
+        if ( size.x >= size.y*1.68 )
+            break;
+    }
 
-int
-wxGridCellAutoWrapStringRenderer::GetBestWidth(wxGrid& grid,
-                                               wxGridCellAttr& attr,
-                                               wxDC& dc,
-                                               int row, int col,
-                                               int height)
-{
-    const int lineHeight = dc.GetCharHeight();
-
-    // Maximal number of lines that fully fit but at least 1.
-    const size_t maxLines = height - AUTOWRAP_Y_MARGIN < lineHeight
-                                ? 1
-                                : (height - AUTOWRAP_Y_MARGIN)/lineHeight;
-
-    // Increase width until all the text fits.
-    //
-    // TODO: this is not the most efficient to do it for the long strings.
-    const int charWidth = dc.GetCharWidth();
-    int width = 2*charWidth;
-    while ( GetTextLines(grid, dc, attr, wxSize(width, height),
-                         row, col).size() > maxLines )
-        width += charWidth;
-
-    return width;
+    return size;
 }
 
 // ----------------------------------------------------------------------------
@@ -589,8 +497,18 @@ wxSize wxGridCellStringRenderer::DoGetBestSize(const wxGridCellAttr& attr,
                                                wxDC& dc,
                                                const wxString& text)
 {
+    wxCoord x = 0, y = 0, max_x = 0;
     dc.SetFont(attr.GetFont());
-    return dc.GetMultiLineTextExtent(text);
+    wxStringTokenizer tk(text, wxT('\n'));
+    while ( tk.HasMoreTokens() )
+    {
+        dc.GetTextExtent(tk.GetNextToken(), &x, &y);
+        max_x = wxMax(max_x, x);
+    }
+
+    y *= 1 + text.Freq(wxT('\n')); // multiply by the number of lines.
+
+    return wxSize(max_x, y);
 }
 
 wxSize wxGridCellStringRenderer::GetBestSize(wxGrid& grid,
@@ -614,12 +532,13 @@ void wxGridCellStringRenderer::Draw(wxGrid& grid,
     // erase only this cells background, overflow cells should have been erased
     wxGridCellRenderer::Draw(grid, attr, dc, rectCell, row, col, isSelected);
 
-    if ( attr.CanOverflow() )
-    {
-        int hAlign, vAlign;
-        attr.GetAlignment(&hAlign, &vAlign);
+    int hAlign, vAlign;
+    attr.GetAlignment(&hAlign, &vAlign);
 
-        int overflowCols = 0;
+    int overflowCols = 0;
+
+    if (attr.GetOverflow())
+    {
         int cols = grid.GetNumberCols();
         int best_width = GetBestSize(grid,attr,dc,row,col).GetWidth();
         int cell_rows, cell_cols;
@@ -673,12 +592,9 @@ void wxGridCellStringRenderer::Draw(wxGrid& grid,
                 col_end = grid.GetNumberCols() - 1;
             for (int i = col + cell_cols; i <= col_end; i++)
             {
-                // redraw the cell to update the background
-                wxGridCellCoords coords(row, i);
-                grid.DrawCell(dc, coords);
-
                 clip.width = grid.GetColSize(i) - 1;
-                wxDCClipper clipper(dc, clip);
+                dc.DestroyClippingRegion();
+                dc.SetClippingRegion(clip);
 
                 SetTextColoursAndFont(grid, attr, dc,
                         grid.IsInSelection(row,i));
@@ -691,6 +607,7 @@ void wxGridCellStringRenderer::Draw(wxGrid& grid,
             rect = rectCell;
             rect.Inflate(-1);
             rect.width++;
+            dc.DestroyClippingRegion();
         }
     }
 
@@ -698,7 +615,7 @@ void wxGridCellStringRenderer::Draw(wxGrid& grid,
     SetTextColoursAndFont(grid, attr, dc, isSelected);
 
     grid.DrawTextRectangle(dc, grid.GetCellValue(row, col),
-                           rect, attr);
+                           rect, hAlign, vAlign);
 }
 
 // ----------------------------------------------------------------------------
@@ -732,12 +649,15 @@ void wxGridCellNumberRenderer::Draw(wxGrid& grid,
 
     SetTextColoursAndFont(grid, attr, dc, isSelected);
 
+    // draw the text right aligned by default
+    int hAlign = wxALIGN_RIGHT,
+        vAlign = wxALIGN_INVALID;
+    attr.GetNonDefaultAlignment(&hAlign, &vAlign);
+
     wxRect rect = rectCell;
     rect.Inflate(-1);
 
-    // draw the text right aligned by default
-    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, attr,
-                           wxALIGN_RIGHT);
+    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, hAlign, vAlign);
 }
 
 wxSize wxGridCellNumberRenderer::GetBestSize(wxGrid& grid,
@@ -746,34 +666,6 @@ wxSize wxGridCellNumberRenderer::GetBestSize(wxGrid& grid,
                                              int row, int col)
 {
     return DoGetBestSize(attr, dc, GetString(grid, row, col));
-}
-
-wxSize wxGridCellNumberRenderer::GetMaxBestSize(wxGrid& WXUNUSED(grid),
-                                                wxGridCellAttr& attr,
-                                                wxDC& dc)
-{
-    // In theory, it's possible that there is a value in min..max range which
-    // is longer than both min and max, e.g. we could conceivably have "88" be
-    // wider than both "87" and "91" with some fonts, but it seems something
-    // too exotic to worry about in practice.
-    wxSize size = DoGetBestSize(attr, dc, wxString::Format("%ld", m_minValue));
-    size.IncTo(DoGetBestSize(attr, dc, wxString::Format("%ld", m_maxValue)));
-
-    return size;
-}
-
-void wxGridCellNumberRenderer::SetParameters(const wxString& params)
-{
-    if ( params.empty() )
-        return;
-
-    wxString maxStr;
-    const wxString minStr = params.BeforeFirst(',', &maxStr);
-
-    if ( !minStr.ToLong(&m_minValue) || !maxStr.ToLong(&m_maxValue) )
-    {
-        wxLogDebug("Invalid wxGridCellNumberRenderer parameters \"%s\"", params);
-    }
 }
 
 // ----------------------------------------------------------------------------
@@ -872,12 +764,15 @@ void wxGridCellFloatRenderer::Draw(wxGrid& grid,
 
     SetTextColoursAndFont(grid, attr, dc, isSelected);
 
+    // draw the text right aligned by default
+    int hAlign = wxALIGN_RIGHT,
+        vAlign = wxALIGN_INVALID;
+    attr.GetNonDefaultAlignment(&hAlign, &vAlign);
+
     wxRect rect = rectCell;
     rect.Inflate(-1);
 
-    // draw the text right aligned by default
-    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, attr,
-                           wxALIGN_RIGHT);
+    grid.DrawTextRectangle(dc, GetString(grid, row, col), rect, hAlign, vAlign);
 }
 
 wxSize wxGridCellFloatRenderer::GetBestSize(wxGrid& grid,
@@ -971,32 +866,21 @@ void wxGridCellFloatRenderer::SetParameters(const wxString& params)
 // wxGridCellBoolRenderer
 // ----------------------------------------------------------------------------
 
+wxSize wxGridCellBoolRenderer::ms_sizeCheckMark;
+
 wxSize wxGridCellBoolRenderer::GetBestSize(wxGrid& grid,
-                                           wxGridCellAttr& attr,
-                                           wxDC& dc,
+                                           wxGridCellAttr& WXUNUSED(attr),
+                                           wxDC& WXUNUSED(dc),
                                            int WXUNUSED(row),
                                            int WXUNUSED(col))
 {
-    return GetMaxBestSize(grid, attr, dc);
-}
-
-wxSize wxGridCellBoolRenderer::GetMaxBestSize(wxGrid& grid,
-                                              wxGridCellAttr& WXUNUSED(attr),
-                                              wxDC& WXUNUSED(dc))
-{
-    static wxPrivate::DpiDependentValue<wxSize> s_sizeCheckMark;
-
-    // Get the check mark size in pixels if it hadn't been done yet or if the
-    // DPI has changed.
-    if ( s_sizeCheckMark.HasChanged(&grid) )
+    // compute it only once (no locks for MT safeness in GUI thread...)
+    if ( !ms_sizeCheckMark.x )
     {
-        s_sizeCheckMark.SetAtNewDPI
-            (
-                wxRendererNative::Get().GetCheckBoxSize(&grid, wxCONTROL_CELL)
-            );
+        ms_sizeCheckMark = wxRendererNative::Get().GetCheckBoxSize(&grid);
     }
 
-    return s_sizeCheckMark.Get();
+    return ms_sizeCheckMark;
 }
 
 void wxGridCellBoolRenderer::Draw(wxGrid& grid,
@@ -1008,13 +892,43 @@ void wxGridCellBoolRenderer::Draw(wxGrid& grid,
 {
     wxGridCellRenderer::Draw(grid, attr, dc, rect, row, col, isSelected);
 
-    int hAlign = wxALIGN_LEFT;
-    int vAlign = wxALIGN_CENTRE_VERTICAL;
-    attr.GetNonDefaultAlignment(&hAlign, &vAlign);
+    // draw a check mark in the centre (ignoring alignment - TODO)
+    wxSize size = GetBestSize(grid, attr, dc, row, col);
 
-    const wxRect checkBoxRect =
-        wxGetContentRect(GetBestSize(grid, attr, dc, row, col),
-                         rect, hAlign, vAlign);
+    // don't draw outside the cell
+    wxCoord minSize = wxMin(rect.width, rect.height);
+    if ( size.x >= minSize || size.y >= minSize )
+    {
+        // and even leave (at least) 1 pixel margin
+        size.x = size.y = minSize;
+    }
+
+    // draw a border around checkmark
+    int vAlign, hAlign;
+    attr.GetAlignment(&hAlign, &vAlign);
+
+    wxRect rectBorder;
+    if (hAlign == wxALIGN_CENTRE)
+    {
+        rectBorder.x = rect.x + rect.width / 2 - size.x / 2;
+        rectBorder.y = rect.y + rect.height / 2 - size.y / 2;
+        rectBorder.width = size.x;
+        rectBorder.height = size.y;
+    }
+    else if (hAlign == wxALIGN_LEFT)
+    {
+        rectBorder.x = rect.x + 2;
+        rectBorder.y = rect.y + rect.height / 2 - size.y / 2;
+        rectBorder.width = size.x;
+        rectBorder.height = size.y;
+    }
+    else if (hAlign == wxALIGN_RIGHT)
+    {
+        rectBorder.x = rect.x + rect.width - size.x - 2;
+        rectBorder.y = rect.y + rect.height / 2 - size.y / 2;
+        rectBorder.width = size.x;
+        rectBorder.height = size.y;
+    }
 
     bool value;
     if ( grid.GetTable()->CanGetValueAs(row, col, wxGRID_VALUE_BOOL) )
@@ -1027,11 +941,11 @@ void wxGridCellBoolRenderer::Draw(wxGrid& grid,
         value = wxGridCellBoolEditor::IsTrueValue(cellval);
     }
 
-    int flags = wxCONTROL_CELL;
+    int flags = 0;
     if (value)
         flags |= wxCONTROL_CHECKED;
 
-    wxRendererNative::Get().DrawCheckBox( &grid, dc, checkBoxRect, flags );
+    wxRendererNative::Get().DrawCheckBox( &grid, dc, rectBorder, flags );
 }
 
 #endif // wxUSE_GRID

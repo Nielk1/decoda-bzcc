@@ -93,16 +93,16 @@ protected:
 private:
     friend class wxComboBox; // it accesses our DoGetItemClientData()
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
 };
 
 // ----------------------------------------------------------------------------
 // event tables and such
 // ----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxComboListBox, wxListBox)
+BEGIN_EVENT_TABLE(wxComboListBox, wxListBox)
     EVT_LEFT_UP(wxComboListBox::OnLeftUp)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // ============================================================================
 // implementation
@@ -270,12 +270,17 @@ wxComboBox::~wxComboBox()
 // wxComboBox methods forwarded to wxTextCtrl
 // ----------------------------------------------------------------------------
 
+wxString wxComboBox::DoGetValue() const
+{
+    return GetTextCtrl() ? GetTextCtrl()->GetValue() : m_valueString;
+}
+
 void wxComboBox::SetValue(const wxString& value)
 {
-    if ( HasFlag(wxCB_READONLY) )
-        SetStringSelection(value);
-    else
+    if ( GetTextCtrl() )
         GetTextCtrl()->SetValue(value);
+    else
+        m_valueString = value;
 }
 
 void wxComboBox::WriteText(const wxString& value)

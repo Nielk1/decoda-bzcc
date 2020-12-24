@@ -14,19 +14,12 @@
     system changes.
 
     @note Implementation limitations: this class is currently implemented for
-          MSW, macOS and GTK ports but doesn't detect all changes correctly
+          MSW, OS X and GTK ports but doesn't detect all changes correctly
           everywhere: under MSW accessing the file is not detected (only
-          modifying it is) and under macOS neither accessing nor modifying is
-          detected (only creating and deleting files is). Moreover, macOS
+          modifying it is) and under OS X neither accessing nor modifying is
+          detected (only creating and deleting files is). Moreover, OS X
           version doesn't currently collapse pairs of create/delete events in a
           rename event, unlike the other ones.
-
-    @note The application's event loop needs to be running before a
-          wxFileSystemWatcher can be properly created, and that is why one
-          should not be created too early during application startup.
-          If you intend to create a wxFileSystemWatcher at startup, you can
-          override wxAppConsole::OnEventLoopEnter() to ensure it is not done
-          too early.
 
     For the full list of change types that are reported see wxFSWFlags.
 
@@ -85,11 +78,10 @@ public:
         Additionally a file mask can be specified to include only files
         matching that particular mask.
 
-        This method is implemented efficiently on MSW and macOS, but
-        should be used with care on other platforms for directories with lots
-        of children (e.g. the root directory) as it calls Add() for each
-        subdirectory, potentially creating a lot of watches and taking a long
-        time to execute.
+        This method is implemented efficiently on MSW, but should be used with
+        care on other platforms for directories with lots of children (e.g. the
+        root directory) as it calls Add() for each subdirectory, potentially
+        creating a lot of watches and taking a long time to execute.
 
         Note that on platforms that use symbolic links, you will probably want
         to have called wxFileName::DontFollowLink on @a path. This is especially
@@ -250,9 +242,8 @@ enum wxFSWFlags
         Notice that under MSW this event is sometimes -- although not always --
         followed by a ::wxFSW_EVENT_MODIFY for the new file.
 
-        Under macOS this event is only detected when watching entire trees. When
-        watching directories, separate ::wxFSW_EVENT_CREATE and
-        ::wxFSW_EVENT_DELETE events are detected instead.
+        Under OS X this event is currently not detected and instead separate
+        ::wxFSW_EVENT_CREATE and ::wxFSW_EVENT_DELETE events are.
      */
     wxFSW_EVENT_RENAME = 0x04,
 
@@ -262,7 +253,7 @@ enum wxFSWFlags
         Depending on the program doing the file modification, multiple such
         events can be reported for a single logical file update.
 
-        Under macOS this event is only detected when watching entire trees.
+        Under OS X this event is currently not detected.
      */
     wxFSW_EVENT_MODIFY = 0x08,
 
@@ -276,8 +267,7 @@ enum wxFSWFlags
     /**
         The item's metadata was changed, e.g.\ its permissions or timestamps.
 
-        This event is currently only detected under Linux and macOS.
-        Under macOS this event is only detected when watching entire trees.
+        This event is currently only detected under Linux.
 
         @since 2.9.5
      */
@@ -289,8 +279,7 @@ enum wxFSWFlags
         wxFSW_EVENT_UNMOUNT cannot be set; unmount events are produced automatically. This flag
         is therefore not included in wxFSW_EVENT_ALL.
 
-        This event is currently only detected under Linux and macOS.
-        Under macOS this event is only detected when watching entire trees.
+        This event is currently only detected under Linux.
 
         @since 2.9.5
     */

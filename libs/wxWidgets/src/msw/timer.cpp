@@ -73,8 +73,8 @@ UINT_PTR GetNewTimerId(wxMSWTimerImpl *t)
 // private functions
 // ----------------------------------------------------------------------------
 
-LRESULT APIENTRY
-wxTimerWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT APIENTRY _EXPORT wxTimerWndProc(HWND hWnd, UINT message,
+                                        WPARAM wParam, LPARAM lParam);
 
 // ----------------------------------------------------------------------------
 // wxTimerHiddenWindowModule: used to manage the hidden window used for
@@ -86,8 +86,8 @@ class wxTimerHiddenWindowModule : public wxModule
 {
 public:
     // module init/finalize
-    virtual bool OnInit() wxOVERRIDE;
-    virtual void OnExit() wxOVERRIDE;
+    virtual bool OnInit();
+    virtual void OnExit();
 
     // get the hidden window (creates on demand)
     static HWND GetHWND();
@@ -99,10 +99,10 @@ private:
     // the class used to create it
     static const wxChar *ms_className;
 
-    wxDECLARE_DYNAMIC_CLASS(wxTimerHiddenWindowModule);
+    DECLARE_DYNAMIC_CLASS(wxTimerHiddenWindowModule)
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTimerHiddenWindowModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxTimerHiddenWindowModule, wxModule)
 
 // ============================================================================
 // implementation
@@ -161,8 +161,8 @@ void wxProcessTimer(wxMSWTimerImpl& timer)
 }
 
 
-LRESULT APIENTRY
-wxTimerWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT APIENTRY _EXPORT wxTimerWndProc(HWND hWnd, UINT message,
+                                        WPARAM wParam, LPARAM lParam)
 {
     if ( message == WM_TIMER )
     {

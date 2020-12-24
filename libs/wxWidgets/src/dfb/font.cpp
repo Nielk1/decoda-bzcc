@@ -38,23 +38,10 @@ typedef wxFontMgrFontRefData wxFontRefData;
 // wxFont
 // ----------------------------------------------------------------------------
 
-wxFont::wxFont(const wxString& nativeFontInfoString)
-{
-    wxNativeFontInfo info;
-    if ( info.FromString(nativeFontInfoString) )
-        (void)Create(info);
-}
-
 bool wxFont::Create(const wxNativeFontInfo& info)
 {
-    m_refData = new wxFontRefData(info.pointSize,
-                                  info.family,
-                                  info.style,
-                                  info.weight,
-                                  info.underlined,
-                                  info.faceName,
-                                  info.encoding);
-    return true;
+    return Create(info.pointSize, info.family, info.style, info.weight,
+                  info.underlined, info.faceName, info.encoding);
 }
 
 bool wxFont::Create(int pointSize,
@@ -94,11 +81,11 @@ wxIDirectFBFontPtr wxFont::GetDirectFBFont(bool antialiased) const
     return i ? i->GetDirectFBFont() : wxIDirectFBFontPtr();
 }
 
-double wxFont::GetFractionalPointSize() const
+int wxFont::GetPointSize() const
 {
     wxCHECK_MSG( IsOk(), 0, wxT("invalid font") );
 
-    return M_FONTDATA->GetFractionalPointSize();
+    return M_FONTDATA->GetPointSize();
 }
 
 wxString wxFont::GetFaceName() const
@@ -120,11 +107,11 @@ wxFontStyle wxFont::GetStyle() const
     return M_FONTDATA->GetStyle();
 }
 
-int wxFont::GetNumericWeight() const
+wxFontWeight wxFont::GetWeight() const
 {
     wxCHECK_MSG( IsOk(), wxFONTWEIGHT_MAX, wxT("invalid font") );
 
-    return M_FONTDATA->GetNumericWeight();
+    return M_FONTDATA->GetWeight();
 }
 
 bool wxFont::GetUnderlined() const
@@ -160,10 +147,10 @@ const wxNativeFontInfo *wxFont::GetNativeFontInfo() const
 // change font attributes
 // ----------------------------------------------------------------------------
 
-void wxFont::SetFractionalPointSize(double pointSize)
+void wxFont::SetPointSize(int pointSize)
 {
     AllocExclusive();
-    M_FONTDATA->SetFractionalPointSize(pointSize);
+    M_FONTDATA->SetPointSize(pointSize);
 }
 
 void wxFont::SetFamily(wxFontFamily family)
@@ -178,10 +165,10 @@ void wxFont::SetStyle(wxFontStyle style)
     M_FONTDATA->SetStyle(style);
 }
 
-void wxFont::SetNumericWeight(int weight)
+void wxFont::SetWeight(wxFontWeight weight)
 {
     AllocExclusive();
-    M_FONTDATA->SetNumericWeight(weight);
+    M_FONTDATA->SetWeight(weight);
 }
 
 bool wxFont::SetFaceName(const wxString& faceName)

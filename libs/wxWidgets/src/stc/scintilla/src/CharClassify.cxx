@@ -8,12 +8,15 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <stdexcept>
-
 #include "CharClassify.h"
 
 #ifdef SCI_NAMESPACE
 using namespace Scintilla;
+#endif
+
+// Shut up annoying Visual C++ warnings:
+#ifdef _MSC_VER
+#pragma warning(disable: 4514)
 #endif
 
 CharClassify::CharClassify() {
@@ -44,7 +47,7 @@ void CharClassify::SetCharClasses(const unsigned char *chars, cc newCharClass) {
 	}
 }
 
-int CharClassify::GetCharsOfClass(cc characterClass, unsigned char *buffer) const {
+int CharClassify::GetCharsOfClass(cc characterClass, unsigned char *buffer) {
 	// Get characters belonging to the given char class; return the number
 	// of characters (if the buffer is NULL, don't write to it).
 	int count = 0;

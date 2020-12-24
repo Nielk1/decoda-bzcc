@@ -24,7 +24,10 @@
     performance nor from user interface point of view, for large number of
     items.
 
-    Notice that the list box doesn't support control characters other than @c TAB.
+    Notice that currently @c TAB characters in list box items text are not
+    handled consistently under all platforms, so they should be replaced by
+    spaces to display strings properly everywhere. The list box doesn't
+    support any other control characters at all.
 
     @beginStyleTable
     @style{wxLB_SINGLE}
@@ -58,9 +61,7 @@
         list is selected or the selection changes.
     @event{EVT_LISTBOX_DCLICK(id, func)}
         Process a @c wxEVT_LISTBOX_DCLICK event, when the listbox
-        is double-clicked. On some platforms (notably wxGTK2)
-        pressing the enter key is handled as an equivalent of a
-        double-click.
+        is double-clicked.
     @endEventTable
 
     @library{wxcore}
@@ -173,9 +174,9 @@ public:
     void Deselect(int n);
 
     virtual void SetSelection(int n);
-
+    
     virtual int GetSelection() const;
-
+    
     virtual bool SetStringSelection(const wxString& s, bool select);
     virtual bool SetStringSelection(const wxString& s);
 
@@ -284,8 +285,12 @@ public:
     /**
         Ensure that the item with the given index is currently shown.
 
-        This method scrolls the listbox only if necessary and doesn't do
-        anything if this item is already shown, unlike SetFirstItem().
+        Scroll the listbox if necessary.
+
+        This method is currently only implemented in wxGTK and wxOSX and does
+        nothing in other ports.
+
+        @see SetFirstItem()
      */
     virtual void EnsureVisible(int n);
 
@@ -296,54 +301,12 @@ public:
      */
     virtual bool IsSorted() const;
 
-    /**
-        Return the number of items that can fit vertically in the visible area of
-        the listbox.
-
-        Returns -1 if the number of items per page couldn't be determined. On
-        wxGTK this method can only determine the number of items per page if
-        there is at least one item in the listbox.
-
-        @since 3.1.0
-    */
-    int GetCountPerPage() const;
-
-    /**
-        Return the index of the topmost visible item.
-
-        Returns ::wxNOT_FOUND if the method is not implemented for the current
-        platform.
-
-        @since 3.1.0
-    */
-    int GetTopItem() const;
-
-    /**
-        MSW-specific function for setting custom tab stop distances.
-
-        Tab stops are expressed in dialog unit widths, i.e. "quarters of the
-        average character width for the font that is selected into the list
-        box".
-
-        @param tabStops
-            If this argument is empty, tab stops are reset to their default
-            value (every 32 dialog units). If it contains a single element, tab
-            stops are set at each multiple of the given value. Otherwise tab
-            stops are set at every element of the array, which must be in
-            ascending order.
-
-        @return @true if all specified tabs are set, @false otherwise
-
-        @onlyfor{wxmsw}
-
-        @since 3.1.4
-     */
-    virtual void MSWSetTabStops(const wxVector<int>& tabStops);
 
     // NOTE: Phoenix needs to see the implementation of pure virtuals so it
     // knows that this class is not abstract.
-    virtual unsigned int GetCount() const;
-    virtual wxString GetString(unsigned int n) const;
-    virtual void SetString(unsigned int n, const wxString& s);
-    virtual int FindString(const wxString& s, bool bCase = false) const;
+    virtual unsigned int GetCount() const; 
+    virtual wxString GetString(unsigned int n) const; 
+    virtual void SetString(unsigned int n, const wxString& s); 
+    virtual int FindString(const wxString& s, bool bCase = false) const;     
 };
+

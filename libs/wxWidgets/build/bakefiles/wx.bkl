@@ -95,7 +95,7 @@
             <command>
                 $(INSTALL_DIR) $(DESTDIR)$(BINDIR)
                 $(INSTALL_DIR) $(DESTDIR)$(LIBDIR)/wx/config
-                $(INSTALL_SCRIPT) lib/wx/config/$(TOOLCHAIN_FULLNAME) $(DESTDIR)$(LIBDIR)/wx/config
+                $(INSTALL_PROGRAM) lib/wx/config/$(TOOLCHAIN_FULLNAME) $(DESTDIR)$(LIBDIR)/wx/config
                 (cd $(DESTDIR)$(BINDIR) &amp;&amp; rm -f wx-config &amp;&amp; $(LN_S) $(LIBDIR)/wx/config/$(TOOLCHAIN_FULLNAME) wx-config || cp -p $(DESTDIR)$(LIBDIR)/wx/config/$(TOOLCHAIN_FULLNAME) wx-config)
             </command>
         </action>
@@ -153,7 +153,7 @@
     </if>
 
 
-    <!-- copy setup.h on DOS/Windows if the format supports it: -->
+    <!-- copy setup.h on DOS/OS2/Windows if the format supports it: -->
     <if cond="FORMAT!='autoconf' and IS_MSVC_PRJ=='0'">
         <mkdir id="libdir">
             <dir>$(LIBDIRNAME)</dir>
@@ -170,7 +170,8 @@
 
         <set var="SETUP_H_SUBDIR">
             <if cond="WXUNIV=='1'">univ</if>
-            <if cond="WXUNIV=='0'">$(TOOLKIT_LOWERCASE)</if>
+            <if cond="WXUNIV=='0' and PLATFORM_OS2!='1'">$(TOOLKIT_LOWERCASE)</if>
+            <if cond="WXUNIV=='0' and PLATFORM_OS2=='1'">os2</if>
         </set>
 
         <copy-file-to-file-if-not-exist id="master_setup.h">
@@ -205,7 +206,7 @@
             <depends-on-file>$(SRCDIR)/include/wx/msw/genrcdefs.h</depends-on-file>
 
             <command>
-                $(DOLLAR)(CPP) $(DOLLAR)(CPPFLAGS) "$(nativePaths(SRCDIR))\include\wx\msw\genrcdefs.h" > "$(SETUPHDIR)\wx\msw\rcdefs.h"
+                $(DOLLAR)(CPP) "$(nativePaths(SRCDIR))\include\wx\msw\genrcdefs.h" > "$(SETUPHDIR)\wx\msw\rcdefs.h"
             </command>
 
         </action>

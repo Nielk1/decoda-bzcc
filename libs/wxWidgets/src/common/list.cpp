@@ -51,7 +51,6 @@ bool wxListKey::operator==(wxListKeyValue value) const
             wxFAIL_MSG(wxT("bad key type."));
             // let compiler optimize the line above away in release build
             // by not putting return here...
-            wxFALLTHROUGH;
 
         case wxKEY_STRING:
             return *m_key.string == *value.string;
@@ -145,6 +144,16 @@ void wxListBase::Init(wxKeyType keyType)
   m_count = 0;
   m_destroy = false;
   m_keyType = keyType;
+}
+
+wxListBase::wxListBase(size_t count, void *elements[])
+{
+  Init();
+
+  for ( size_t n = 0; n < count; n++ )
+  {
+      Append(elements[n]);
+  }
 }
 
 void wxListBase::DoCopy(const wxListBase& list)
@@ -502,6 +511,9 @@ void wxListBase::Sort(const wxSortCompareFunction compfunc)
 
     // sort the array
     qsort((void *)objArray,num,sizeof(wxObject *),
+#ifdef __WXWINCE__
+        (int (__cdecl *)(const void *,const void *))
+#endif
         compfunc);
 
     // put the sorted pointers back into the list
@@ -683,16 +695,22 @@ bool wxStringList::Member(const wxChar *s) const
     return false;
 }
 
+#ifdef __WXWINCE__
+extern "C"
+{
+static int __cdecl
+#else
 extern "C"
 {
 static int LINKAGEMODE
+#endif
 
 wx_comparestrings(const void *arg1, const void *arg2)
 {
-    const wxChar* s1 = *static_cast<wxChar* const*>(arg1);
-    const wxChar* s2 = *static_cast<wxChar* const*>(arg2);
+  wxChar **s1 = (wxChar **) arg1;
+  wxChar **s2 = (wxChar **) arg2;
 
-    return wxStrcmp(s1, s2);
+  return wxStrcmp (*s1, *s2);
 }
 
 }   // end of extern "C" (required because of GCC Bug c++/33078

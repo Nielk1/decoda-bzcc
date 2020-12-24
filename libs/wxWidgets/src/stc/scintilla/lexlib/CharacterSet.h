@@ -160,18 +160,11 @@ inline bool isoperator(int ch) {
 
 // Simple case functions for ASCII.
 
-inline int MakeUpperCase(int ch) {
+inline char MakeUpperCase(char ch) {
 	if (ch < 'a' || ch > 'z')
 		return ch;
 	else
 		return static_cast<char>(ch - 'a' + 'A');
-}
-
-inline int MakeLowerCase(int ch) {
-	if (ch < 'A' || ch > 'Z')
-		return ch;
-	else
-		return ch - 'A' + 'a';
 }
 
 int CompareCaseInsensitive(const char *a, const char *b);

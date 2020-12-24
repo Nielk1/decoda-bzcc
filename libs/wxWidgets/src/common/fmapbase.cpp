@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     21.06.2003 (extracted from common/fontmap.cpp)
-// Copyright:   (c) 1999-2003 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 1999-2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -362,7 +362,7 @@ class wxFontMapperModule : public wxModule
 public:
     wxFontMapperModule() : wxModule() { }
 
-    virtual bool OnInit() wxOVERRIDE
+    virtual bool OnInit()
     {
         // a dummy wxFontMapperBase object could have been created during the
         // program startup before wxApp was created, we have to delete it to
@@ -376,15 +376,15 @@ public:
         return true;
     }
 
-    virtual void OnExit() wxOVERRIDE
+    virtual void OnExit()
     {
         wxFontMapperBase::Reset();
     }
 
-    wxDECLARE_DYNAMIC_CLASS(wxFontMapperModule);
+    DECLARE_DYNAMIC_CLASS(wxFontMapperModule)
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxFontMapperModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxFontMapperModule, wxModule)
 
 
 // ============================================================================
@@ -407,7 +407,8 @@ wxFontMapperBase::wxFontMapperBase()
 wxFontMapperBase::~wxFontMapperBase()
 {
 #if wxUSE_CONFIG && wxUSE_FILECONFIG
-    delete m_configDummy;
+    if ( m_configDummy )
+        delete m_configDummy;
 #endif // wxUSE_CONFIG
 }
 

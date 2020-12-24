@@ -19,7 +19,7 @@
 #include "wx/xrc/xh_clrpicker.h"
 #include "wx/clrpicker.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxColourPickerCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxColourPickerCtrlXmlHandler, wxXmlResourceHandler)
 
 wxColourPickerCtrlXmlHandler::wxColourPickerCtrlXmlHandler() : wxXmlResourceHandler()
 {

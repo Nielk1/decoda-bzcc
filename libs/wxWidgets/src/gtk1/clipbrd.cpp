@@ -297,7 +297,7 @@ selection_handler( GtkWidget *WXUNUSED(widget),
 // wxClipboard
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxClipboard, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxClipboard,wxObject)
 
 wxClipboard::wxClipboard()
 {

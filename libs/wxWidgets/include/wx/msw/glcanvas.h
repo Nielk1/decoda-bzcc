@@ -24,12 +24,10 @@
 class WXDLLIMPEXP_GL wxGLContext : public wxGLContextBase
 {
 public:
-    wxGLContext(wxGLCanvas *win,
-                const wxGLContext *other = NULL,
-                const wxGLContextAttrs *ctxAttrs = NULL);
+    wxGLContext(wxGLCanvas *win, const wxGLContext* other = NULL);
     virtual ~wxGLContext();
 
-    virtual bool SetCurrent(const wxGLCanvas& win) const wxOVERRIDE;
+    virtual bool SetCurrent(const wxGLCanvas& win) const;
 
     HGLRC GetGLRC() const { return m_glContext; }
 
@@ -37,7 +35,7 @@ protected:
     HGLRC m_glContext;
 
 private:
-    wxDECLARE_CLASS(wxGLContext);
+    DECLARE_CLASS(wxGLContext)
 };
 
 // ----------------------------------------------------------------------------
@@ -47,17 +45,7 @@ private:
 class WXDLLIMPEXP_GL wxGLCanvas : public wxGLCanvasBase
 {
 public:
-    explicit // avoid implicitly converting a wxWindow* to wxGLCanvas
-    wxGLCanvas(wxWindow *parent,
-               const wxGLAttributes& dispAttrs,
-               wxWindowID id = wxID_ANY,
-               const wxPoint& pos = wxDefaultPosition,
-               const wxSize& size = wxDefaultSize,
-               long style = 0,
-               const wxString& name = wxGLCanvasName,
-               const wxPalette& palette = wxNullPalette);
-
-    explicit
+    wxEXPLICIT // avoid implicitly converting a wxWindow* to wxGLCanvas
     wxGLCanvas(wxWindow *parent,
                wxWindowID id = wxID_ANY,
                const int *attribList = NULL,
@@ -66,15 +54,6 @@ public:
                long style = 0,
                const wxString& name = wxGLCanvasName,
                const wxPalette& palette = wxNullPalette);
-
-    bool Create(wxWindow *parent,
-                const wxGLAttributes& dispAttrs,
-                wxWindowID id = wxID_ANY,
-                const wxPoint& pos = wxDefaultPosition,
-                const wxSize& size = wxDefaultSize,
-                long style = 0,
-                const wxString& name = wxGLCanvasName,
-                const wxPalette& palette = wxNullPalette);
 
     bool Create(wxWindow *parent,
                 wxWindowID id = wxID_ANY,
@@ -88,7 +67,7 @@ public:
     virtual ~wxGLCanvas();
 
     // implement wxGLCanvasBase methods
-    virtual bool SwapBuffers() wxOVERRIDE;
+    virtual bool SwapBuffers();
 
 
     // MSW-specific helpers
@@ -97,19 +76,16 @@ public:
     // get the HDC used for OpenGL rendering
     HDC GetHDC() const { return m_hDC; }
 
-    // Try to find pixel format matching the given attributes list for the
-    // specified HDC, return 0 on error, otherwise ppfd is filled in with the
-    // information from dispAttrs
-    static int FindMatchingPixelFormat(const wxGLAttributes& dispAttrs,
-                                       PIXELFORMATDESCRIPTOR* ppfd = NULL);
-    // Same as FindMatchingPixelFormat
+    // try to find pixel format matching the given attributes list for the
+    // specified HDC, return 0 on error, otherwise pfd is filled in with the
+    // information from attribList if non-NULL
     static int ChooseMatchingPixelFormat(HDC hdc, const int *attribList,
                                          PIXELFORMATDESCRIPTOR *pfd = NULL);
 
 #if wxUSE_PALETTE
     // palette stuff
     bool SetupPalette(const wxPalette& palette);
-    virtual wxPalette CreateDefaultPalette() wxOVERRIDE;
+    virtual wxPalette CreateDefaultPalette();
     void OnQueryNewPalette(wxQueryNewPaletteEvent& event);
     void OnPaletteChanged(wxPaletteChangedEvent& event);
 #endif // wxUSE_PALETTE
@@ -175,8 +151,8 @@ protected:
     HDC m_hDC;
 
 private:
-    wxDECLARE_EVENT_TABLE();
-    wxDECLARE_CLASS(wxGLCanvas);
+    DECLARE_EVENT_TABLE()
+    DECLARE_CLASS(wxGLCanvas)
 };
 
 #endif // _WX_GLCANVAS_H_

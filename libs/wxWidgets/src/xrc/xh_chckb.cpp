@@ -22,7 +22,7 @@
     #include "wx/checkbox.h"
 #endif
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxCheckBoxXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxCheckBoxXmlHandler, wxXmlResourceHandler)
 
 wxCheckBoxXmlHandler::wxCheckBoxXmlHandler()
 : wxXmlResourceHandler()

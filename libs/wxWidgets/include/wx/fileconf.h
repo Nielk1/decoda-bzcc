@@ -151,28 +151,28 @@ public:
 #endif // __UNIX__/!__UNIX__
 
   // implement inherited pure virtual functions
-  virtual void SetPath(const wxString& strPath) wxOVERRIDE;
-  virtual const wxString& GetPath() const wxOVERRIDE;
+  virtual void SetPath(const wxString& strPath);
+  virtual const wxString& GetPath() const;
 
-  virtual bool GetFirstGroup(wxString& str, long& lIndex) const wxOVERRIDE;
-  virtual bool GetNextGroup (wxString& str, long& lIndex) const wxOVERRIDE;
-  virtual bool GetFirstEntry(wxString& str, long& lIndex) const wxOVERRIDE;
-  virtual bool GetNextEntry (wxString& str, long& lIndex) const wxOVERRIDE;
+  virtual bool GetFirstGroup(wxString& str, long& lIndex) const;
+  virtual bool GetNextGroup (wxString& str, long& lIndex) const;
+  virtual bool GetFirstEntry(wxString& str, long& lIndex) const;
+  virtual bool GetNextEntry (wxString& str, long& lIndex) const;
 
-  virtual size_t GetNumberOfEntries(bool bRecursive = false) const wxOVERRIDE;
-  virtual size_t GetNumberOfGroups(bool bRecursive = false) const wxOVERRIDE;
+  virtual size_t GetNumberOfEntries(bool bRecursive = false) const;
+  virtual size_t GetNumberOfGroups(bool bRecursive = false) const;
 
-  virtual bool HasGroup(const wxString& strName) const wxOVERRIDE;
-  virtual bool HasEntry(const wxString& strName) const wxOVERRIDE;
+  virtual bool HasGroup(const wxString& strName) const;
+  virtual bool HasEntry(const wxString& strName) const;
 
-  virtual bool Flush(bool bCurrentOnly = false) wxOVERRIDE;
+  virtual bool Flush(bool bCurrentOnly = false);
 
-  virtual bool RenameEntry(const wxString& oldName, const wxString& newName) wxOVERRIDE;
-  virtual bool RenameGroup(const wxString& oldName, const wxString& newName) wxOVERRIDE;
+  virtual bool RenameEntry(const wxString& oldName, const wxString& newName);
+  virtual bool RenameGroup(const wxString& oldName, const wxString& newName);
 
-  virtual bool DeleteEntry(const wxString& key, bool bGroupIfEmptyAlso = true) wxOVERRIDE;
-  virtual bool DeleteGroup(const wxString& szKey) wxOVERRIDE;
-  virtual bool DeleteAll() wxOVERRIDE;
+  virtual bool DeleteEntry(const wxString& key, bool bGroupIfEmptyAlso = true);
+  virtual bool DeleteGroup(const wxString& szKey);
+  virtual bool DeleteAll();
 
   // additional, wxFileConfig-specific, functionality
 #if wxUSE_STREAMS
@@ -181,9 +181,6 @@ public:
   // as it won't be "changed" any more
   virtual bool Save(wxOutputStream& os, const wxMBConv& conv = wxConvAuto());
 #endif // wxUSE_STREAMS
-
-  void EnableAutoSave() { m_autosave = true; }
-  void DisableAutoSave() { m_autosave = false; }
 
 public:
   // functions to work with this list
@@ -194,16 +191,16 @@ public:
   bool      LineListIsEmpty();
 
 protected:
-  virtual bool DoReadString(const wxString& key, wxString *pStr) const wxOVERRIDE;
-  virtual bool DoReadLong(const wxString& key, long *pl) const wxOVERRIDE;
+  virtual bool DoReadString(const wxString& key, wxString *pStr) const;
+  virtual bool DoReadLong(const wxString& key, long *pl) const;
 #if wxUSE_BASE64
-  virtual bool DoReadBinary(const wxString& key, wxMemoryBuffer* buf) const wxOVERRIDE;
+  virtual bool DoReadBinary(const wxString& key, wxMemoryBuffer* buf) const;
 #endif // wxUSE_BASE64
 
-  virtual bool DoWriteString(const wxString& key, const wxString& szValue) wxOVERRIDE;
-  virtual bool DoWriteLong(const wxString& key, long lValue) wxOVERRIDE;
+  virtual bool DoWriteString(const wxString& key, const wxString& szValue);
+  virtual bool DoWriteLong(const wxString& key, long lValue);
 #if wxUSE_BASE64
-  virtual bool DoWriteBinary(const wxString& key, const wxMemoryBuffer& buf) wxOVERRIDE;
+  virtual bool DoWriteBinary(const wxString& key, const wxMemoryBuffer& buf);
 #endif // wxUSE_BASE64
 
 private:
@@ -253,10 +250,9 @@ private:
 #endif // __UNIX__
 
   bool m_isDirty;                       // if true, we have unsaved changes
-  bool m_autosave;                      // if true, save changes on destruction
 
   wxDECLARE_NO_COPY_CLASS(wxFileConfig);
-  wxDECLARE_ABSTRACT_CLASS(wxFileConfig);
+  DECLARE_ABSTRACT_CLASS(wxFileConfig)
 };
 
 #endif

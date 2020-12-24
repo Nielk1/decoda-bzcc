@@ -13,7 +13,7 @@
 
 class WXDLLIMPEXP_CORE wxRadioButton: public wxControl
 {
-    wxDECLARE_DYNAMIC_CLASS(wxRadioButton);
+    DECLARE_DYNAMIC_CLASS(wxRadioButton)
 public:
     wxRadioButton();
     virtual ~wxRadioButton() { RemoveFromCycle(); }
@@ -23,7 +23,7 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize, long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxRadioButtonNameStr))
+        const wxString& name = wxRadioButtonNameStr)
     {
         Create(parent, id, label, pos, size, style, validator, name);
     }
@@ -33,7 +33,7 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize, long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxRadioButtonNameStr));
+        const wxString& name = wxRadioButtonNameStr);
 
     virtual void SetValue(bool val);
     virtual bool GetValue() const ;

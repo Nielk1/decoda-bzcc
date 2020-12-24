@@ -12,15 +12,14 @@
 #define _WX_GENERIC_DATECTRL_H_
 
 #include "wx/compositewin.h"
-#include "wx/containr.h"
 
 class WXDLLIMPEXP_FWD_CORE wxComboCtrl;
 
-class WXDLLIMPEXP_FWD_CORE wxCalendarCtrl;
-class WXDLLIMPEXP_FWD_CORE wxCalendarComboPopup;
+class WXDLLIMPEXP_FWD_ADV wxCalendarCtrl;
+class WXDLLIMPEXP_FWD_ADV wxCalendarComboPopup;
 
-class WXDLLIMPEXP_CORE wxDatePickerCtrlGeneric
-    : public wxCompositeWindow< wxNavigationEnabled<wxDatePickerCtrlBase> >
+class WXDLLIMPEXP_ADV wxDatePickerCtrlGeneric
+    : public wxCompositeWindow<wxDatePickerCtrlBase>
 {
 public:
     // creating the control
@@ -50,11 +49,11 @@ public:
                 const wxString& name = wxDatePickerCtrlNameStr);
 
     // wxDatePickerCtrl methods
-    void SetValue(const wxDateTime& date) wxOVERRIDE;
-    wxDateTime GetValue() const wxOVERRIDE;
+    void SetValue(const wxDateTime& date);
+    wxDateTime GetValue() const;
 
-    bool GetRange(wxDateTime *dt1, wxDateTime *dt2) const wxOVERRIDE;
-    void SetRange(const wxDateTime &dt1, const wxDateTime &dt2) wxOVERRIDE;
+    bool GetRange(wxDateTime *dt1, wxDateTime *dt2) const;
+    void SetRange(const wxDateTime &dt1, const wxDateTime &dt2);
 
     bool SetDateRange(const wxDateTime& lowerdate = wxDefaultDateTime,
                       const wxDateTime& upperdate = wxDefaultDateTime);
@@ -67,28 +66,29 @@ public:
     // -------------------------------
 
     // overridden base class methods
-    virtual bool Destroy() wxOVERRIDE;
+    virtual bool Destroy();
 
 protected:
-    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+    virtual wxSize DoGetBestSize() const;
 
 private:
     void Init();
 
     // return the list of the windows composing this one
-    virtual wxWindowList GetCompositeWindowParts() const wxOVERRIDE;
+    virtual wxWindowList GetCompositeWindowParts() const;
 
     void OnText(wxCommandEvent &event);
     void OnSize(wxSizeEvent& event);
+    void OnFocus(wxFocusEvent& event);
 
 #ifdef __WXOSX_COCOA__
-    virtual void OSXGenerateEvent(const wxDateTime& WXUNUSED(dt)) wxOVERRIDE { }
+    virtual void OSXGenerateEvent(const wxDateTime& WXUNUSED(dt)) { }
 #endif
 
     wxComboCtrl* m_combo;
     wxCalendarComboPopup* m_popup;
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
     wxDECLARE_NO_COPY_CLASS(wxDatePickerCtrlGeneric);
 };
 

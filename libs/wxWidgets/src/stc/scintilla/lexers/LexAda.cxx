@@ -34,8 +34,8 @@ using namespace Scintilla;
  */
 
 static void ColouriseDocument(
-    Sci_PositionU startPos,
-    Sci_Position length,
+    unsigned int startPos,
+    int length,
     int initStyle,
     WordList *keywordlists[],
     Accessor &styler);
@@ -65,6 +65,8 @@ static void ColouriseWhiteSpace(StyleContext& sc, bool& apostropheStartsAttribut
 static void ColouriseWord(StyleContext& sc, WordList& keywords, bool& apostropheStartsAttribute);
 
 static inline bool IsDelimiterCharacter(int ch);
+static inline bool IsNumberStartCharacter(int ch);
+static inline bool IsNumberCharacter(int ch);
 static inline bool IsSeparatorOrDelimiterCharacter(int ch);
 static bool IsValidIdentifier(const std::string& identifier);
 static bool IsValidNumber(const std::string& number);
@@ -222,8 +224,8 @@ static void ColouriseWord(StyleContext& sc, WordList& keywords, bool& apostrophe
 //
 
 static void ColouriseDocument(
-    Sci_PositionU startPos,
-    Sci_Position length,
+    unsigned int startPos,
+    int length,
     int initStyle,
     WordList *keywordlists[],
     Accessor &styler) {
@@ -231,7 +233,7 @@ static void ColouriseDocument(
 
 	StyleContext sc(startPos, length, initStyle, styler);
 
-	Sci_Position lineCurrent = styler.GetLine(startPos);
+	int lineCurrent = styler.GetLine(startPos);
 	bool apostropheStartsAttribute = (styler.GetLineState(lineCurrent) & 1) != 0;
 
 	while (sc.More()) {
@@ -306,6 +308,19 @@ static inline bool IsDelimiterCharacter(int ch) {
 	default:
 		return false;
 	}
+}
+
+static inline bool IsNumberCharacter(int ch) {
+	return IsNumberStartCharacter(ch) ||
+	       ch == '_' ||
+	       ch == '.' ||
+	       ch == '#' ||
+	       (ch >= 'a' && ch <= 'f') ||
+	       (ch >= 'A' && ch <= 'F');
+}
+
+static inline bool IsNumberStartCharacter(int ch) {
+	return IsADigit(ch);
 }
 
 static inline bool IsSeparatorOrDelimiterCharacter(int ch) {
@@ -511,5 +526,5 @@ static inline bool IsWordCharacter(int ch) {
 }
 
 static inline bool IsWordStartCharacter(int ch) {
-	return (IsASCII(ch) && isalpha(ch)) || ch == '_';
+	return (isascii(ch) && isalpha(ch)) || ch == '_';
 }

@@ -35,8 +35,8 @@
 
 static void wxSliderCallback (Widget widget, XtPointer clientData, XmScaleCallbackStruct * cbs);
 
-wxBEGIN_EVENT_TABLE(wxSlider, wxControl)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxSlider, wxControl)
+END_EVENT_TABLE()
 
 
 

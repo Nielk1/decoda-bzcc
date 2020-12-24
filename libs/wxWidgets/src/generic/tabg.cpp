@@ -35,9 +35,9 @@ WX_DEFINE_LIST(wxTabLayerList)
 // defined: use new, rounded tab implementation (doesn't colour in tabs)
 // #define wxUSE_NEW_METHOD
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTabControl, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxTabControl, wxObject)
 
-// wxIMPLEMENT_DYNAMIC_CLASS(wxTabLayer, wxList);
+// IMPLEMENT_DYNAMIC_CLASS(wxTabLayer, wxList)
 
 wxTabControl::wxTabControl(wxTabView *v)
 {
@@ -203,7 +203,7 @@ void wxTabControl::OnDraw(wxDC& dc, bool lastInRow)
 
   wxColour col(m_view->GetTextColour());
   dc.SetTextForeground(col);
-  dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
+  dc.SetBackgroundMode(wxTRANSPARENT);
   wxCoord textWidth, textHeight;
   dc.GetTextExtent(GetLabel(), &textWidth, &textHeight);
 
@@ -474,7 +474,7 @@ void wxTabControl::OnDraw(wxDC& dc, bool lastInRow)
 
     wxColour col(m_view->GetTextColour());
     dc.SetTextForeground(col);
-    dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
+    dc.SetBackgroundMode(wxTRANSPARENT);
     long textWidth, textHeight;
     dc.GetTextExtent(GetLabel(), &textWidth, &textHeight);
 
@@ -501,7 +501,7 @@ bool wxTabControl::HitTest(int x, int y) const
     return false;
 }
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTabView, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxTabView, wxObject)
 
 wxTabView::wxTabView(long style)
 {
@@ -1135,13 +1135,13 @@ int wxTabView::CalculateTabWidth(int noTabs, bool adjustView)
  * wxTabbedDialog
  */
 
-wxIMPLEMENT_CLASS(wxTabbedDialog, wxDialog);
+IMPLEMENT_CLASS(wxTabbedDialog, wxDialog)
 
-wxBEGIN_EVENT_TABLE(wxTabbedDialog, wxDialog)
+BEGIN_EVENT_TABLE(wxTabbedDialog, wxDialog)
     EVT_CLOSE(wxTabbedDialog::OnCloseWindow)
     EVT_MOUSE_EVENTS(wxTabbedDialog::OnMouseEvent)
     EVT_PAINT(wxTabbedDialog::OnPaint)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxTabbedDialog::wxTabbedDialog(wxWindow *parent, wxWindowID id,
     const wxString& title,
@@ -1180,12 +1180,12 @@ void wxTabbedDialog::OnPaint(wxPaintEvent& WXUNUSED(event) )
  * wxTabbedPanel
  */
 
-wxIMPLEMENT_CLASS(wxTabbedPanel, wxPanel);
+IMPLEMENT_CLASS(wxTabbedPanel, wxPanel)
 
-wxBEGIN_EVENT_TABLE(wxTabbedPanel, wxPanel)
+BEGIN_EVENT_TABLE(wxTabbedPanel, wxPanel)
     EVT_MOUSE_EVENTS(wxTabbedPanel::OnMouseEvent)
     EVT_PAINT(wxTabbedPanel::OnPaint)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxTabbedPanel::wxTabbedPanel(wxWindow *parent, wxWindowID id, const wxPoint& pos,
    const wxSize& size, long windowStyle, const wxString& name):
@@ -1216,7 +1216,7 @@ void wxTabbedPanel::OnPaint(wxPaintEvent& WXUNUSED(event) )
  * wxPanelTabView
  */
 
-wxIMPLEMENT_CLASS(wxPanelTabView, wxTabView);
+IMPLEMENT_CLASS(wxPanelTabView, wxTabView)
 
 wxPanelTabView::wxPanelTabView(wxPanel *pan, long style)
     : wxTabView(style)

@@ -66,10 +66,10 @@ WX_DEFINE_ARRAY_PTR(wxOverlayImpl*, wxDfbOverlaysList);
 // ---------------------------------------------------------------------------
 
 // in wxUniv this class is abstract because it doesn't have DoPopupMenu()
-wxIMPLEMENT_ABSTRACT_CLASS(wxWindowDFB, wxWindowBase);
+IMPLEMENT_ABSTRACT_CLASS(wxWindowDFB, wxWindowBase)
 
-wxBEGIN_EVENT_TABLE(wxWindowDFB, wxWindowBase)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxWindowDFB, wxWindowBase)
+END_EVENT_TABLE()
 
 //-----------------------------------------------------------------------------
 // global functions
@@ -310,13 +310,6 @@ void wxWindowDFB::DoReleaseMouse()
 /* static */ wxWindow *wxWindowBase::GetCapture()
 {
     return (wxWindow*)gs_mouseCapture;
-}
-
-wxMouseState wxGetMouseState()
-{
-#warning "implement this"
-    wxMouseState ms;
-    return ms;
 }
 
 bool wxWindowDFB::SetCursor(const wxCursor& cursor)
@@ -684,7 +677,8 @@ void wxWindowDFB::PaintWindow(const wxRect& rect)
     // only send wxNcPaintEvent if drawing at least part of nonclient area:
     if ( !clientRect.Contains(rect) )
     {
-        wxNcPaintEvent eventNc(this);
+        wxNcPaintEvent eventNc(GetId());
+        eventNc.SetEventObject(this);
         HandleWindowEvent(eventNc);
     }
     else
@@ -696,7 +690,8 @@ void wxWindowDFB::PaintWindow(const wxRect& rect)
     // only send wxPaintEvent if drawing at least part of client area:
     if ( rect.Intersects(clientRect) )
     {
-        wxPaintEvent eventPt(this);
+        wxPaintEvent eventPt(GetId());
+        eventPt.SetEventObject(this);
         HandleWindowEvent(eventPt);
     }
     else

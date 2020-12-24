@@ -39,8 +39,12 @@
     extern "C" int vswscanf(const wchar_t *, const wchar_t *, va_list);
 #endif
 
-#include <time.h>
-#include <locale.h>
+#ifndef __WXWINCE__
+    #include <time.h>
+    #include <locale.h>
+#else
+    #include "wx/msw/wince/time.h"
+#endif
 
 #ifndef WX_PRECOMP
     #include "wx/string.h"
@@ -53,7 +57,14 @@
     #include <langinfo.h>
 #endif
 
-#include <errno.h>
+#ifdef __WXWINCE__
+    // there is no errno.h under CE apparently
+    #define wxSET_ERRNO(value)
+#else
+    #include <errno.h>
+
+    #define wxSET_ERRNO(value) errno = value
+#endif
 
 #if defined(__DARWIN__)
     #include "wx/osx/core/cfref.h"
@@ -82,7 +93,7 @@ WXDLLIMPEXP_BASE size_t wxMB2WC(wchar_t *buf, const char *psz, size_t n)
 #ifdef HAVE_WCSRTOMBS
     return mbsrtowcs(buf, &psz, n, &mbstate);
 #else
-    return wxMbstowcs(buf, psz, n);
+    return mbstowcs(buf, psz, n);
 #endif
   }
 
@@ -95,7 +106,7 @@ WXDLLIMPEXP_BASE size_t wxMB2WC(wchar_t *buf, const char *psz, size_t n)
 #ifdef HAVE_WCSRTOMBS
   return mbsrtowcs(NULL, &psz, 0, &mbstate);
 #else
-  return wxMbstowcs(NULL, psz, 0);
+  return mbstowcs(NULL, psz, 0);
 #endif
 }
 
@@ -115,19 +126,26 @@ WXDLLIMPEXP_BASE size_t wxWC2MB(char *buf, const wchar_t *pwz, size_t n)
 #ifdef HAVE_WCSRTOMBS
     return wcsrtombs(buf, &pwz, n, &mbstate);
 #else
-    return wxWcstombs(buf, pwz, n);
+    return wcstombs(buf, pwz, n);
 #endif
   }
 
 #ifdef HAVE_WCSRTOMBS
   return wcsrtombs(NULL, &pwz, 0, &mbstate);
 #else
-  return wxWcstombs(NULL, pwz, 0);
+  return wcstombs(NULL, pwz, 0);
 #endif
 }
 
 char* wxSetlocale(int category, const char *locale)
 {
+#ifdef __WXWINCE__
+    // FIXME-CE: there is no setlocale() in CE CRT, use SetThreadLocale()?
+    wxUnusedVar(category);
+    wxUnusedVar(locale);
+
+    return NULL;
+#else // !__WXWINCE__
 #ifdef __WXMAC__
     char *rv = NULL ;
     if ( locale != NULL && locale[0] == 0 )
@@ -155,6 +173,7 @@ char* wxSetlocale(int category, const char *locale)
         wxUpdateLocaleIsUtf8();
     }
     return rv;
+#endif // __WXWINCE__/!__WXWINCE__
 }
 
 // ============================================================================
@@ -176,6 +195,19 @@ char* wxSetlocale(int category, const char *locale)
 
     int wxCRT_VfprintfW( FILE *stream, const wchar_t *format, va_list argptr );
 #endif
+
+#if defined(__DMC__)
+/* Digital Mars adds count to _stprintf (C99) so convert */
+int wxCRT_SprintfW (wchar_t * __RESTRICT s, const wchar_t * __RESTRICT format, ... )
+{
+    va_list arglist;
+
+    va_start( arglist, format );
+    int iLen = swprintf ( s, -1, format, arglist );
+    va_end( arglist );
+    return iLen ;
+}
+#endif //__DMC__
 
 // ----------------------------------------------------------------------------
 // implement the standard IO functions for wide char if libc doesn't have them
@@ -620,7 +652,20 @@ int wxVsprintf(char *str, const wxString& format, va_list argptr)
 int wxVsprintf(wchar_t *str, const wxString& format, va_list argptr)
 {
 #if wxUSE_UNICODE_WCHAR
+#ifdef __DMC__
+/*
+This fails with a bug similar to
+http://www.digitalmars.com/pnews/read.php?server=news.digitalmars.com&group=c++.beta&artnum=680
+in DMC 8.49 and 8.50
+I don't see it being used in the wxWidgets sources at present (oct 2007) CE
+*/
+#pragma message ( "warning ::::: wxVsprintf(wchar_t *str, const wxString& format, va_list argptr) not yet implemented" )
+    wxFAIL_MSG( wxT("TODO") );
+
+    return -1;
+#else
     return wxCRT_VsprintfW(str, format.wc_str(), argptr);
+#endif //DMC
 #else // wxUSE_UNICODE_UTF8
     #if !wxUSE_UTF8_LOCALE_ONLY
     if ( !wxLocaleIsUtf8 )
@@ -737,7 +782,7 @@ size_t wxStrlen(const wxChar32 *s )
 {
     if (!s) return 0;
     size_t i=0;
-    while (*s!=0) { ++i; ++s; }
+    while (*s!=0) { ++i; ++s; };
     return i;
 }
 
@@ -908,8 +953,8 @@ wxCRT_StrtoullBase(const T* nptr, T** endptr, int base, T* sign)
                 {
                     // Then it's an error.
                     if ( endptr )
-                        *endptr = const_cast<T*>(nptr);
-                    errno = EINVAL;
+                        *endptr = (T*) nptr;
+                    wxSET_ERRNO(EINVAL);
                     return sum;
                 }
             }
@@ -949,7 +994,7 @@ wxCRT_StrtoullBase(const T* nptr, T** endptr, int base, T* sign)
 
         if ( sum < prevsum )
         {
-            errno = ERANGE;
+            wxSET_ERRNO(ERANGE);
             break;
         }
     }
@@ -970,7 +1015,7 @@ static wxULongLong_t wxCRT_DoStrtoull(const T* nptr, T** endptr, int base)
 
     if ( sign == wxT('-') )
     {
-        errno = ERANGE;
+        wxSET_ERRNO(ERANGE);
         uval = 0;
     }
 
@@ -992,7 +1037,7 @@ static wxLongLong_t wxCRT_DoStrtoll(const T* nptr, T** endptr, int base)
         }
         else
         {
-            errno = ERANGE;
+            wxSET_ERRNO(ERANGE);
         }
     }
     else if ( uval <= wxINT64_MAX )
@@ -1001,7 +1046,7 @@ static wxLongLong_t wxCRT_DoStrtoll(const T* nptr, T** endptr, int base)
     }
     else
     {
-        errno = ERANGE;
+        wxSET_ERRNO(ERANGE);
     }
 
     return val;
@@ -1087,9 +1132,22 @@ char *strdup(const char *s)
 }
 #endif // wxNEED_STRDUP
 
+#if defined(__WXWINCE__) && (_WIN32_WCE <= 211)
+
+void *calloc( size_t num, size_t size )
+{
+    void** ptr = (void **)malloc(num * size);
+    memset( ptr, 0, num * size);
+    return ptr;
+}
+
+#endif // __WXWINCE__ <= 211
+
 // ============================================================================
 // wxLocaleIsUtf8
 // ============================================================================
+
+#if wxUSE_UNICODE_UTF8
 
 #if !wxUSE_UTF8_LOCALE_ONLY
 bool wxLocaleIsUtf8 = false; // the safer setting if not known
@@ -1144,6 +1202,8 @@ void wxUpdateLocaleIsUtf8()
     wxLocaleIsUtf8 = wxIsLocaleUtf8();
 #endif
 }
+
+#endif // wxUSE_UNICODE_UTF8
 
 // ============================================================================
 // wx wrappers for CRT functions
@@ -1221,7 +1281,7 @@ wchar_t *wxFgets(wchar_t *s, int size, FILE *stream)
 // wxScanf() and friends
 // ----------------------------------------------------------------------------
 
-#ifdef HAVE_VSSCANF // __VISUALC__, see wx/crt.h
+#ifdef HAVE_VSSCANF // __VISUALC__ and __DMC__ see wx/crt.h
 int wxVsscanf(const char *str, const char *format, va_list ap)
     { return wxCRT_VsscanfA(str, format, ap); }
 int wxVsscanf(const wchar_t *str, const wchar_t *format, va_list ap)
@@ -1239,99 +1299,3 @@ int wxVsscanf(const wxCStrData& str, const char *format, va_list ap)
 int wxVsscanf(const wxCStrData& str, const wchar_t *format, va_list ap)
     { return wxCRT_VsscanfW(str.AsWCharBuf(), format, ap); }
 #endif // HAVE_NO_VSSCANF
-
-// ============================================================================
-// ANDROID specific private implementations (due stubs/missing support in NDK)
-// ============================================================================
-
-// On android, most wchar_t functions are broken, so instead we must
-// convert a byte at a time
-
-#ifdef __ANDROID__
-
-#define ANDROID_WCSTO_START \
-    int len = wcslen(nptr) + 1; \
-    char dst[len]; \
-    for(int i=0; i<len; i++) \
-        dst[i] = wctob(nptr[i]); \
-    char *dstendp;
-
-#define ANDROID_WCSTO_END \
-    if(endptr) { \
-        if(dstendp) \
-            *endptr = (wchar_t*)(nptr + (dstendp - dst) * sizeof(wchar_t)); \
-        else \
-            *endptr = NULL; \
-    } \
-    return d;
-
-long android_wcstol(const wchar_t *nptr, wchar_t **endptr, int base)
-{
-    ANDROID_WCSTO_START
-    long d = strtol(dst, &dstendp, base);
-    ANDROID_WCSTO_END
-}
-
-unsigned long android_wcstoul(const wchar_t *nptr, wchar_t **endptr, int base)
-{
-    ANDROID_WCSTO_START
-    unsigned long d = strtoul(dst, &dstendp, base);
-    ANDROID_WCSTO_END
-}
-
-double android_wcstod(const wchar_t *nptr, wchar_t **endptr)
-{
-    ANDROID_WCSTO_START
-    double d = strtod(dst, &dstendp);
-    ANDROID_WCSTO_END
-}
-
-#ifdef wxNEED_WX_MBSTOWCS
-
-WXDLLEXPORT size_t android_mbstowcs(wchar_t * out, const char * in, size_t outlen)
-{
-    if (!out)
-    {
-        size_t outsize = 0;
-        while(*in++)
-            outsize++;
-        return outsize;
-    }
-
-    const char* origin = in;
-
-    while (outlen-- && *in)
-    {
-        *out++ = (wchar_t) *in++;
-    }
-
-    *out = '\0';
-
-    return in - origin;
-}
-
-WXDLLEXPORT size_t android_wcstombs(char * out, const wchar_t * in, size_t outlen)
-{
-    if (!out)
-    {
-        size_t outsize = 0;
-        while(*in++)
-            outsize++;
-        return outsize;
-    }
-
-    const wchar_t* origin = in;
-
-    while (outlen-- && *in)
-    {
-        *out++ = (char) *in++;
-    }
-
-    *out = '\0';
-
-    return in - origin;
-}
-
-#endif // wxNEED_WX_MBSTOWCS
-
-#endif // __ANDROID__

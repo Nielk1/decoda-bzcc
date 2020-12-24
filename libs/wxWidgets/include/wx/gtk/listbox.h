@@ -30,7 +30,7 @@ public:
             int n = 0, const wxString choices[] = (const wxString *) NULL,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxASCII_STR(wxListBoxNameStr) )
+            const wxString& name = wxListBoxNameStr )
     {
         Init();
         Create(parent, id, pos, size, n, choices, style, validator, name);
@@ -41,7 +41,7 @@ public:
             const wxArrayString& choices,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxASCII_STR(wxListBoxNameStr) )
+            const wxString& name = wxListBoxNameStr )
     {
         Init();
         Create(parent, id, pos, size, choices, style, validator, name);
@@ -54,37 +54,34 @@ public:
                 int n = 0, const wxString choices[] = (const wxString *) NULL,
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxASCII_STR(wxListBoxNameStr));
+                const wxString& name = wxListBoxNameStr);
     bool Create(wxWindow *parent, wxWindowID id,
                 const wxPoint& pos,
                 const wxSize& size,
                 const wxArrayString& choices,
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxASCII_STR(wxListBoxNameStr));
+                const wxString& name = wxListBoxNameStr);
 
-    virtual unsigned int GetCount() const wxOVERRIDE;
-    virtual wxString GetString(unsigned int n) const wxOVERRIDE;
-    virtual void SetString(unsigned int n, const wxString& s) wxOVERRIDE;
-    virtual int FindString(const wxString& s, bool bCase = false) const wxOVERRIDE;
+    virtual unsigned int GetCount() const;
+    virtual wxString GetString(unsigned int n) const;
+    virtual void SetString(unsigned int n, const wxString& s);
+    virtual int FindString(const wxString& s, bool bCase = false) const;
 
-    virtual bool IsSelected(int n) const wxOVERRIDE;
-    virtual int GetSelection() const wxOVERRIDE;
-    virtual int GetSelections(wxArrayInt& aSelections) const wxOVERRIDE;
+    virtual bool IsSelected(int n) const;
+    virtual int GetSelection() const;
+    virtual int GetSelections(wxArrayInt& aSelections) const;
 
-    virtual void EnsureVisible(int n) wxOVERRIDE;
+    virtual void EnsureVisible(int n);
 
-    virtual int GetTopItem() const wxOVERRIDE;
-    virtual int GetCountPerPage() const wxOVERRIDE;
-
-    virtual void Update() wxOVERRIDE;
+    virtual void Update();
 
     static wxVisualAttributes
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
 
     // implementation from now on
 
-    virtual GtkWidget *GetConnectWidget() wxOVERRIDE;
+    virtual GtkWidget *GetConnectWidget();
 
     struct _GtkTreeView   *m_treeview;
     struct _GtkListStore  *m_liststore;
@@ -102,23 +99,23 @@ public:
     void GTKOnActivated(int item);
 
 protected:
-    virtual void DoClear() wxOVERRIDE;
-    virtual void DoDeleteOneItem(unsigned int n) wxOVERRIDE;
-    virtual wxSize DoGetBestSize() const wxOVERRIDE;
-    virtual void DoApplyWidgetStyle(GtkRcStyle *style) wxOVERRIDE;
-    virtual GdkWindow *GTKGetWindow(wxArrayGdkWindows& windows) const wxOVERRIDE;
+    virtual void DoClear();
+    virtual void DoDeleteOneItem(unsigned int n);
+    virtual wxSize DoGetBestSize() const;
+    virtual void DoApplyWidgetStyle(GtkRcStyle *style);
+    virtual GdkWindow *GTKGetWindow(wxArrayGdkWindows& windows) const;
 
-    virtual void DoSetSelection(int n, bool select) wxOVERRIDE;
+    virtual void DoSetSelection(int n, bool select);
 
     virtual int DoInsertItems(const wxArrayStringsAdapter& items,
                               unsigned int pos,
-                              void **clientData, wxClientDataType type) wxOVERRIDE;
-    virtual int DoInsertOneItem(const wxString& item, unsigned int pos) wxOVERRIDE;
+                              void **clientData, wxClientDataType type);
+    virtual int DoInsertOneItem(const wxString& item, unsigned int pos);
 
-    virtual void DoSetFirstItem(int n) wxOVERRIDE;
-    virtual void DoSetItemClientData(unsigned int n, void* clientData) wxOVERRIDE;
-    virtual void* DoGetItemClientData(unsigned int n) const wxOVERRIDE;
-    virtual int DoListHitTest(const wxPoint& point) const wxOVERRIDE;
+    virtual void DoSetFirstItem(int n);
+    virtual void DoSetItemClientData(unsigned int n, void* clientData);
+    virtual void* DoGetItemClientData(unsigned int n) const;
+    virtual int DoListHitTest(const wxPoint& point) const;
 
     // get the iterator for the given index, returns false if invalid
     bool GTKGetIteratorFor(unsigned pos, _GtkTreeIter *iter) const;
@@ -132,7 +129,7 @@ protected:
 private:
     void Init(); //common construction
 
-    wxDECLARE_DYNAMIC_CLASS(wxListBox);
+    DECLARE_DYNAMIC_CLASS(wxListBox)
 };
 
 #endif // _WX_GTK_LISTBOX_H_

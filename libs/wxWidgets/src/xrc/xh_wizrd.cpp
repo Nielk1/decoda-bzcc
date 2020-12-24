@@ -24,7 +24,7 @@
 
 #include "wx/wizard.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxWizardXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxWizardXmlHandler, wxXmlResourceHandler)
 
 wxWizardXmlHandler::wxWizardXmlHandler() : wxXmlResourceHandler()
 {

@@ -109,7 +109,7 @@ class wxConsoleEventLoopSourcesManager : public wxEventLoopSourcesManagerBase
 public:
     wxEventLoopSource* AddSourceForFD( int fd,
                                        wxEventLoopSourceHandler *handler,
-                                       int flags) wxOVERRIDE
+                                       int flags)
     {
         wxCHECK_MSG( fd != -1, NULL, "can't monitor invalid fd" );
 
@@ -214,10 +214,6 @@ void wxConsoleEventLoop::OnNextIteration()
     wxTheApp->CheckSignal();
 }
 
-void wxConsoleEventLoop::DoYieldFor(long eventsToProcess)
-{
-    wxEventLoopBase::DoYieldFor(eventsToProcess);
-}
 
 wxEventLoopBase *wxConsoleAppTraits::CreateEventLoop()
 {

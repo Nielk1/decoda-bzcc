@@ -37,6 +37,9 @@
 
 extern "C"
 {
+#ifdef __DMC__
+    #include "tif_config.h"
+#endif
     #include "tiff.h"
     #include "tiffio.h"
 }
@@ -95,7 +98,7 @@ TIFFwxErrorHandler(const char* module, const char *fmt, va_list ap)
 // wxTIFFHandler
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTIFFHandler,wxImageHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxTIFFHandler,wxImageHandler)
 
 wxTIFFHandler::wxTIFFHandler()
 {
@@ -528,7 +531,7 @@ bool wxTIFFHandler::LoadFile( wxImage *image, wxInputStream& stream, bool verbos
             default:
                 wxLogWarning(_("Unknown TIFF resolution unit %d ignored"),
                     tiffRes);
-                wxFALLTHROUGH;
+                // fall through
 
             case RESUNIT_NONE:
                 resUnit = wxIMAGE_RESOLUTION_NONE;
@@ -625,7 +628,7 @@ bool wxTIFFHandler::SaveFile( wxImage *image, wxOutputStream& stream, bool verbo
     {
         default:
             wxFAIL_MSG( wxT("unknown image resolution units") );
-            wxFALLTHROUGH;
+            // fall through
 
         case wxIMAGE_RESOLUTION_NONE:
             tiffRes = RESUNIT_NONE;
@@ -804,8 +807,8 @@ bool wxTIFFHandler::SaveFile( wxImage *image, wxOutputStream& stream, bool verbo
                     if (hasAlpha)
                     {
                         value = image->GetAlpha(column, row);
-                        buf[column*bytesPerPixel+1] = minIsWhite ? 255 - value
-                                                                 : value;
+                        buf[column*bytesPerPixel+1]
+                            = minIsWhite ? 255 - value : value;
                     }
                 }
             }
@@ -895,7 +898,7 @@ bool wxTIFFHandler::DoCanRead( wxInputStream& stream )
 
     wxString copyright;
     const wxString desc = ver.BeforeFirst('\n', &copyright);
-    copyright.Replace("\n", wxString());
+    copyright.Replace("\n", "");
 
     return wxVersionInfo("libtiff", major, minor, micro, desc, copyright);
 }

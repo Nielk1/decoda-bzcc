@@ -26,7 +26,7 @@ public:
     bool Create(int n,
                 const unsigned char *red, const unsigned char *green, const unsigned char *blue);
 
-    virtual int GetColoursCount() const wxOVERRIDE;
+    virtual int GetColoursCount() const;
 
     int
     GetPixel(unsigned char red, unsigned char green, unsigned char blue) const;
@@ -35,16 +35,16 @@ public:
     GetRGB(int pixel,
            unsigned char *red, unsigned char *green, unsigned char *blue) const;
 
-    // implementation
+    // implemetation
     WXHPALETTE GetHPALETTE() const;
     void SetHPALETTE(WXHPALETTE pal);
 
 protected:
-    virtual wxGDIRefData *CreateGDIRefData() const wxOVERRIDE;
-    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const wxOVERRIDE;
+    virtual wxGDIRefData *CreateGDIRefData() const;
+    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxPalette);
+    DECLARE_DYNAMIC_CLASS(wxPalette)
 };
 
 #endif // _WX_PALETTE_H_

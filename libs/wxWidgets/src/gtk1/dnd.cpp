@@ -801,7 +801,7 @@ void wxDropSource::PrepareIcon( int action, GdkDragContext *context )
 
     GdkBitmap *mask;
     if ( icon->GetMask() )
-        mask = icon->GetMask()->m_bitmap;
+        mask = icon->GetMask()->GetBitmap();
     else
         mask = NULL;
 

@@ -49,7 +49,7 @@
 
 #include "wx/valgen.h"
 
-wxIMPLEMENT_CLASS(wxGenericValidator, wxValidator);
+IMPLEMENT_CLASS(wxGenericValidator, wxValidator)
 
 wxGenericValidator::wxGenericValidator(bool *val)
 {
@@ -128,7 +128,7 @@ bool wxGenericValidator::Copy(const wxGenericValidator& val)
 }
 
 // Called to transfer data to the window
-bool wxGenericValidator::TransferToWindow()
+bool wxGenericValidator::TransferToWindow(void)
 {
     if ( !m_validatorWindow )
         return false;
@@ -349,7 +349,7 @@ bool wxGenericValidator::TransferToWindow()
         }
         else if (m_pFloat)
         {
-            pControl->SetValue(wxString::Format(wxS("%g"), double(*m_pFloat)));
+            pControl->SetValue(wxString::Format(wxT("%g"), *m_pFloat));
             return true;
         }
         else if (m_pDouble)
@@ -414,7 +414,7 @@ bool wxGenericValidator::TransferToWindow()
 }
 
 // Called to transfer data from the window
-bool wxGenericValidator::TransferFromWindow()
+bool wxGenericValidator::TransferFromWindow(void)
 {
     if ( !m_validatorWindow )
         return false;

@@ -25,7 +25,6 @@
     #include "wx/dcmemory.h"
     #include "wx/bitmap.h"
     #include "wx/image.h"
-    #include "wx/utils.h"
 #endif //WX_PRECOMP
 
 // ============================================================================

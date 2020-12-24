@@ -18,7 +18,7 @@
 // wxMemoryDCImpl
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxMemoryDCImpl, wxWindowDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxMemoryDCImpl, wxWindowDCImpl)
 
 void wxMemoryDCImpl::Init()
 {

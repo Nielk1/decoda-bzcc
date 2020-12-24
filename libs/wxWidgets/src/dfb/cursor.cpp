@@ -49,7 +49,7 @@ public:
 // wxCursor
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxCursor, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxCursor, wxObject)
 
 void wxCursor::InitFromStock(wxStockCursor cursorId)
 {

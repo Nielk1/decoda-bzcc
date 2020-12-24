@@ -55,9 +55,6 @@
     #define CLR_INVALID ((COLORREF)-1)
 #endif // no CLR_INVALID
 
-// ROP which doesn't have standard name
-#define DSTERASE 0x00220326     // dest = (NOT src) AND dest
-
 // ----------------------------------------------------------------------------
 // wxBitmapRefData
 // ----------------------------------------------------------------------------
@@ -69,19 +66,14 @@ public:
     wxBitmapRefData(const wxBitmapRefData& data);
     virtual ~wxBitmapRefData() { Free(); }
 
-    virtual void Free() wxOVERRIDE;
+    virtual void Free();
 
-#if wxUSE_WXDIB
     // Creates a new bitmap (DDB or DIB) from the contents of the given DIB.
     void CopyFromDIB(const wxDIB& dib);
 
+#if wxUSE_WXDIB
     // Takes ownership of the given DIB.
     bool AssignDIB(wxDIB& dib);
-
-    // Also takes ownership of the given DIB, but doesn't change any other
-    // fields (which are supposed to be already set), and just updates
-    // m_hasAlpha because 32 bit DIBs always do have it.
-    void Set32bppHDIB(HBITMAP hdib);
 #endif // wxUSE_WXDIB
 
 
@@ -133,14 +125,13 @@ public:
 private:
     void Init();
 
-#if wxUSE_WXDIB
     // Initialize using the given DIB but use (and take ownership of) the
     // bitmap handle if it is valid, assuming it's a DDB. If it's not valid,
     // use the DIB handle itself taking ownership of it (i.e. wxDIB will become
     // invalid when this function returns even though we take it as const
     // reference because this is how it's passed to us).
     void InitFromDIB(const wxDIB& dib, HBITMAP hbitmap = NULL);
-#endif // wxUSE_WXDIB
+
 
     // optional mask for transparent drawing
     wxMask       *m_bitmapMask;
@@ -154,10 +145,10 @@ private:
 // macros
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxBitmap, wxGDIObject);
-wxIMPLEMENT_DYNAMIC_CLASS(wxMask, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxBitmap, wxGDIObject)
+IMPLEMENT_DYNAMIC_CLASS(wxMask, wxObject)
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapHandler, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxBitmapHandler, wxObject)
 
 // ============================================================================
 // implementation
@@ -168,7 +159,19 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapHandler, wxObject);
 // ----------------------------------------------------------------------------
 
 // decide whether we should create a DIB or a DDB for the given parameters
-#if wxUSE_WXDIB
+//
+// NB: we always use DIBs under Windows CE as this is much simpler (even if
+//     also less efficient...) and we obviously can't use them if there is no
+//     DIB support compiled in at all
+#ifdef __WXWINCE__
+    static inline bool wxShouldCreateDIB(int, int, int, WXHDC) { return true; }
+
+    #define ALWAYS_USE_DIB
+#elif !wxUSE_WXDIB
+    // no sense in defining wxShouldCreateDIB() as we can't compile code
+    // executed if it is true, so we have to use #if's anyhow
+    #define NEVER_USE_DIB
+#else // wxUSE_WXDIB && !__WXWINCE__
     static inline bool wxShouldCreateDIB(int w, int h, int d, WXHDC hdc)
     {
         // here is the logic:
@@ -176,9 +179,10 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapHandler, wxObject);
         //  (a) if hdc is specified, the caller explicitly wants DDB
         //  (b) otherwise, create a DIB if depth >= 24 (we don't support 16bpp
         //      or less DIBs anyhow)
-        //  (c) finally, create DIBs even if the depth hasn't been
+        //  (c) finally, create DIBs under Win9x even if the depth hasn't been
         //      explicitly specified but the current display depth is 24 or
-        //      more and the image is "big", i.e. > 16Mb
+        //      more and the image is "big", i.e. > 16Mb which is the
+        //      theoretical limit for DDBs under Win9x
         //
         // consequences (all of which seem to make sense):
         //
@@ -192,10 +196,6 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapHandler, wxObject);
     }
 
     #define SOMETIMES_USE_DIB
-#else // !wxUSE_WXDIB
-    // no sense in defining wxShouldCreateDIB() as we can't compile code
-    // executed if it is true, so we have to use #if's anyhow
-    #define NEVER_USE_DIB
 #endif // different DIB usage scenarious
 
 // ----------------------------------------------------------------------------
@@ -223,10 +223,12 @@ wxBitmapRefData::wxBitmapRefData(const wxBitmapRefData& data)
 {
     Init();
 
-#if wxUSE_WXDIB
+    // (deep) copy the mask if present
+    if (data.m_bitmapMask)
+        m_bitmapMask = new wxMask(*data.m_bitmapMask);
+
     wxASSERT_MSG( !data.m_dib,
                     wxT("can't copy bitmap locked for raw access!") );
-#endif // wxUSE_WXDIB
 
     m_hasAlpha = data.m_hasAlpha;
 
@@ -235,33 +237,9 @@ wxBitmapRefData::wxBitmapRefData(const wxBitmapRefData& data)
     if ( data.m_hBitmap )
     {
         wxDIB dib((HBITMAP)(data.m_hBitmap));
-        // DDB obtained from CopyFromDIB() can have different
-        // colour depth than source DIB so we need to check it.
         CopyFromDIB(dib);
-        if ( m_depth != dib.GetDepth() )
-        {
-            // We got DDB with a different colour depth than we wanted, so we
-            // can't use it and need to continue using the DIB instead.
-            wxDIB dibDst(m_width, m_height, dib.GetDepth());
-            if ( dibDst.IsOk() )
-            {
-                m_depth = dib.GetDepth();
-                memcpy(dibDst.GetData(), dib.GetData(),
-                        wxDIB::GetLineSize(m_width, m_depth)*m_height);
-                AssignDIB(dibDst);
-            }
-            else
-            {
-                // Nothing else left to do...
-            }
-        }
     }
 #endif // wxUSE_WXDIB
-
-    // Ensure this is done after the block above otherwise if the color depth didn't match we'll lose the mask
-    // (deep) copy the mask if present
-    if (data.m_bitmapMask)
-        m_bitmapMask = new wxMask(*data.m_bitmapMask);
 }
 
 void wxBitmapRefData::Free()
@@ -279,14 +257,10 @@ void wxBitmapRefData::Free()
         {
             wxLogLastError(wxT("DeleteObject(hbitmap)"));
         }
-
-        m_hBitmap = 0;
     }
 
     wxDELETE(m_bitmapMask);
 }
-
-#if wxUSE_WXDIB
 
 void wxBitmapRefData::InitFromDIB(const wxDIB& dib, HBITMAP hbitmap)
 {
@@ -334,22 +308,9 @@ void wxBitmapRefData::CopyFromDIB(const wxDIB& dib)
 #endif // SOMETIMES_USE_DIB/ALWAYS_USE_DIB
 
     InitFromDIB(dib, hbitmap);
-    if ( hbitmap )
-    {
-        // DDB obtained from CreatedDDB() can have different colour depth
-        // than source DIB and we have to adjust respective data member
-        // accordingly.
-        BITMAP bm;
-        if ( ::GetObject(hbitmap, sizeof(bm), &bm) != sizeof(bm) )
-        {
-            wxLogLastError(wxS("GetObject (@wxBitmapRefData::CopyFromDIB)"));
-        }
-        else
-        {
-            m_depth = bm.bmBitsPixel;
-        }
-    }
 }
+
+#if wxUSE_WXDIB
 
 bool wxBitmapRefData::AssignDIB(wxDIB& dib)
 {
@@ -360,15 +321,6 @@ bool wxBitmapRefData::AssignDIB(wxDIB& dib)
     InitFromDIB(dib);
 
     return true;
-}
-
-void wxBitmapRefData::Set32bppHDIB(HBITMAP hdib)
-{
-    Free();
-
-    m_isDIB = true;
-    m_hasAlpha = true;
-    m_hBitmap = hdib;
 }
 
 #endif // wxUSE_WXDIB
@@ -387,7 +339,6 @@ wxGDIRefData *wxBitmap::CloneGDIRefData(const wxGDIRefData *data) const
     return new wxBitmapRefData(*static_cast<const wxBitmapRefData *>(data));
 }
 
-#if wxUSE_WXDIB
 // Premultiply the values of all RGBA pixels in the given range.
 static void PremultiplyPixels(unsigned char* begin, unsigned char* end)
 {
@@ -442,58 +393,20 @@ static bool CheckAlpha(HBITMAP hbmp, HBITMAP* hdib = NULL)
     return false;
 }
 
-// Return HDIB containing premultiplied bitmap data if the original bitmap is
-// not premultiplied, otherwise return NULL.
-//
-// Semantics is a bit weird here again because we want to avoid throwing the
-// wxDIB we create here away if possible.
-//
-// Also notice that this function uses a heuristics for determining whether the
-// original bitmap uses premultiplied alpha or not and can return NULL for some
-// bitmaps not using premultiplied alpha. And while this should be relatively
-// rare in practice, we really ought to allow the user to specify this
-// explicitly.
-static HBITMAP CreatePremultipliedDIBIfNeeded(HBITMAP hbmp)
-{
-    // Check if 32-bit bitmap realy has premultiplied RGB data
-    // and premuliply it if necessary.
-
-    BITMAP bm;
-    if ( !::GetObject(hbmp, sizeof(bm), &bm) || (bm.bmBitsPixel != 32) )
-        return NULL;
-
-    wxDIB dib(hbmp);
-    if ( !dib.IsOk() )
-        return NULL;
-
-    unsigned char* pixels = dib.GetData();
-    unsigned char* const end = pixels + 4*dib.GetWidth()*dib.GetHeight();
-    for ( ; pixels < end; pixels += 4 )
-    {
-        const unsigned char a = pixels[3];
-        if ( a > 0 && (pixels[0] > a || pixels[1] > a || pixels[2] > a) )
-        {
-            // Data is certainly not premultiplied by alpha if any of the
-            // values is smaller than the value of alpha itself.
-            PremultiplyPixels(dib.GetData(), end);
-
-            return dib.Detach();
-        }
-    }
-
-    return NULL;
-}
-#endif // wxUSE_WXDIB
-
 bool wxBitmap::CopyFromIconOrCursor(const wxGDIImage& icon,
                                     wxBitmapTransparency transp)
 {
+#if !defined(__WXMICROWIN__) && !defined(__WXWINCE__)
     // it may be either HICON or HCURSOR
     HICON hicon = (HICON)icon.GetHandle();
 
-    AutoIconInfo iconInfo;
-    if ( !iconInfo.GetFrom(hicon) )
+    ICONINFO iconInfo;
+    if ( !::GetIconInfo(hicon, &iconInfo) )
+    {
+        wxLogLastError(wxT("GetIconInfo"));
+
         return false;
+    }
 
     wxBitmapRefData *refData = new wxBitmapRefData;
     m_refData = refData;
@@ -507,59 +420,23 @@ bool wxBitmap::CopyFromIconOrCursor(const wxGDIImage& icon,
         refData->m_height = h;
         refData->m_depth = wxDisplayDepth();
         refData->m_hBitmap = (WXHBITMAP)iconInfo.hbmColor;
-
-        // Reset this field to prevent it from being destroyed by AutoIconInfo,
-        // we took ownership of it.
-        iconInfo.hbmColor = 0;
     }
     else // we only have monochrome icon/cursor
     {
-        // For monochrome icons/cursor bitmap mask is of height 2*h
-        // and contains both AND and XOR masks.
-        // AND mask: 0 <= y <= h-1
-        // XOR mask: h <= y <= 2*h-1
-        // First we need to extract and store XOR mask from this bitmap.
-        HBITMAP hbmp = ::CreateBitmap(w, h, 1, wxDisplayDepth(), NULL);
-        if ( !hbmp )
+        // Then we need to create our own empty bitmap, which will be modified
+        // by the mask below.
+        wxDIB dib(w, h, wxDisplayDepth());
+        if ( dib.IsOk() )
         {
-            wxLogLastError(wxT("wxBitmap::CopyFromIconOrCursor - CreateBitmap"));
+            memset(dib.GetData(), 0, wxDIB::GetLineSize(w, dib.GetDepth())*h);
+            refData->AssignDIB(dib);
         }
-        else
-        {
-            MemoryHDC dcSrc;
-            MemoryHDC dcDst;
-            SelectInHDC selSrc(dcSrc, iconInfo.hbmMask);
-            SelectInHDC selDst(dcDst, hbmp);
-            if ( !::BitBlt((HDC)dcDst, 0, 0, w, h,
-                           (HDC)dcSrc, 0, h,
-                           SRCCOPY) )
-            {
-                wxLogLastError(wxT("wxBitmap::CopyFromIconOrCursor - BitBlt"));
-            }
-            // Prepare the AND mask to be compatible with wxBitmap mask
-            // by seting its bits to 0 wherever XOR mask (image) bits are set to 1.
-            // This is done in-place by applying the following ROP:
-            // dest = dest AND (NOT src) where dest=AND mask, src=XOR mask
-            //
-            // AND mask will be extracted later at creation of inverted mask.
-            if ( !::BitBlt((HDC)dcSrc, 0, 0, w, h,
-                           (HDC)dcSrc, 0, h,
-                           DSTERASE) )
-            {
-                wxLogLastError(wxT("wxBitmap::CopyFromIconOrCursor - BitBlt"));
-            }
-        }
-        refData->m_width = w;
-        refData->m_height = h;
-        refData->m_depth = wxDisplayDepth();
-        refData->m_hBitmap = hbmp;
     }
 
     switch ( transp )
     {
         default:
             wxFAIL_MSG( wxT("unknown wxBitmapTransparency value") );
-            wxFALLTHROUGH;
 
         case wxBitmapTransparency_None:
             // nothing to do, refData->m_hasAlpha is false by default
@@ -572,8 +449,12 @@ bool wxBitmap::CopyFromIconOrCursor(const wxGDIImage& icon,
             // alpha, so check for this.
             {
                 HBITMAP hdib = 0;
-                if ( CheckAlpha(refData->m_hBitmap, &hdib) )
-                    refData->Set32bppHDIB(hdib);
+                if ( CheckAlpha(iconInfo.hbmColor, &hdib) )
+                {
+                    refData->m_hasAlpha = true;
+                    ::DeleteObject(refData->m_hBitmap);
+                    refData->m_hBitmap = hdib;
+                }
             }
             break;
 #endif // wxUSE_WXDIB
@@ -590,7 +471,16 @@ bool wxBitmap::CopyFromIconOrCursor(const wxGDIImage& icon,
         refData->SetMask(wxInvertMask(iconInfo.hbmMask, w, h));
     }
 
+    // delete the old one now as we don't need it any more
+    ::DeleteObject(iconInfo.hbmMask);
+
     return true;
+#else // __WXMICROWIN__ || __WXWINCE__
+    wxUnusedVar(icon);
+    wxUnusedVar(transp);
+
+    return false;
+#endif // !__WXWINCE__/__WXWINCE__
 }
 
 bool wxBitmap::CopyFromCursor(const wxCursor& cursor, wxBitmapTransparency transp)
@@ -655,6 +545,7 @@ wxBitmap::~wxBitmap()
 
 wxBitmap::wxBitmap(const char bits[], int width, int height, int depth)
 {
+#ifndef __WXMICROWIN__
     wxBitmapRefData *refData = new wxBitmapRefData;
     m_refData = refData;
 
@@ -712,7 +603,8 @@ wxBitmap::wxBitmap(const char bits[], int width, int height, int depth)
         free(data);
     }
 
-    refData->m_handle = (WXHANDLE)hbmp;
+    SetHBITMAP((WXHBITMAP)hbmp);
+#endif
 }
 
 wxBitmap::wxBitmap(int w, int h, const wxDC& dc)
@@ -751,8 +643,6 @@ bool wxBitmap::DoCreate(int w, int h, int d, WXHDC hdc)
 {
     UnRef();
 
-    wxCHECK_MSG( w > 0 && h > 0, false, wxT("invalid bitmap size") );
-
     m_refData = new wxBitmapRefData;
 
     GetBitmapData()->m_width = w;
@@ -783,6 +673,7 @@ bool wxBitmap::DoCreate(int w, int h, int d, WXHDC hdc)
 #endif // NEVER_USE_DIB
     {
 #ifndef ALWAYS_USE_DIB
+#ifndef __WXMICROWIN__
         if ( d > 0 )
         {
             hbmp = ::CreateBitmap(w, h, 1, d, NULL);
@@ -793,7 +684,8 @@ bool wxBitmap::DoCreate(int w, int h, int d, WXHDC hdc)
 
             GetBitmapData()->m_depth = d;
         }
-        else // No valid depth, create bitmap compatible with the screen
+        else // d == 0, create bitmap compatible with the screen
+#endif // !__WXMICROWIN__
         {
             ScreenHDC dc;
             hbmp = ::CreateCompatibleBitmap(dc, w, h);
@@ -807,12 +699,199 @@ bool wxBitmap::DoCreate(int w, int h, int d, WXHDC hdc)
 #endif // !ALWAYS_USE_DIB
     }
 
-    GetBitmapData()->m_handle = (WXHANDLE)hbmp;
+    SetHBITMAP((WXHBITMAP)hbmp);
 
     return IsOk();
 }
 
 #if wxUSE_IMAGE
+
+// ----------------------------------------------------------------------------
+// wxImage to/from conversions for Microwin
+// ----------------------------------------------------------------------------
+
+// Microwin versions are so different from normal ones that it really doesn't
+// make sense to use #ifdefs inside the function bodies
+#ifdef __WXMICROWIN__
+
+bool wxBitmap::CreateFromImage(const wxImage& image, int depth, const wxDC& dc)
+{
+    // Set this to 1 to experiment with mask code,
+    // which currently doesn't work
+    #define USE_MASKS 0
+
+    m_refData = new wxBitmapRefData();
+
+    // Initial attempt at a simple-minded implementation.
+    // The bitmap will always be created at the screen depth,
+    // so the 'depth' argument is ignored.
+
+    HDC hScreenDC = ::GetDC(NULL);
+    int screenDepth = ::GetDeviceCaps(hScreenDC, BITSPIXEL);
+
+    HBITMAP hBitmap = ::CreateCompatibleBitmap(hScreenDC, image.GetWidth(), image.GetHeight());
+    HBITMAP hMaskBitmap = NULL;
+    HBITMAP hOldMaskBitmap = NULL;
+    HDC hMaskDC = NULL;
+    unsigned char maskR = 0;
+    unsigned char maskG = 0;
+    unsigned char maskB = 0;
+
+    //    printf("Created bitmap %d\n", (int) hBitmap);
+    if (hBitmap == NULL)
+    {
+        ::ReleaseDC(NULL, hScreenDC);
+        return false;
+    }
+    HDC hMemDC = ::CreateCompatibleDC(hScreenDC);
+
+    HBITMAP hOldBitmap = ::SelectObject(hMemDC, hBitmap);
+    ::ReleaseDC(NULL, hScreenDC);
+
+    // created an mono-bitmap for the possible mask
+    bool hasMask = image.HasMask();
+
+    if ( hasMask )
+    {
+#if USE_MASKS
+        // FIXME: we should be able to pass bpp = 1, but
+        // GdBlit can't handle a different depth
+#if 0
+        hMaskBitmap = ::CreateBitmap( (WORD)image.GetWidth(), (WORD)image.GetHeight(), 1, 1, NULL );
+#else
+        hMaskBitmap = ::CreateCompatibleBitmap( hMemDC, (WORD)image.GetWidth(), (WORD)image.GetHeight());
+#endif
+        maskR = image.GetMaskRed();
+        maskG = image.GetMaskGreen();
+        maskB = image.GetMaskBlue();
+
+        if (!hMaskBitmap)
+        {
+            hasMask = false;
+        }
+        else
+        {
+            hScreenDC = ::GetDC(NULL);
+            hMaskDC = ::CreateCompatibleDC(hScreenDC);
+           ::ReleaseDC(NULL, hScreenDC);
+
+            hOldMaskBitmap = ::SelectObject( hMaskDC, hMaskBitmap);
+        }
+#else
+        hasMask = false;
+#endif
+    }
+
+    int i, j;
+    for (i = 0; i < image.GetWidth(); i++)
+    {
+        for (j = 0; j < image.GetHeight(); j++)
+        {
+            unsigned char red = image.GetRed(i, j);
+            unsigned char green = image.GetGreen(i, j);
+            unsigned char blue = image.GetBlue(i, j);
+
+            ::SetPixel(hMemDC, i, j, PALETTERGB(red, green, blue));
+
+            if (hasMask)
+            {
+                // scan the bitmap for the transparent colour and set the corresponding
+                // pixels in the mask to BLACK and the rest to WHITE
+                if (maskR == red && maskG == green && maskB == blue)
+                    ::SetPixel(hMaskDC, i, j, PALETTERGB(0, 0, 0));
+                else
+                    ::SetPixel(hMaskDC, i, j, PALETTERGB(255, 255, 255));
+            }
+        }
+    }
+
+    ::SelectObject(hMemDC, hOldBitmap);
+    ::DeleteDC(hMemDC);
+    if (hasMask)
+    {
+        ::SelectObject(hMaskDC, hOldMaskBitmap);
+        ::DeleteDC(hMaskDC);
+
+        ((wxBitmapRefData*)m_refData)->SetMask(hMaskBitmap);
+    }
+
+    SetWidth(image.GetWidth());
+    SetHeight(image.GetHeight());
+    SetDepth(screenDepth);
+    SetHBITMAP( (WXHBITMAP) hBitmap );
+
+#if wxUSE_PALETTE
+    // Copy the palette from the source image
+    SetPalette(image.GetPalette());
+#endif // wxUSE_PALETTE
+
+    return true;
+}
+
+wxImage wxBitmap::ConvertToImage() const
+{
+    // Initial attempt at a simple-minded implementation.
+    // The bitmap will always be created at the screen depth,
+    // so the 'depth' argument is ignored.
+    // TODO: transparency (create a mask image)
+
+    if (!IsOk())
+    {
+        wxFAIL_MSG( wxT("bitmap is invalid") );
+        return wxNullImage;
+    }
+
+    wxImage image;
+
+    wxCHECK_MSG( IsOk(), wxNullImage, wxT("invalid bitmap") );
+
+    // create an wxImage object
+    int width = GetWidth();
+    int height = GetHeight();
+    image.Create( width, height );
+    unsigned char *data = image.GetData();
+    if( !data )
+    {
+        wxFAIL_MSG( wxT("could not allocate data for image") );
+        return wxNullImage;
+    }
+
+    HDC hScreenDC = ::GetDC(NULL);
+
+    HDC hMemDC = ::CreateCompatibleDC(hScreenDC);
+    ::ReleaseDC(NULL, hScreenDC);
+
+    HBITMAP hBitmap = (HBITMAP) GetHBITMAP();
+
+    HBITMAP hOldBitmap = ::SelectObject(hMemDC, hBitmap);
+
+    int i, j;
+    for (i = 0; i < GetWidth(); i++)
+    {
+        for (j = 0; j < GetHeight(); j++)
+        {
+            COLORREF color = ::GetPixel(hMemDC, i, j);
+            unsigned char red = GetRValue(color);
+            unsigned char green = GetGValue(color);
+            unsigned char blue = GetBValue(color);
+
+            image.SetRGB(i, j, red, green, blue);
+        }
+    }
+
+    ::SelectObject(hMemDC, hOldBitmap);
+    ::DeleteDC(hMemDC);
+
+#if wxUSE_PALETTE
+    // Copy the palette from the source image
+    if (GetPalette())
+        image.SetPalette(* GetPalette());
+#endif // wxUSE_PALETTE
+
+    return image;
+}
+
+#endif // __WXMICROWIN__
 
 // ----------------------------------------------------------------------------
 // wxImage to/from conversions
@@ -884,23 +963,11 @@ bool wxBitmap::CreateFromImage(const wxImage& image, int depth, WXHDC hdc)
     else // we need to convert DIB to DDB
     {
         hbitmap = dib.CreateDDB((HDC)hdc);
-        // DDB obtained from CreatedDDB() can have different colour depth
-        // than source DIB and we have to adjust respective data member
-        // accordingly.
-        BITMAP bm;
-        if ( ::GetObject(hbitmap, sizeof(bm), &bm) != sizeof(bm) )
-        {
-            wxLogLastError(wxS("GetObject (@wxBitmap::CreateFromImage)"));
-        }
-        else
-        {
-            refData->m_depth = bm.bmBitsPixel;
-        }
     }
 #endif // !ALWAYS_USE_DIB
 
     // validate this object
-    refData->m_handle = (WXHANDLE)hbitmap;
+    SetHBITMAP((WXHBITMAP)hbitmap);
 
     // finally also set the mask if we have one
     if ( image.HasMask() )
@@ -957,14 +1024,7 @@ wxImage wxBitmap::ConvertToImage() const
     }
 
     // and then DIB to our wxImage
-    // By default, we autodetect the presence of alpha and consider unnecessary
-    // to create the alpha channel in wxImage if we don't have any effective
-    // alpha in the bitmap because its depth, on its own, is not an indicator
-    // that it uses alpha as it could be just the default screen depth. However
-    // if the user had explicitly called UseAlpha(), then we consider
-    // that the resulting image should really have the alpha channel too.
-    wxImage image = dib.ConvertToImage(HasAlpha() ?
-               wxDIB::Convert_AlphaAlwaysIf32bpp : wxDIB::Convert_AlphaAuto);
+    wxImage image = dib.ConvertToImage();
     if ( !image.IsOk() )
     {
         return wxNullImage;
@@ -1069,19 +1129,7 @@ bool wxBitmap::LoadFile(const wxString& filename, wxBitmapType type)
     {
         m_refData = new wxBitmapRefData;
 
-        if ( !handler->LoadFile(this, filename, type, -1, -1) )
-            return false;
-
-#if wxUSE_WXDIB
-        // wxBitmap must contain premultiplied data, but external files are not
-        // always in this format, so try to detect whether this is the case and
-        // create a premultiplied DIB if it really is.
-        HBITMAP hdib = CreatePremultipliedDIBIfNeeded(GetHbitmap());
-        if ( hdib )
-            static_cast<wxBitmapRefData*>(m_refData)->Set32bppHDIB(hdib);
-#endif // wxUSE_WXDIB
-
-        return true;
+        return handler->LoadFile(this, filename, type, -1, -1);
     }
 #if wxUSE_IMAGE && wxUSE_WXDIB
     else // no bitmap handler found
@@ -1163,6 +1211,7 @@ wxBitmap wxBitmap::GetSubBitmapOfHDC( const wxRect& rect, WXHDC hdc ) const
     wxBitmap ret( rect.width, rect.height, GetDepth() );
     wxASSERT_MSG( ret.IsOk(), wxT("GetSubBitmap error") );
 
+#ifndef __WXMICROWIN__
     // handle alpha channel, if any
     if (HasAlpha())
         ret.UseAlpha();
@@ -1203,6 +1252,7 @@ wxBitmap wxBitmap::GetSubBitmapOfHDC( const wxRect& rect, WXHDC hdc ) const
         wxMask *mask = new wxMask((WXHBITMAP) hbmpMask);
         ret.SetMask(mask);
     }
+#endif // !__WXMICROWIN__
 
     return ret;
 }
@@ -1233,16 +1283,16 @@ wxDC *wxBitmap::GetSelectedInto() const
 #endif
 }
 
-void wxBitmap::UseAlpha(bool use)
+void wxBitmap::UseAlpha()
 {
     if ( GetBitmapData() )
-    {
-        // Only 32bpp bitmaps can contain alpha channel.
-        if ( use && GetBitmapData()->m_depth < 32 )
-            use = false;
+        GetBitmapData()->m_hasAlpha = true;
+}
 
-        GetBitmapData()->m_hasAlpha = use;
-    }
+void wxBitmap::ResetAlpha()
+{
+    if ( GetBitmapData() )
+        GetBitmapData()->m_hasAlpha = false;
 }
 
 bool wxBitmap::HasAlpha() const
@@ -1252,59 +1302,8 @@ bool wxBitmap::HasAlpha() const
 
 void wxBitmap::MSWUpdateAlpha()
 {
-#if wxUSE_WXDIB
     if ( CheckAlpha(GetHbitmap()) )
         GetBitmapData()->m_hasAlpha = true;
-#else // !wxUSE_WXDIB
-        GetBitmapData()->m_hasAlpha = false;
-#endif // wxUSE_WXDIB/!wxUSE_WXDIB
-}
-
-void wxBitmap::MSWBlendMaskWithAlpha()
-{
-#if defined(wxHAS_RAW_BITMAP)
-    if ( !HasAlpha() || !GetMask() )
-        return;
-    // Update alpha channel by blending original alpha values with mask and then remove the mask.
-    // For non-masked pixels alpha channel values will remain intact and for masked pixels
-    // they will be set to the transparent value (0).
-    AllocExclusive();
-
-    {
-        wxBitmap bmpMask = GetMask()->GetBitmap();
-        wxNativePixelData maskData(bmpMask);
-        wxCHECK_RET(maskData, "No access to bitmap mask data");
-
-        wxAlphaPixelData bmpData(*this);
-        wxCHECK_RET(bmpData, "No access to bitmap data");
-
-        const int w = GetWidth();
-        const int h = GetHeight();
-
-        wxNativePixelData::Iterator maskRowStart(maskData);
-        wxAlphaPixelData::Iterator bmpRowStart(bmpData);
-        for ( int y = 0; y < h; y++ )
-        {
-            wxNativePixelData::Iterator pMask = maskRowStart;
-            wxAlphaPixelData::Iterator pBmp = bmpRowStart;
-            for ( int x = 0; x < w; x++, ++pBmp, ++pMask )
-            {
-                // Masked pixel is not drawn i.e. is transparent,
-                // non-masked pixel is untouched.
-                if ( pMask.Red() == 0 )
-                {
-                    pBmp.Red() = pBmp.Green() = pBmp.Blue() = 0; // pre-multiplied
-                    pBmp.Alpha() = wxALPHA_TRANSPARENT;
-                }
-            }
-            maskRowStart.OffsetY(maskData, 1);
-            bmpRowStart.OffsetY(bmpData, 1);
-        }
-    }
-    GetBitmapData()->SetMask((wxMask*)NULL);
-    wxASSERT(HasAlpha());
-    wxASSERT(!GetMask());
-#endif // wxHAS_RAW_BITMAP
 }
 
 // ----------------------------------------------------------------------------
@@ -1337,34 +1336,6 @@ void wxBitmap::SetMask(wxMask *mask)
     AllocExclusive();
 
     GetBitmapData()->SetMask(mask);
-}
-
-bool wxBitmap::InitFromHBITMAP(WXHBITMAP bmp, int width, int height, int depth)
-{
-#if wxDEBUG_LEVEL >= 2
-    if ( bmp != NULL )
-    {
-        BITMAP bm;
-        if ( ::GetObject(bmp, sizeof(bm), &bm) == sizeof(bm) )
-        {
-            wxASSERT_MSG(bm.bmWidth == width && bm.bmHeight == height && bm.bmBitsPixel == depth,
-                         wxS("Inconsistent bitmap parameters"));
-        }
-        else
-        {
-            wxFAIL_MSG(wxS("Cannot retrieve parameters of the bitmap"));
-        }
-    }
-#endif // wxDEBUG_LEVEL >= 2
-
-    AllocExclusive();
-
-    GetBitmapData()->m_handle = (WXHANDLE)bmp;
-    GetBitmapData()->m_width = width;
-    GetBitmapData()->m_height = height;
-    GetBitmapData()->m_depth = depth;
-
-    return IsOk();
 }
 
 // ----------------------------------------------------------------------------
@@ -1451,11 +1422,19 @@ void *wxBitmap::GetRawData(wxPixelDataBase& data, int bpp)
 #endif
 }
 
-void wxBitmap::UngetRawData(wxPixelDataBase& WXUNUSED(data))
+void wxBitmap::UngetRawData(wxPixelDataBase& dataBase)
 {
 #if wxUSE_WXDIB
     if ( !IsOk() )
         return;
+
+    if ( !&dataBase )
+    {
+        // invalid data, don't crash -- but don't assert neither as we're
+        // called automatically from wxPixelDataBase dtor and so there is no
+        // way to prevent this from happening
+        return;
+    }
 
     // if we're a DDB we need to convert DIB back to DDB now to make the
     // changes made via raw bitmap access effective
@@ -1464,8 +1443,7 @@ void wxBitmap::UngetRawData(wxPixelDataBase& WXUNUSED(data))
         wxDIB *dib = GetBitmapData()->m_dib;
         GetBitmapData()->m_dib = NULL;
 
-        GetBitmapData()->Free();
-        GetBitmapData()->CopyFromDIB(*dib);
+        // TODO: convert
 
         delete dib;
     }
@@ -1547,6 +1525,7 @@ wxMask::~wxMask()
 // Create a mask from a mono bitmap (copies the bitmap).
 bool wxMask::Create(const wxBitmap& bitmap)
 {
+#ifndef __WXMICROWIN__
     wxCHECK_MSG( bitmap.IsOk() && bitmap.GetDepth() == 1, false,
                  wxT("can't create mask from invalid or not monochrome bitmap") );
 
@@ -1571,6 +1550,10 @@ bool wxMask::Create(const wxBitmap& bitmap)
     SelectObject(destDC, 0);
     DeleteDC(destDC);
     return true;
+#else
+    wxUnusedVar(bitmap);
+    return false;
+#endif
 }
 
 // Create a mask from a bitmap and a palette index indicating
@@ -1602,6 +1585,7 @@ bool wxMask::Create(const wxBitmap& bitmap, int paletteIndex)
 // the transparent area
 bool wxMask::Create(const wxBitmap& bitmap, const wxColour& colour)
 {
+#ifndef __WXMICROWIN__
     wxCHECK_MSG( bitmap.IsOk(), false, wxT("invalid bitmap in wxMask::Create") );
 
     if ( m_maskBitmap )
@@ -1662,43 +1646,17 @@ bool wxMask::Create(const wxBitmap& bitmap, const wxColour& colour)
     ::DeleteDC(destDC);
 
     return ok;
+#else // __WXMICROWIN__
+    wxUnusedVar(bitmap);
+    wxUnusedVar(colour);
+    return false;
+#endif // __WXMICROWIN__/!__WXMICROWIN__
 }
 
 wxBitmap wxMask::GetBitmap() const
 {
-    // We have to do a deep copy of the mask bitmap
-    // and assign it to the resulting wxBitmap.
-
-    // Create new bitmap with the same parameters as a mask bitmap.
-    BITMAP bm;
-    ::GetObject(m_maskBitmap, sizeof(bm), (LPVOID)&bm);
-
-    HBITMAP hNewBitmap = ::CreateBitmapIndirect(&bm);
-    if ( !hNewBitmap )
-    {
-        wxLogLastError(wxS("CreateBitmapIndirect"));
-        return wxNullBitmap;
-    }
-
-    // Copy the bitmap.
-    HDC hdcSrc = ::CreateCompatibleDC((HDC)NULL);
-    HBITMAP hSrcOldBmp = (HBITMAP)::SelectObject(hdcSrc, m_maskBitmap);
-
-    HDC hdcMem = ::CreateCompatibleDC((HDC)NULL);
-    HBITMAP hMemOldBmp = (HBITMAP)::SelectObject(hdcMem, hNewBitmap);
-
-    ::BitBlt(hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, hdcSrc, 0, 0, SRCCOPY);
-    ::SelectObject(hdcMem, hMemOldBmp);
-
-    // Clean up.
-    ::SelectObject(hdcSrc, hSrcOldBmp);
-    ::DeleteDC(hdcSrc);
-    ::DeleteDC(hdcMem);
-
-    // Create and return a new wxBitmap.
     wxBitmap bmp;
-    bmp.InitFromHBITMAP((WXHBITMAP)hNewBitmap, bm.bmWidth, bm.bmHeight, bm.bmBitsPixel);
-
+    bmp.SetHBITMAP(m_maskBitmap);
     return bmp;
 }
 
@@ -1781,20 +1739,6 @@ HICON wxBitmapToIconOrCursor(const wxBitmap& bmp,
 
     if ( bmp.HasAlpha() )
     {
-        // Make a copy in case we would neeed to remove its mask.
-        // If this will not be necessary, the copy is cheap as bitmaps are reference-counted.
-        wxBitmap curBmp(bmp);
-
-        // For bitmap with both alpha channel and mask we have to apply mask on our own
-        // because 32 bpp icons don't work properly with mask bitmaps.
-        // To do so we will create a temporary bitmap with copy of RGB data and with alpha channel
-        // being a superposition of the original alpha values and the mask - for non-masked pixels
-        // alpha channel values will remain intact and for masked pixels they will be set to the transparent value.
-        if ( curBmp.GetMask() )
-        {
-            curBmp.MSWBlendMaskWithAlpha();
-        }
-
         HBITMAP hbmp;
 
 #if wxUSE_WXDIB && wxUSE_IMAGE
@@ -1803,17 +1747,17 @@ HICON wxBitmapToIconOrCursor(const wxBitmap& bmp,
         // a special DIB in such format to pass to it. This is inefficient but
         // better than creating an icon with wrong colours.
         AutoHBITMAP hbmpRelease;
-        hbmp = wxDIB(curBmp.ConvertToImage(),
+        hbmp = wxDIB(bmp.ConvertToImage(),
                      wxDIB::PixelFormat_NotPreMultiplied).Detach();
         hbmpRelease.Init(hbmp);
 #else // !(wxUSE_WXDIB && wxUSE_IMAGE)
-        hbmp = GetHbitmapOf(curBmp);
+        hbmp = GetHbitmapOf(bmp);
 #endif // wxUSE_WXDIB && wxUSE_IMAGE
 
         // Create an empty mask bitmap.
         // it doesn't seem to work if we mess with the mask at all.
         AutoHBITMAP
-            hMonoBitmap(CreateBitmap(curBmp.GetWidth(),curBmp.GetHeight(),1,1,NULL));
+            hMonoBitmap(CreateBitmap(bmp.GetWidth(),bmp.GetHeight(),1,1,NULL));
 
         ICONINFO iconInfo;
         wxZeroMemory(iconInfo);
@@ -1890,6 +1834,7 @@ HCURSOR wxBitmapToHCURSOR(const wxBitmap& bmp, int hotSpotX, int hotSpotY)
 
 HBITMAP wxInvertMask(HBITMAP hbmpMask, int w, int h)
 {
+#ifndef __WXMICROWIN__
     wxCHECK_MSG( hbmpMask, 0, wxT("invalid bitmap in wxInvertMask") );
 
     // get width/height from the bitmap if not given
@@ -1931,4 +1876,7 @@ HBITMAP wxInvertMask(HBITMAP hbmpMask, int w, int h)
     ::DeleteDC(hdcDst);
 
     return hbmpInvMask;
+#else
+    return 0;
+#endif
 }

@@ -22,7 +22,7 @@
     #include "wx/bmpbuttn.h"
 #endif
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxBitmapButtonXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxBitmapButtonXmlHandler, wxXmlResourceHandler)
 
 wxBitmapButtonXmlHandler::wxBitmapButtonXmlHandler()
 : wxXmlResourceHandler()
@@ -44,7 +44,7 @@ wxObject *wxBitmapButtonXmlHandler::DoCreateResource()
                    GetID(),
                    GetBitmap(wxT("bitmap"), wxART_BUTTON),
                    GetPosition(), GetSize(),
-                   GetStyle(wxT("style")),
+                   GetStyle(wxT("style"), wxBU_AUTODRAW),
                    wxDefaultValidator,
                    GetName());
     if (GetBool(wxT("default"), 0))

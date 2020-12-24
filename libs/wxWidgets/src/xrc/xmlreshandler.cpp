@@ -3,6 +3,7 @@
 // Purpose:     XML resource handler
 // Author:      Steven Lamerton
 // Created:     2011/01/26
+// RCS-ID:      $id$
 // Copyright:   (c) 2011 Steven Lamerton
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -17,7 +18,7 @@
 
 #include "wx/xrc/xmlreshandler.h"
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxXmlResourceHandler, wxObject);
+IMPLEMENT_ABSTRACT_CLASS(wxXmlResourceHandler, wxObject)
 
 wxXmlResourceHandlerImplBase* wxXmlResourceHandler::GetImpl() const
 {

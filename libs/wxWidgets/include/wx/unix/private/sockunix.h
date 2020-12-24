@@ -23,8 +23,6 @@
 
 #include "wx/private/fdiomanager.h"
 
-#define wxCloseSocket close
-
 class wxSocketImplUnix : public wxSocketImpl,
                          public wxFDIOHandler
 {
@@ -36,14 +34,10 @@ public:
         m_fds[1] = -1;
     }
 
-    virtual wxSocketError GetLastError() const wxOVERRIDE;
+    virtual wxSocketError GetLastError() const;
 
-    virtual void ReenableEvents(wxSocketEventFlags flags) wxOVERRIDE
+    virtual void ReenableEvents(wxSocketEventFlags flags)
     {
-        // Events are only ever used for non-blocking sockets.
-        if ( GetSocketFlags() & wxSOCKET_BLOCK )
-            return;
-
         // enable the notifications about input/output being available again in
         // case they were disabled by OnRead/WriteWaiting()
         //
@@ -59,27 +53,26 @@ public:
         EnableEvents(flags);
     }
 
-    virtual void UpdateBlockingState() wxOVERRIDE
-    {
-        // Make this int and not bool to allow passing it to ioctl().
-        int isNonBlocking = (GetSocketFlags() & wxSOCKET_BLOCK) == 0;
-        ioctl(m_fd, FIONBIO, &isNonBlocking);
-
-        DoEnableEvents(wxSOCKET_INPUT_FLAG | wxSOCKET_OUTPUT_FLAG, isNonBlocking);
-    }
-
     // wxFDIOHandler methods
-    virtual void OnReadWaiting() wxOVERRIDE;
-    virtual void OnWriteWaiting() wxOVERRIDE;
-    virtual void OnExceptionWaiting() wxOVERRIDE;
-    virtual bool IsOk() const wxOVERRIDE { return m_fd != INVALID_SOCKET; }
+    virtual void OnReadWaiting();
+    virtual void OnWriteWaiting();
+    virtual void OnExceptionWaiting();
+    virtual bool IsOk() const { return m_fd != INVALID_SOCKET; }
 
 private:
-    virtual void DoClose() wxOVERRIDE
+    virtual void DoClose()
     {
         DisableEvents();
 
-        wxCloseSocket(m_fd);
+        close(m_fd);
+    }
+
+    virtual void UnblockAndRegisterWithEventLoop()
+    {
+        int trueArg = 1;
+        ioctl(m_fd, FIONBIO, &trueArg);
+
+        EnableEvents();
     }
 
     // enable or disable notifications for socket input/output events
@@ -121,16 +114,16 @@ public:
         m_fdioManager = NULL;
     }
 
-    virtual bool OnInit() wxOVERRIDE;
-    virtual void OnExit() wxOVERRIDE { }
+    virtual bool OnInit();
+    virtual void OnExit() { }
 
-    virtual wxSocketImpl *CreateSocket(wxSocketBase& wxsocket) wxOVERRIDE
+    virtual wxSocketImpl *CreateSocket(wxSocketBase& wxsocket)
     {
         return new wxSocketImplUnix(wxsocket);
     }
 
-    virtual void Install_Callback(wxSocketImpl *socket_, wxSocketNotify event) wxOVERRIDE;
-    virtual void Uninstall_Callback(wxSocketImpl *socket_, wxSocketNotify event) wxOVERRIDE;
+    virtual void Install_Callback(wxSocketImpl *socket_, wxSocketNotify event);
+    virtual void Uninstall_Callback(wxSocketImpl *socket_, wxSocketNotify event);
 
 protected:
     // get the FD index corresponding to the given wxSocketNotify

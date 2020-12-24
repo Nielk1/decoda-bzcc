@@ -19,8 +19,6 @@
 #endif
 
 #include "wx/uiaction.h"
-#include "wx/private/uiaction.h"
-
 #include "wx/msw/wrapwin.h"
 
 #include "wx/msw/private/keyboard.h"
@@ -29,31 +27,6 @@
 
 namespace
 {
-
-class wxUIActionSimulatorMSWImpl : public wxUIActionSimulatorImpl
-{
-public:
-    // Returns a pointer to the global simulator object: as it's stateless, we
-    // can reuse the same one without having to allocate it on the heap all the
-    // time.
-    static wxUIActionSimulatorMSWImpl* Get()
-    {
-        static wxUIActionSimulatorMSWImpl s_impl;
-        return &s_impl;
-    }
-
-    virtual bool MouseMove(long x, long y) wxOVERRIDE;
-    virtual bool MouseDown(int button = wxMOUSE_BTN_LEFT) wxOVERRIDE;
-    virtual bool MouseUp(int button = wxMOUSE_BTN_LEFT) wxOVERRIDE;
-
-    virtual bool DoKey(int keycode, int modifiers, bool isDown) wxOVERRIDE;
-
-private:
-    // This class has no public ctors, use Get() instead.
-    wxUIActionSimulatorMSWImpl() { }
-
-    wxDECLARE_NO_COPY_CLASS(wxUIActionSimulatorMSWImpl);
-};
 
 DWORD EventTypeForMouseButton(int button, bool isDown)
 {
@@ -76,7 +49,7 @@ DWORD EventTypeForMouseButton(int button, bool isDown)
 
 } // anonymous namespace
 
-bool wxUIActionSimulatorMSWImpl::MouseDown(int button)
+bool wxUIActionSimulator::MouseDown(int button)
 {
     POINT p;
     wxGetCursorPosMSW(&p);
@@ -84,7 +57,7 @@ bool wxUIActionSimulatorMSWImpl::MouseDown(int button)
     return true;
 }
 
-bool wxUIActionSimulatorMSWImpl::MouseMove(long x, long y)
+bool wxUIActionSimulator::MouseMove(long x, long y)
 {
     // Because MOUSEEVENTF_ABSOLUTE takes measurements scaled between 0 & 65535
     // we need to scale our input too
@@ -100,7 +73,7 @@ bool wxUIActionSimulatorMSWImpl::MouseMove(long x, long y)
     return true;
 }
 
-bool wxUIActionSimulatorMSWImpl::MouseUp(int button)
+bool wxUIActionSimulator::MouseUp(int button)
 {
     POINT p;
     wxGetCursorPosMSW(&p);
@@ -109,7 +82,7 @@ bool wxUIActionSimulatorMSWImpl::MouseUp(int button)
 }
 
 bool
-wxUIActionSimulatorMSWImpl::DoKey(int keycode, int WXUNUSED(modifiers), bool isDown)
+wxUIActionSimulator::DoKey(int keycode, int WXUNUSED(modifiers), bool isDown)
 {
     bool isExtended;
     DWORD vkkeycode = wxMSWKeyboard::WXToVK(keycode, &isExtended);
@@ -123,17 +96,6 @@ wxUIActionSimulatorMSWImpl::DoKey(int keycode, int WXUNUSED(modifiers), bool isD
     keybd_event(vkkeycode, 0, flags, 0);
 
     return true;
-}
-
-wxUIActionSimulator::wxUIActionSimulator()
-                   : m_impl(wxUIActionSimulatorMSWImpl::Get())
-{
-}
-
-wxUIActionSimulator::~wxUIActionSimulator()
-{
-    // We can use a static wxUIActionSimulatorMSWImpl object because it's
-    // stateless, so no need to delete it.
 }
 
 #endif // wxUSE_UIACTIONSIMULATOR

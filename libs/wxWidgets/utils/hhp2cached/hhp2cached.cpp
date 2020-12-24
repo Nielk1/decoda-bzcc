@@ -26,7 +26,7 @@ public:
     virtual bool OnInit();
 };
 
-wxIMPLEMENT_APP(MyApp);
+IMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {

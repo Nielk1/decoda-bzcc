@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1992-1997 Sam Leffler
  * Copyright (c) 1992-1997 Silicon Graphics, Inc.
@@ -31,7 +32,7 @@
 #include "tiffio.h"
 
 #ifndef HAVE_GETOPT
-extern int getopt(int argc, char * const argv[], const char *optstring);
+extern int getopt(int, char**, char*);
 #endif
 
 #define	CopyField(tag, v) \
@@ -237,7 +238,6 @@ cpStrips(TIFF* in, TIFF* out)
 
 		if (!TIFFGetField(in, TIFFTAG_STRIPBYTECOUNTS, &bytecounts)) {
 			fprintf(stderr, "tiffsplit: strip byte counts are missing\n");
-                        _TIFFfree(buf);
 			return (0);
 		}
 		for (s = 0; s < ns; s++) {
@@ -271,7 +271,6 @@ cpTiles(TIFF* in, TIFF* out)
 
 		if (!TIFFGetField(in, TIFFTAG_TILEBYTECOUNTS, &bytecounts)) {
 			fprintf(stderr, "tiffsplit: tile byte counts are missing\n");
-                        _TIFFfree(buf);
 			return (0);
 		}
 		for (t = 0; t < nt; t++) {

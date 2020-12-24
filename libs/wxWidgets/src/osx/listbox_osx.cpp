@@ -23,8 +23,8 @@
     #include "wx/dcclient.h"
 #endif
 
-wxBEGIN_EVENT_TABLE(wxListBox, wxControl)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxListBox, wxControl)
+END_EVENT_TABLE()
 
 #include "wx/osx/private.h"
 
@@ -83,7 +83,7 @@ bool wxListBox::Create(
         return false;
 
     if ( IsSorted() )
-        m_strings.sorted = new wxSortedArrayString(wxDictionaryStringSortAscending);
+        m_strings.sorted = new wxSortedArrayString;
     else
         m_strings.unsorted = new wxArrayString;
 
@@ -145,16 +145,6 @@ void wxListBox::EnsureVisible(int n)
     GetListPeer()->ListScrollTo( n );
 }
 
-int wxListBox::GetTopItem() const
-{
-    return GetListPeer()->ListGetTopItem();
-}
-
-int wxListBox::GetCountPerPage() const
-{
-    return GetListPeer()->ListGetCountPerPage();
-}
-
 void wxListBox::DoDeleteOneItem(unsigned int n)
 {
     wxCHECK_RET( IsValid(n), wxT("invalid index in wxListBox::Delete") );
@@ -201,9 +191,6 @@ void wxListBox::DoSetSelection(int n, bool select)
     m_blockEvents = false;
 
     UpdateOldSelections();
-
-    if (select)
-        EnsureVisible(n);
 }
 
 bool wxListBox::IsSelected(int n) const
@@ -248,6 +235,7 @@ wxSize wxListBox::DoGetBestSize() const
 {
     int lbWidth = 100;  // some defaults
     int lbHeight;
+    int wLine;
 
     {
         wxClientDC dc(const_cast<wxListBox*>(this));
@@ -260,7 +248,8 @@ wxSize wxListBox::DoGetBestSize() const
 
             wxCoord width, height ;
             dc.GetTextExtent( str , &width, &height);
-            lbWidth = wxMax( lbWidth, width );
+            wLine = width ;
+            lbWidth = wxMax( lbWidth, wLine );
         }
 
         // Add room for the scrollbar
@@ -280,6 +269,11 @@ wxSize wxListBox::DoGetBestSize() const
     }
 
     return wxSize( lbWidth, lbHeight );
+}
+
+void wxListBox::Refresh(bool eraseBack, const wxRect *rect)
+{
+    wxControl::Refresh( eraseBack, rect );
 }
 
 // Some custom controls depend on this
@@ -375,8 +369,6 @@ int wxListBox::DoInsertItems(const wxArrayStringsAdapter& items,
     // get the first visible item so for now do at least this.
     SetFirstItem(startpos);
 
-    InvalidateBestSize();
-
     UpdateOldSelections();
 
     return idx;
@@ -429,8 +421,8 @@ void wxListBox::MacHandleSelectionChange(int row)
     // selection because in wxWidgets API there is no notification event for
     // removing the selection from a single-selection list box.
     //
-    // Otherwise call DoChangeSingleSelection so that m_oldSelections is
-    // updated with the correct value before it's possible used later.
+    // Otherwise call DoChangeSingleSelection so GetOldSelection() will return
+    // the correct value if row < 0 later.
     const int count = static_cast<int>(GetCount());
     if ( row < 0 || row >= count )
     {

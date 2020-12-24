@@ -35,7 +35,7 @@ class wxWindowPtr : public wxSharedPtr<T>
 public:
     typedef T element_type;
 
-    explicit wxWindowPtr(element_type* win)
+    wxEXPLICIT wxWindowPtr(element_type* win)
         : wxSharedPtr<T>(win, wxPrivate::wxWindowDeleter())
     {
     }

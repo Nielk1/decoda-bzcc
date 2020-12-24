@@ -29,7 +29,7 @@
 // wxScreenDC
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxScreenDCImpl, wxPaintDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxScreenDCImpl,wxPaintDCImpl)
 
 wxScreenDCImpl::wxScreenDCImpl( wxDC* owner )
               : wxPaintDCImpl( owner )

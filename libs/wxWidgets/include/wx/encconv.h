@@ -33,6 +33,7 @@ enum
 
     wxPLATFORM_UNIX = 0,
     wxPLATFORM_WINDOWS,
+    wxPLATFORM_OS2,
     wxPLATFORM_MAC
 };
 
@@ -53,7 +54,7 @@ class WXDLLIMPEXP_BASE wxEncodingConverter : public wxObject
     public:
 
             wxEncodingConverter();
-            virtual ~wxEncodingConverter() { delete[] m_Table; }
+            virtual ~wxEncodingConverter() { if (m_Table) delete[] m_Table; }
 
             // Initialize conversion. Both output or input encoding may
             // be wxFONTENCODING_UNICODE.
@@ -96,7 +97,7 @@ class WXDLLIMPEXP_BASE wxEncodingConverter : public wxObject
             bool Convert(wchar_t* str) const { return Convert(str, str); }
 
             // Return equivalent(s) for given font that are used
-            // under given platform. wxPLATFORM_CURRENT means the platform
+            // under given platform. wxPLATFORM_CURRENT means the plaform
             // this binary was compiled for
             //
             // Examples:

@@ -8,8 +8,10 @@
 #endif
 
 #if GetEnv("WXW_VER") == "Snapshot"
+    #define INFOFILE WXW_DIR + "\BuildSVN.txt"
     #define WX_VERSION "Snapshot"
 #elif GetEnv("WXW_VER") != ""
+    #define INFOFILE WXW_DIR + "\docs\msw\install.txt"
     #define WX_VERSION GetEnv("WXW_VER")
 #else
     #error "WXW_VER environment variable must be defined."
@@ -23,21 +25,20 @@
 AppName=wxWidgets
 AppVerName=wxWidgets {#WX_VERSION}
 AppPublisher=wxWidgets
-AppPublisherURL=https://www.wxwidgets.org
-AppSupportURL=https://www.wxwidgets.org
-AppUpdatesURL=https://www.wxwidgets.org
+AppPublisherURL=http://www.wxwidgets.org
+AppSupportURL=http://www.wxwidgets.org
+AppUpdatesURL=http://www.wxwidgets.org
 DefaultDirName={sd}\wxWidgets-{#WX_VERSION}
 DefaultGroupName=wxWidgets {#WX_VERSION}
 UsePreviousAppDir=no
 DisableProgramGroupPage=yes
 LicenseFile={#WXW_DIR}\docs\licence.txt
 InfoBeforeFile={#WXW_DIR}\docs\readme.txt
-InfoAfterFile={#WXW_DIR}\docs\msw\setup_after.txt
+InfoAfterFile={#INFOFILE}
 OutputDir={#WXW_DIR}\..
 OutputBaseFilename={#SETUPFILENAME}
 PrivilegesRequired=none
 SetupIconFile={#WXW_DIR}\art\wxwin.ico
-UninstallDisplayIcon={#WXW_DIR}\art\wxwin.ico
 Compression=lzma
 SolidCompression=yes
 
@@ -46,14 +47,14 @@ SolidCompression=yes
 Source: "{#WXW_DIR}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [INI]
-Filename: "{app}\wx.url"; Section: "InternetShortcut"; Key: "URL"; String: "https://www.wxwidgets.org"
+Filename: "{app}\wx.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://www.wxwidgets.org"
 
 [Icons]
 Name: "{group}\{cm:ProgramOnTheWeb,wxWidgets}"; Filename: "{app}\wx.url"
 Name: {group}\wxWidgets Manual; Filename: {app}\docs\htmlhelp\wx.chm; WorkingDir: {app}; IconIndex: 0; Flags: useapppaths
 Name: {group}\Changes; Filename: {app}\docs\changes.txt; WorkingDir: {app}; IconIndex: 0; Flags: useapppaths
 Name: {group}\Readme; Filename: {app}\docs\readme.txt; WorkingDir: {app}; IconIndex: 0; Flags: useapppaths
-Name: {group}\Setting up wxWidgets; Filename: {app}\docs\msw\install.md; WorkingDir: {app}; IconIndex: 0; Flags: useapppaths
+Name: {group}\Compiling wxWidgets; Filename: {app}\docs\msw\install.txt; WorkingDir: {app}; IconIndex: 0; Flags: useapppaths
 Name: "{group}\Uninstall wxWidgets {#WX_VERSION}"; Filename: "{uninstallexe}"
 
 

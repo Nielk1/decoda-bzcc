@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1995-1997 Sam Leffler
  * Copyright (c) 1995-1997 Silicon Graphics, Inc.
@@ -24,15 +25,9 @@
 
 #ifndef _TIFFPREDICT_
 #define	_TIFFPREDICT_
-
-#include "tiffio.h"
-#include "tiffiop.h"
-
 /*
  * ``Library-private'' Support for the Predictor Tag
  */
-
-typedef int (*TIFFEncodeDecodeMethod)(TIFF* tif, uint8* buf, tmsize_t size);
 
 /*
  * Codecs that want to support the Predictor tag must place
@@ -47,12 +42,12 @@ typedef struct {
 	TIFFCodeMethod  encoderow;	/* parent codec encode/decode row */
 	TIFFCodeMethod  encodestrip;	/* parent codec encode/decode strip */
 	TIFFCodeMethod  encodetile;	/* parent codec encode/decode tile */ 
-	TIFFEncodeDecodeMethod  encodepfunc;	/* horizontal differencer */
+	TIFFPostMethod  encodepfunc;	/* horizontal differencer */
 
 	TIFFCodeMethod  decoderow;	/* parent codec encode/decode row */
 	TIFFCodeMethod  decodestrip;	/* parent codec encode/decode strip */
 	TIFFCodeMethod  decodetile;	/* parent codec encode/decode tile */ 
-	TIFFEncodeDecodeMethod  decodepfunc;	/* horizontal accumulator */
+	TIFFPostMethod  decodepfunc;	/* horizontal accumulator */
 
 	TIFFVGetMethod  vgetparent;	/* super-class method */
 	TIFFVSetMethod  vsetparent;	/* super-class method */

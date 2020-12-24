@@ -24,7 +24,7 @@
     #include "wx/menu.h"
 #endif
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxMenuXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxMenuXmlHandler, wxXmlResourceHandler)
 
 wxMenuXmlHandler::wxMenuXmlHandler() :
         wxXmlResourceHandler(), m_insideMenu(false)
@@ -47,14 +47,12 @@ wxObject *wxMenuXmlHandler::DoCreateResource()
         CreateChildren(menu, true/*only this handler*/);
         m_insideMenu = oldins;
 
-#if wxUSE_MENUBAR
         wxMenuBar *p_bar = wxDynamicCast(m_parent, wxMenuBar);
         if (p_bar)
         {
             p_bar->Append(menu, title);
         }
         else
-#endif // wxUSE_MENUBAR
         {
             wxMenu *p_menu = wxDynamicCast(m_parent, wxMenu);
             if (p_menu)
@@ -80,9 +78,7 @@ wxObject *wxMenuXmlHandler::DoCreateResource()
         {
             int id = GetID();
             wxString label = GetText(wxT("label"));
-#if wxUSE_ACCEL
             wxString accel = GetText(wxT("accel"), false);
-#endif // wxUSE_ACCEL
 
             wxItemKind kind = wxITEM_NORMAL;
             if (GetBool(wxT("radio")))
@@ -103,16 +99,14 @@ wxObject *wxMenuXmlHandler::DoCreateResource()
 
             wxMenuItem *mitem = new wxMenuItem(p_menu, id, label,
                                                GetText(wxT("help")), kind);
-#if wxUSE_ACCEL
             if (!accel.empty())
             {
                 wxAcceleratorEntry entry;
                 if (entry.FromString(accel))
                     mitem->SetAccel(&entry);
             }
-#endif // wxUSE_ACCEL
 
-#if !defined(__WXMSW__) || wxUSE_OWNER_DRAWN
+#if (!defined(__WXMSW__) && !defined(__WXPM__)) || wxUSE_OWNER_DRAWN
             if (HasParam(wxT("bitmap")))
             {
                 // currently only wxMSW has support for using different checked
@@ -147,9 +141,7 @@ bool wxMenuXmlHandler::CanHandle(wxXmlNode *node)
            );
 }
 
-#if wxUSE_MENUBAR
-
-wxIMPLEMENT_DYNAMIC_CLASS(wxMenuBarXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxMenuBarXmlHandler, wxXmlResourceHandler)
 
 wxMenuBarXmlHandler::wxMenuBarXmlHandler() : wxXmlResourceHandler()
 {
@@ -187,7 +179,5 @@ bool wxMenuBarXmlHandler::CanHandle(wxXmlNode *node)
 {
     return IsOfClass(node, wxT("wxMenuBar"));
 }
-
-#endif // wxUSE_MENUBAR
 
 #endif // wxUSE_XRC && wxUSE_MENUS

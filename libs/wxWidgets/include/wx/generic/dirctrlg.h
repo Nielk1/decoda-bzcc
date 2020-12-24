@@ -14,7 +14,7 @@
 #ifndef _WX_DIRCTRL_H_
 #define _WX_DIRCTRL_H_
 
-#if wxUSE_DIRDLG || wxUSE_FILEDLG
+#if wxUSE_DIRDLG
 
 #include "wx/treectrl.h"
 #include "wx/dialog.h"
@@ -27,8 +27,6 @@
 
 class WXDLLIMPEXP_FWD_CORE wxTextCtrl;
 class WXDLLIMPEXP_FWD_BASE wxHashTable;
-
-extern WXDLLIMPEXP_DATA_CORE(const char) wxDirDialogDefaultFolderStr[];
 
 //-----------------------------------------------------------------------------
 // Extra styles for wxGenericDirCtrl
@@ -47,9 +45,7 @@ enum
     // Editable labels
     wxDIRCTRL_EDIT_LABELS    = 0x0100,
     // Allow multiple selection
-    wxDIRCTRL_MULTIPLE       = 0x0200,
-
-    wxDIRCTRL_DEFAULT_STYLE  = wxDIRCTRL_3D_INTERNAL
+    wxDIRCTRL_MULTIPLE       = 0x0200
 };
 
 //-----------------------------------------------------------------------------
@@ -82,27 +78,27 @@ class WXDLLIMPEXP_CORE wxGenericDirCtrl: public wxControl
 {
 public:
     wxGenericDirCtrl();
-    wxGenericDirCtrl(wxWindow *parent, wxWindowID id = wxID_ANY,
-              const wxString &dir = wxASCII_STR(wxDirDialogDefaultFolderStr),
+    wxGenericDirCtrl(wxWindow *parent, const wxWindowID id = wxID_ANY,
+              const wxString &dir = wxDirDialogDefaultFolderStr,
               const wxPoint& pos = wxDefaultPosition,
               const wxSize& size = wxDefaultSize,
-              long style = wxDIRCTRL_DEFAULT_STYLE,
+              long style = wxDIRCTRL_3D_INTERNAL,
               const wxString& filter = wxEmptyString,
               int defaultFilter = 0,
-              const wxString& name = wxASCII_STR(wxTreeCtrlNameStr) )
+              const wxString& name = wxTreeCtrlNameStr )
     {
         Init();
         Create(parent, id, dir, pos, size, style, filter, defaultFilter, name);
     }
 
-    bool Create(wxWindow *parent, wxWindowID id = wxID_ANY,
-              const wxString &dir = wxASCII_STR(wxDirDialogDefaultFolderStr),
+    bool Create(wxWindow *parent, const wxWindowID id = wxID_ANY,
+              const wxString &dir = wxDirDialogDefaultFolderStr,
               const wxPoint& pos = wxDefaultPosition,
               const wxSize& size = wxDefaultSize,
-              long style = wxDIRCTRL_DEFAULT_STYLE,
+              long style = wxDIRCTRL_3D_INTERNAL,
               const wxString& filter = wxEmptyString,
               int defaultFilter = 0,
-              const wxString& name = wxASCII_STR(wxTreeCtrlNameStr) );
+              const wxString& name = wxTreeCtrlNameStr );
 
     virtual void Init();
 
@@ -176,7 +172,7 @@ public:
     virtual void CollapseTree();
 
     // overridden base class methods
-    virtual void SetFocus() wxOVERRIDE;
+    virtual void SetFocus();
 
 protected:
     virtual void ExpandRoot();
@@ -208,8 +204,8 @@ private:
     wxDirFilterListCtrl* m_filterListCtrl;
 
 private:
-    wxDECLARE_EVENT_TABLE();
-    wxDECLARE_DYNAMIC_CLASS(wxGenericDirCtrl);
+    DECLARE_EVENT_TABLE()
+    DECLARE_DYNAMIC_CLASS(wxGenericDirCtrl)
     wxDECLARE_NO_COPY_CLASS(wxGenericDirCtrl);
 };
 
@@ -230,7 +226,7 @@ class WXDLLIMPEXP_CORE wxDirFilterListCtrl: public wxChoice
 {
 public:
     wxDirFilterListCtrl() { Init(); }
-    wxDirFilterListCtrl(wxGenericDirCtrl* parent, wxWindowID id = wxID_ANY,
+    wxDirFilterListCtrl(wxGenericDirCtrl* parent, const wxWindowID id = wxID_ANY,
               const wxPoint& pos = wxDefaultPosition,
               const wxSize& size = wxDefaultSize,
               long style = 0)
@@ -239,7 +235,7 @@ public:
         Create(parent, id, pos, size, style);
     }
 
-    bool Create(wxGenericDirCtrl* parent, wxWindowID id = wxID_ANY,
+    bool Create(wxGenericDirCtrl* parent, const wxWindowID id = wxID_ANY,
               const wxPoint& pos = wxDefaultPosition,
               const wxSize& size = wxDefaultSize,
               long style = 0);
@@ -257,12 +253,12 @@ public:
 protected:
     wxGenericDirCtrl*    m_dirCtrl;
 
-    wxDECLARE_EVENT_TABLE();
-    wxDECLARE_CLASS(wxDirFilterListCtrl);
+    DECLARE_EVENT_TABLE()
+    DECLARE_CLASS(wxDirFilterListCtrl)
     wxDECLARE_NO_COPY_CLASS(wxDirFilterListCtrl);
 };
 
-#if !defined(__WXMSW__) && !defined(__WXMAC__)
+#if !defined(__WXMSW__) && !defined(__WXMAC__) && !defined(__WXPM__)
     #define wxDirCtrl wxGenericDirCtrl
 #endif
 
@@ -302,17 +298,11 @@ public:
     int GetIconID(const wxString& extension, const wxString& mime = wxEmptyString);
     wxImageList *GetSmallImageList();
 
-    const wxSize& GetSize() const { return m_size; }
-    void SetSize(const wxSize& sz) { m_size = sz; }
-
-    bool IsOk() const { return m_smallImageList != NULL; }
-
 protected:
-    void Create(const wxSize& sz);  // create on first use
+    void Create();  // create on first use
 
     wxImageList *m_smallImageList;
     wxHashTable *m_HashTable;
-    wxSize  m_size;
 };
 
 // The global fileicons table

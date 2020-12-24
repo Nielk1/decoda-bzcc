@@ -23,8 +23,8 @@
 
 #include "wx/osx/private.h"
 
-wxBEGIN_EVENT_TABLE(wxCheckListBox, wxListBox)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxCheckListBox, wxListBox)
+END_EVENT_TABLE()
 
 void wxCheckListBox::Init()
 {

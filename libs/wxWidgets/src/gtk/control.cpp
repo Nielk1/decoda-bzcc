@@ -22,6 +22,7 @@
 #include "wx/utils.h"
 #include "wx/sysopt.h"
 
+#include <gtk/gtk.h>
 #include "wx/gtk/private.h"
 #include "wx/gtk/private/mnemonics.h"
 
@@ -33,7 +34,7 @@
 // wxControl creation
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxControl, wxWindow);
+IMPLEMENT_DYNAMIC_CLASS(wxControl, wxWindow)
 
 wxControl::wxControl()
 {
@@ -60,7 +61,7 @@ bool wxControl::Create( wxWindow *parent,
 bool wxControl::SetFont(const wxFont& font)
 {
     const bool changed = base_type::SetFont(font);
-    if (changed && m_widget && !gtk_widget_get_realized(m_widget) && gtk_check_version(3,5,0))
+    if (changed && !gtk_widget_get_realized(m_widget) && gtk_check_version(3,5,0))
     {
         // GTK defers sending "style-updated" until widget is realized, but
         // GetBestSize() won't compute correct result until the signal is sent,
@@ -96,11 +97,6 @@ void wxControl::PostCreation(const wxSize& size)
 {
     wxWindow::PostCreation();
 
-#ifdef __WXGTK3__
-    if (HasFlag(wxNO_BORDER))
-        GTKApplyCssStyle("*{ border:none; border-radius:0; padding:0 }");
-#endif
-
 #ifndef __WXGTK3__
     // NB: GetBestSize needs to know the style, otherwise it will assume
     //     default font and if the user uses a different font, determined
@@ -122,7 +118,7 @@ void wxControl::PostCreation(const wxSize& size)
 void wxControl::GTKFixSensitivity(bool WXUNUSED_IN_GTK3(onlyIfUnderMouse))
 {
 #ifndef __WXGTK3__
-    if (!wx_is_at_least_gtk2(14)
+    if (gtk_check_version(2,14,0)
 #if wxUSE_SYSTEM_OPTIONS
         && (wxSystemOptions::GetOptionInt(wxT("gtk.control.disable-sensitivity-fix")) != 1)
 #endif
@@ -255,18 +251,17 @@ wxControl::GetDefaultAttributesFromGTKWidget(GtkWidget* widget,
     }
     GtkStyleContext* sc = gtk_widget_get_style_context(widget);
     gtk_style_context_save(sc);
-    GdkRGBA *fc, *bc;
-    wxNativeFontInfo info;
+    GdkRGBA c;
     gtk_style_context_set_state(sc, stateFlag);
-    gtk_style_context_get(sc, stateFlag,
-        "color", &fc, "background-color", &bc,
-        GTK_STYLE_PROPERTY_FONT, &info.description, NULL);
-    gtk_style_context_restore(sc);
-    attr.colFg = wxColour(*fc);
-    attr.colBg = wxColour(*bc);
+    gtk_style_context_get_color(sc, stateFlag, &c);
+    attr.colFg = wxColour(c);
+    gtk_style_context_get_background_color(sc, stateFlag, &c);
+    attr.colBg = wxColour(c);
+    wxNativeFontInfo info;
+    gtk_style_context_get(
+        sc, stateFlag, GTK_STYLE_PROPERTY_FONT, &info.description, NULL);
     attr.font = wxFont(info);
-    gdk_rgba_free(fc);
-    gdk_rgba_free(bc);
+    gtk_style_context_restore(sc);
 
     // Go up the parent chain for a background color
     while (attr.colBg.Alpha() == 0 && (widget = gtk_widget_get_parent(widget)))
@@ -274,10 +269,9 @@ wxControl::GetDefaultAttributesFromGTKWidget(GtkWidget* widget,
         sc = gtk_widget_get_style_context(widget);
         gtk_style_context_save(sc);
         gtk_style_context_set_state(sc, stateFlag);
-        gtk_style_context_get(sc, stateFlag, "background-color", &bc, NULL);
+        gtk_style_context_get_background_color(sc, stateFlag, &c);
         gtk_style_context_restore(sc);
-        attr.colBg = wxColour(*bc);
-        gdk_rgba_free(bc);
+        attr.colBg = wxColour(c);
     }
 #else
     GtkStyle* style;
@@ -363,9 +357,9 @@ wxSize wxControl::GTKGetPreferredSize(GtkWidget* widget) const
     return wxSize(req.width, req.height);
 }
 
-wxSize wxControl::GTKGetEntryMargins(GtkEntry* entry) const
+wxPoint wxControl::GTKGetEntryMargins(GtkEntry* entry) const
 {
-    wxSize size;
+    wxPoint size;
     gtk_entry_get_layout_offsets(entry, &size.x, &size.y);
 
 #ifdef __WXGTK3__
@@ -378,7 +372,7 @@ wxSize wxControl::GTKGetEntryMargins(GtkEntry* entry) const
     GtkBorder border = { 2, 2, 2, 2 };
 
 #if GTK_CHECK_VERSION(2,10,0)
-    if (wx_is_at_least_gtk2(10))
+    if (gtk_check_version(2,10,0) == NULL)
     {
         const GtkBorder* innerBorder1 = gtk_entry_get_inner_border(entry);
         if (innerBorder1)

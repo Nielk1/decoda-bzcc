@@ -1,5 +1,5 @@
 // Scintilla source code edit control
-/** @file LexerBase.cxx
+/** @file LexerSimple.cxx
  ** A simple lexer with no state.
  **/
 // Copyright 1998-2010 by Neil Hodgson <neilh@scintilla.org>
@@ -61,7 +61,7 @@ const char * SCI_METHOD LexerBase::DescribeProperty(const char *) {
 	return "";
 }
 
-Sci_Position SCI_METHOD LexerBase::PropertySet(const char *key, const char *val) {
+int SCI_METHOD LexerBase::PropertySet(const char *key, const char *val) {
 	const char *valOld = props.Get(key);
 	if (strcmp(val, valOld) != 0) {
 		props.Set(key, val);
@@ -75,7 +75,7 @@ const char * SCI_METHOD LexerBase::DescribeWordListSets() {
 	return "";
 }
 
-Sci_Position SCI_METHOD LexerBase::WordListSet(int n, const char *wl) {
+int SCI_METHOD LexerBase::WordListSet(int n, const char *wl) {
 	if (n < numWordLists) {
 		WordList wlNew;
 		wlNew.Set(wl);

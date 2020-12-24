@@ -19,8 +19,8 @@
 
 #include "wx/docmdi.h"
 
-wxIMPLEMENT_CLASS(wxDocMDIParentFrame, wxMDIParentFrame);
-wxIMPLEMENT_CLASS(wxDocMDIChildFrame, wxMDIChildFrame);
+IMPLEMENT_CLASS(wxDocMDIParentFrame, wxMDIParentFrame)
+IMPLEMENT_CLASS(wxDocMDIChildFrame, wxMDIChildFrame)
 
 #endif // wxUSE_DOC_VIEW_ARCHITECTURE
 

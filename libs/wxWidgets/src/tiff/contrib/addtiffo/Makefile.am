@@ -25,10 +25,7 @@
 
 LIBTIFF = $(top_builddir)/libtiff/libtiff.la
 
-EXTRA_DIST = \
-	CMakeLists.txt \
-	Makefile.vc \
-	README
+EXTRA_DIST = README Makefile.vc
 
 noinst_PROGRAMS = addtiffo
 

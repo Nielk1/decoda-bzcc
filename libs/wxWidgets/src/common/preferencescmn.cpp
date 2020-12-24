@@ -33,17 +33,14 @@
 
 wxString wxStockPreferencesPage::GetName() const
 {
-    wxString name;
     switch ( m_kind )
     {
         case Kind_General:
-            name = _("General");
-            break;
+            return _("General");
         case Kind_Advanced:
-            name = _("Advanced");
-            break;
+            return _("Advanced");
     }
-    return name;
+    return wxString(); // silence compiler warning
 }
 
 wxPreferencesEditor::wxPreferencesEditor(const wxString& title)

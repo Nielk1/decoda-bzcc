@@ -46,7 +46,7 @@
 // macros
 // ----------------------------------------------------------------------------
 
-    wxIMPLEMENT_CLASS(wxMessageDialog, wxDialog);
+    IMPLEMENT_CLASS(wxMessageDialog, wxDialog)
 
 // ============================================================================
 // implementation

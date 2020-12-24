@@ -60,12 +60,11 @@ public:
     // different conversions to pointers)
     operator bool() const { return m_str != NULL; }
 
-    // at least VC7 also needs this one or it complains about ambiguity
+    // at least VC6 and VC7 also need this one or they complain about ambiguity
     // for !anystr expressions
     bool operator!() const { return !((bool)*this); }
 
 
-#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
     // and these are the conversions operator which allow to assign the result
     // of FuncReturningAnyStrPtr() to either char* or wxChar* (i.e. wchar_t*)
     operator const char *() const
@@ -95,7 +94,6 @@ public:
 
         return p;
     }
-#endif // wxNO_IMPLICIT_WXSTRING_ENCODING
 
     operator const wchar_t *() const
     {

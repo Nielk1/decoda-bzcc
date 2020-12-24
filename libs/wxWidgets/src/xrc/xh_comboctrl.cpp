@@ -26,7 +26,7 @@
 #include "wx/combo.h"
 
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxComboCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxComboCtrlXmlHandler, wxXmlResourceHandler)
 
 wxComboCtrlXmlHandler::wxComboCtrlXmlHandler()
                      : wxXmlResourceHandler()

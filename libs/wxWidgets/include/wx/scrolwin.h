@@ -11,12 +11,7 @@
 #ifndef _WX_SCROLWIN_H_BASE_
 #define _WX_SCROLWIN_H_BASE_
 
-#include "wx/control.h"
 #include "wx/panel.h"
-
-#ifdef  __WXOSX__
-    #include "wx/scrolbar.h"
-#endif
 
 class WXDLLIMPEXP_FWD_CORE wxScrollHelperEvtHandler;
 class WXDLLIMPEXP_FWD_BASE wxTimer;
@@ -69,7 +64,7 @@ enum wxScrollbarVisibility
 class WXDLLIMPEXP_CORE wxAnyScrollHelperBase
 {
 public:
-    explicit wxAnyScrollHelperBase(wxWindow* win);
+    wxEXPLICIT wxAnyScrollHelperBase(wxWindow* win);
     virtual ~wxAnyScrollHelperBase() {}
 
     // Disable use of keyboard keys for scrolling. By default cursor movement
@@ -219,7 +214,7 @@ public:
     void SetTargetRect(const wxRect& rect) { m_rectToScroll = rect; }
     wxRect GetTargetRect() const { return m_rectToScroll; }
 
-    virtual void DoPrepareDC(wxDC& dc) wxOVERRIDE;
+    virtual void DoPrepareDC(wxDC& dc);
 
     // are we generating the autoscroll events?
     bool IsAutoScrolling() const { return m_timerAutoScroll != NULL; }
@@ -309,21 +304,6 @@ protected:
         return size;
     }
 
-    // Can be overridden to return false if the child window shouldn't be
-    // scrolled into view automatically when it gets focus, which is the
-    // default behaviour.
-    virtual bool ShouldScrollToChildOnFocus(wxWindow* child)
-    {
-#if defined(__WXOSX__) && wxUSE_SCROLLBAR
-        if ( wxDynamicCast(child, wxScrollBar) )
-            return false;
-#else
-        wxUnusedVar(child);
-#endif
-
-        return true;
-    }
-
 
     double                m_scaleX;
     double                m_scaleY;
@@ -361,13 +341,13 @@ protected:
 // methods to corresponding wxScrollHelper methods
 #define WX_FORWARD_TO_SCROLL_HELPER()                                         \
 public:                                                                       \
-    virtual void PrepareDC(wxDC& dc) wxOVERRIDE { DoPrepareDC(dc); }          \
-    virtual bool Layout() wxOVERRIDE { return ScrollLayout(); }               \
-    virtual bool CanScroll(int orient) const wxOVERRIDE                       \
+    virtual void PrepareDC(wxDC& dc) { DoPrepareDC(dc); }                     \
+    virtual bool Layout() { return ScrollLayout(); }                          \
+    virtual bool CanScroll(int orient) const                                  \
         { return IsScrollbarShown(orient); }                                  \
-    virtual void DoSetVirtualSize(int x, int y) wxOVERRIDE                    \
+    virtual void DoSetVirtualSize(int x, int y)                               \
         { ScrollDoSetVirtualSize(x, y); }                                     \
-    virtual wxSize GetBestVirtualSize() const wxOVERRIDE                      \
+    virtual wxSize GetBestVirtualSize() const                                 \
         { return ScrollGetBestVirtualSize(); }
 
 // include the declaration of the real wxScrollHelper
@@ -399,28 +379,6 @@ struct WXDLLIMPEXP_CORE wxScrolledT_Helper
 // but wxScrolledWindow includes wxControlContainer functionality and that's
 // not always desirable.
 template<class T>
-bool wxCreateScrolled(T* self,
-                      wxWindow *parent, wxWindowID winid,
-                      const wxPoint& pos, const wxSize& size,
-                      long style, const wxString& name)
-{
-    return self->Create(parent, winid, pos, size, style, name);
-}
-
-#if wxUSE_CONTROLS
-// For wxControl we have to provide overloaded wxCreateScrolled()
-// because wxControl::Create() has 7 parameters and therefore base
-// template expecting 6-parameter T::Create() cannot be used.
-inline bool wxCreateScrolled(wxControl* self,
-                     wxWindow *parent, wxWindowID winid,
-                     const wxPoint& pos, const wxSize& size,
-                     long style, const wxString& name)
-{
-     return self->Create(parent, winid, pos, size, style, wxDefaultValidator, name);
-}
-#endif // wxUSE_CONTROLS
-
-template<class T>
 class wxScrolled : public T,
                    public wxScrollHelper,
                    private wxScrolledT_Helper
@@ -432,7 +390,7 @@ public:
                const wxPoint& pos = wxDefaultPosition,
                const wxSize& size = wxDefaultSize,
                long style = wxScrolledWindowStyle,
-               const wxString& name = wxASCII_STR(wxPanelNameStr))
+               const wxString& name = wxPanelNameStr)
         : wxScrollHelper(this)
     {
         Create(parent, winid, pos, size, style, name);
@@ -443,7 +401,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxScrolledWindowStyle,
-                const wxString& name = wxASCII_STR(wxPanelNameStr))
+                const wxString& name = wxPanelNameStr)
     {
         m_targetWindow = this;
 
@@ -457,19 +415,29 @@ public:
         if ( !(style & (wxHSCROLL | wxVSCROLL)) )
             style |= wxHSCROLL | wxVSCROLL;
 
-        return wxCreateScrolled((T*)this, parent, winid, pos, size, style, name);
+#ifdef __WXOSX__
+        bool retval = T::Create(parent, winid, pos, size, style, name);
+        if ( retval && (style & wxALWAYS_SHOW_SB) )
+            ShowScrollbars(wxSHOW_SB_ALWAYS, wxSHOW_SB_ALWAYS);
+        return retval;
+#else
+        if ( style & wxALWAYS_SHOW_SB )
+            ShowScrollbars(wxSHOW_SB_ALWAYS, wxSHOW_SB_ALWAYS);
+
+        return T::Create(parent, winid, pos, size, style, name);
+#endif
     }
 
 #ifdef __WXMSW__
     // we need to return a special WM_GETDLGCODE value to process just the
     // arrows but let the other navigation characters through
-    virtual WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE
+    virtual WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam)
     {
         return FilterMSWWindowProc(nMsg, T::MSWWindowProc(nMsg, wParam, lParam));
     }
 
     // Take into account the scroll origin.
-    virtual void MSWAdjustBrushOrg(int* xOrg, int* yOrg) const wxOVERRIDE
+    virtual void MSWAdjustBrushOrg(int* xOrg, int* yOrg) const
     {
         CalcUnscrolledPosition(*xOrg, *yOrg, xOrg, yOrg);
     }
@@ -478,14 +446,25 @@ public:
     WX_FORWARD_TO_SCROLL_HELPER()
 
 protected:
-    virtual wxSize DoGetBestSize() const wxOVERRIDE
+    virtual wxSize DoGetBestSize() const
     {
         return FilterBestSize(this, this, T::DoGetBestSize());
     }
 
 private:
+    // VC++ 6 gives warning for the declaration of template member function
+    // without definition
+#ifndef __VISUALC6__
     wxDECLARE_NO_COPY_CLASS(wxScrolled);
+#endif
 };
+
+#ifdef __VISUALC6__
+    // disable the warning about non dll-interface class used as base for
+    // dll-interface class: it's harmless in this case
+    #pragma warning(push)
+    #pragma warning(disable:4275)
+#endif
 
 // for compatibility with existing code, we provide wxScrolledWindow
 // "typedef" for wxScrolled<wxPanel>. It's not a real typedef because we
@@ -500,12 +479,16 @@ public:
                      const wxPoint& pos = wxDefaultPosition,
                      const wxSize& size = wxDefaultSize,
                      long style = wxScrolledWindowStyle,
-                     const wxString& name = wxASCII_STR(wxPanelNameStr))
+                     const wxString& name = wxPanelNameStr)
         : wxScrolled<wxPanel>(parent, winid, pos, size, style, name) {}
 
-    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxScrolledWindow);
+    DECLARE_DYNAMIC_CLASS_NO_COPY(wxScrolledWindow)
 };
 
 typedef wxScrolled<wxWindow> wxScrolledCanvas;
+
+#ifdef __VISUALC6__
+    #pragma warning(pop)
+#endif
 
 #endif // _WX_SCROLWIN_H_BASE_

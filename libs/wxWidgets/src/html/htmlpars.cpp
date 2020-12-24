@@ -30,6 +30,10 @@
 #include "wx/html/htmlpars.h"
 #include "wx/vector.h"
 
+#ifdef __WXWINCE__
+    #include "wx/msw/wince/missing.h"       // for bsearch()
+#endif
+
 // DLL options compatibility check:
 WX_CHECK_BUILD_OPTIONS("wxHTML")
 
@@ -69,7 +73,7 @@ public:
 // wxHtmlParser
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlParser,wxObject);
+IMPLEMENT_ABSTRACT_CLASS(wxHtmlParser,wxObject)
 
 wxHtmlParser::wxHtmlParser()
     : wxObject(),
@@ -150,6 +154,7 @@ void wxHtmlParser::CreateDOMSubTree(wxHtmlTag *cur,
     if (end_pos <= begin_pos)
         return;
 
+    wxChar c;
     wxString::const_iterator i = begin_pos;
     wxString::const_iterator textBeginning = begin_pos;
 
@@ -164,7 +169,6 @@ void wxHtmlParser::CreateDOMSubTree(wxHtmlTag *cur,
 
     while (i < end_pos)
     {
-        wxChar c;
         c = *i;
 
         if (c == wxT('<'))
@@ -312,13 +316,6 @@ void wxHtmlParser::AddTag(const wxHtmlTag& tag)
         if (m_stopParsing)
             return;
     }
-#if wxDEBUG_LEVEL
-    else if (m_HandlersHash.empty())
-    {
-        wxFAIL_MSG( "No HTML tag handlers registered, is your program linked "
-                    "correctly (you might need to use FORCE_WXHTML_MODULES)?" );
-    }
-#endif // wxDEBUG_LEVEL
     if (!inner)
     {
         if (tag.HasEnding())
@@ -415,7 +412,7 @@ wxString wxHtmlParser::GetInnerSource(const wxHtmlTag& tag)
 // wxHtmlTagHandler
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlTagHandler, wxObject);
+IMPLEMENT_ABSTRACT_CLASS(wxHtmlTagHandler,wxObject)
 
 void wxHtmlTagHandler::ParseInnerSource(const wxString& source)
 {
@@ -431,7 +428,7 @@ void wxHtmlTagHandler::ParseInnerSource(const wxString& source)
 // wxHtmlEntitiesParser
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxHtmlEntitiesParser, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxHtmlEntitiesParser,wxObject)
 
 wxHtmlEntitiesParser::wxHtmlEntitiesParser()
 #if !wxUSE_UNICODE
@@ -539,15 +536,13 @@ struct wxHtmlEntityInfo
     unsigned code;
 };
 
-extern "C" {
-static int LINKAGEMODE wxHtmlEntityCompare(const void *key, const void *item)
+extern "C" int LINKAGEMODE wxHtmlEntityCompare(const void *key, const void *item)
 {
 #if wxUSE_UNICODE_UTF8
-    return strcmp(static_cast<const char*>(key), static_cast<const wxHtmlEntityInfo*>(item)->name);
+    return strcmp((char*)key, ((wxHtmlEntityInfo*)item)->name);
 #else
-    return wxStrcmp(static_cast<const wxChar*>(key), static_cast<const wxHtmlEntityInfo*>(item)->name);
+    return wxStrcmp((wxChar*)key, ((wxHtmlEntityInfo*)item)->name);
 #endif
-}
 }
 
 wxChar wxHtmlEntitiesParser::GetEntityChar(const wxString& entity) const
@@ -845,10 +840,24 @@ wxChar wxHtmlEntitiesParser::GetEntityChar(const wxString& entity) const
                 substitutions_cnt++;
 
         wxHtmlEntityInfo *info;
+#ifdef __WXWINCE__
+        // bsearch crashes under WinCE for some reason
+        info = NULL;
+        size_t i;
+        for (i = 0; i < substitutions_cnt; i++)
+        {
+            if (entity == substitutions[i].name)
+            {
+                info = & substitutions[i];
+                break;
+            }
+        }
+#else
         info = (wxHtmlEntityInfo*) bsearch(entity.wx_str(), substitutions,
                                            substitutions_cnt,
                                            sizeof(wxHtmlEntityInfo),
                                            wxHtmlEntityCompare);
+#endif
         if (info)
             code = info->code;
     }
@@ -880,10 +889,10 @@ class wxMetaTagParser : public wxHtmlParser
 public:
     wxMetaTagParser() { }
 
-    wxObject* GetProduct() wxOVERRIDE { return NULL; }
+    wxObject* GetProduct() { return NULL; }
 
 protected:
-    virtual void AddText(const wxString& WXUNUSED(txt)) wxOVERRIDE {}
+    virtual void AddText(const wxString& WXUNUSED(txt)) {}
 
     wxDECLARE_NO_COPY_CLASS(wxMetaTagParser);
 };
@@ -892,8 +901,8 @@ class wxMetaTagHandler : public wxHtmlTagHandler
 {
 public:
     wxMetaTagHandler(wxString *retval) : wxHtmlTagHandler(), m_retval(retval) {}
-    wxString GetSupportedTags() wxOVERRIDE { return wxT("META,BODY"); }
-    bool HandleTag(const wxHtmlTag& tag) wxOVERRIDE;
+    wxString GetSupportedTags() { return wxT("META,BODY"); }
+    bool HandleTag(const wxHtmlTag& tag);
 
 private:
     wxString *m_retval;

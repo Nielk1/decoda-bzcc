@@ -146,7 +146,7 @@ public:
     /**
        Sets the default action for drag and drop.  Use wxDragMove or
        wxDragCopy to set default action to move or copy and use wxDragNone
-       (default) to set default action specified by initialization of dragging
+       (default) to set default action specified by initialization of draging
        (see wxDropSource::DoDragDrop())
     */
     void SetDefaultAction(wxDragResult action);

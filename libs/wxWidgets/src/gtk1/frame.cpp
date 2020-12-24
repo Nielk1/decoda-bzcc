@@ -224,6 +224,13 @@ bool wxFrame::Create( wxWindow *parent,
     return rt;
 }
 
+wxFrame::~wxFrame()
+{
+    SendDestroyEvent();
+
+    DeleteAllBars();
+}
+
 // ----------------------------------------------------------------------------
 // overridden wxWindow methods
 // ----------------------------------------------------------------------------

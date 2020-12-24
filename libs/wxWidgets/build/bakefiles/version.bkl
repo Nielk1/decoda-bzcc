@@ -24,7 +24,7 @@
     -->
     <set var="WX_CURRENT">4</set>
     <set var="WX_REVISION">0</set>
-    <set var="WX_AGE">0</set>
+    <set var="WX_AGE">4</set>
 
 
     <!-- ================================================================== -->

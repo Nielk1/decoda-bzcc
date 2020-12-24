@@ -8,7 +8,7 @@
 enum
 {
     // show Sunday as the first day of the week (default)
-    wxCAL_SUNDAY_FIRST               = 0x0080,
+    wxCAL_SUNDAY_FIRST               = 0x0000,
 
     // show Monday as the first day of the week
     wxCAL_MONDAY_FIRST               = 0x0001,
@@ -40,7 +40,7 @@ enum
 
     The wxCalendarEvent class is used together with wxCalendarCtrl.
 
-    @library{wxcore}
+    @library{wxadv}
     @category{events}
 
     @see wxCalendarCtrl
@@ -62,7 +62,7 @@ public:
         Sets the week day carried by the event, normally only used by the
         library internally.
     */
-    void SetWeekDay(wxDateTime::WeekDay day);
+    void SetWeekDay(const wxDateTime::WeekDay day);
 };
 
 wxEventType wxEVT_CALENDAR_SEL_CHANGED;
@@ -90,7 +90,7 @@ enum wxCalendarDateBorder
     wxCalendarDateAttr is a custom attributes for a calendar date. The objects
     of this class are used with wxCalendarCtrl.
 
-    @library{wxcore}
+    @library{wxadv}
     @category{data}
 
     @see wxCalendarCtrl
@@ -254,11 +254,6 @@ enum wxCalendarHitTestResult
     month is changed, so you will often want to update them in
     @c EVT_CALENDAR_PAGE_CHANGED event handler.
 
-    If neither the @c wxCAL_SUNDAY_FIRST or @c wxCAL_MONDAY_FIRST style is given,
-    the first day of the week is determined from operating system's settings,
-    if possible. The native wxGTK calendar chooses the first weekday based on
-    locale, and these styles have no effect on it.
-
     @beginStyleTable
     @style{wxCAL_SUNDAY_FIRST}
            Show Sunday as the first day in the week (not in wxGTK)
@@ -296,7 +291,7 @@ enum wxCalendarHitTestResult
     @note Changing the selected date will trigger an EVT_CALENDAR_DAY, MONTH or
           YEAR event as well as an EVT_CALENDAR_SEL_CHANGED event.
 
-    @library{wxcore}
+    @library{wxadv}
     @category{ctrl}
     @appearance{calendarctrl}
 
@@ -469,8 +464,7 @@ public:
 
         The @a date parameter must be valid and in the currently valid range as
         set by SetDateRange(), otherwise the current date is not changed and
-        the function returns @false and, additionally, triggers an assertion
-        failure if the date is invalid.
+        the function returns @false.
     */
     virtual bool SetDate(const wxDateTime& date);
 

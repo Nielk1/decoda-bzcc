@@ -40,7 +40,7 @@
 // implementation
 // ============================================================================
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxPickerBase, wxControl);
+IMPLEMENT_ABSTRACT_CLASS(wxPickerBase, wxControl)
 
 // ----------------------------------------------------------------------------
 // wxPickerBase
@@ -91,12 +91,19 @@ bool wxPickerBase::CreateBase(wxWindow *parent,
         // set the initial contents of the textctrl
         m_text->SetValue(text);
 
-        m_text->Bind(wxEVT_TEXT, &wxPickerBase::OnTextCtrlUpdate, this);
-        m_text->Bind(wxEVT_KILL_FOCUS, &wxPickerBase::OnTextCtrlKillFocus, this);
-        m_text->Bind(wxEVT_DESTROY, &wxPickerBase::OnTextCtrlDelete, this);
+        m_text->Connect(m_text->GetId(), wxEVT_TEXT,
+                wxCommandEventHandler(wxPickerBase::OnTextCtrlUpdate),
+                NULL, this);
+        m_text->Connect(m_text->GetId(), wxEVT_KILL_FOCUS,
+                wxFocusEventHandler(wxPickerBase::OnTextCtrlKillFocus),
+                NULL, this);
 
-        m_sizer->Add(m_text,
-                     wxSizerFlags(1).CentreVertical().Border(wxRIGHT));
+        m_text->Connect(m_text->GetId(), wxEVT_DESTROY,
+                wxWindowDestroyEventHandler(wxPickerBase::OnTextCtrlDelete),
+                NULL, this);
+
+        // the text control's proportion values defaults to 2
+        m_sizer->Add(m_text, 2, GetDefaultTextCtrlFlag(), 5);
     }
 
     return true;
@@ -104,9 +111,9 @@ bool wxPickerBase::CreateBase(wxWindow *parent,
 
 void wxPickerBase::PostCreation()
 {
-    // the picker grows in the major direction only if there is no text control
-    m_sizer->Add(m_picker,
-                 wxSizerFlags(HasTextCtrl() ? 0 : 1).CentreVertical());
+    // the picker's proportion value defaults to 1 when there's no text control
+    // associated with it - in that case it defaults to 0
+    m_sizer->Add(m_picker, HasTextCtrl() ? 0 : 1, GetDefaultPickerCtrlFlag(), 5);
 
     // For aesthetic reasons, make sure the picker is at least as high as the
     // associated text control and is always at least square, unless we are
@@ -126,8 +133,6 @@ void wxPickerBase::PostCreation()
     SetSizer(m_sizer);
 
     SetInitialSize( GetMinSize() );
-
-    Layout();
 }
 
 #if wxUSE_TOOLTIPS
@@ -145,26 +150,6 @@ void wxPickerBase::DoSetToolTip(wxToolTip *tip)
 }
 
 #endif // wxUSE_TOOLTIPS
-
-void wxPickerBase::DoSetGrowableFlagFor(wxSizerItem* item, bool grow)
-{
-    // We assume that our controls use either wxALIGN_CENTER_VERTICAL or wxGROW
-    // style, this code would need to be changed in the unlikely event any
-    // other style is used for them.
-    int f = item->GetFlag();
-    if ( grow )
-    {
-        f &= ~wxALIGN_CENTER_VERTICAL;
-        f |= wxGROW;
-    }
-    else
-    {
-        f &= ~wxGROW;
-        f |= wxALIGN_CENTER_VERTICAL;
-    }
-
-    item->SetFlag(f);
-}
 
 // ----------------------------------------------------------------------------
 // wxPickerBase - event handlers

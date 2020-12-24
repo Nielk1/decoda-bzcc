@@ -38,9 +38,9 @@ public:
 
     virtual ~wxOSXAudioToolboxSoundData();
 
-    virtual bool Play(unsigned flags) wxOVERRIDE;
+    virtual bool Play(unsigned flags);
 
-    virtual void DoStop() wxOVERRIDE;
+    virtual void DoStop();
 protected:
     static void CompletionCallback(SystemSoundID  mySSID, void * soundRef);
     void SoundCompleted();
@@ -58,7 +58,6 @@ wxOSXAudioToolboxSoundData::wxOSXAudioToolboxSoundData(SystemSoundID soundID) :
 wxOSXAudioToolboxSoundData::~wxOSXAudioToolboxSoundData()
 {
     DoStop();
-    AudioServicesDisposeSystemSoundID (m_soundID);
 }
 
 void
@@ -95,7 +94,8 @@ void wxOSXAudioToolboxSoundData::DoStop()
     if ( m_playing )
     {
         m_playing = false;
-        AudioServicesRemoveSystemSoundCompletion(m_soundID);
+        AudioServicesDisposeSystemSoundID (m_soundID);
+
         wxSound::SoundStopped(this);
     }
 }
@@ -134,7 +134,9 @@ bool wxSound::Create(const wxString& fileName, bool isResource)
 {
     wxCHECK_MSG( !isResource, false, "not implemented" );
 
-    wxCFRef<CFURLRef> url(wxOSXCreateURLFromFileSystemPath(fileName));
+    wxCFRef<CFMutableStringRef> cfMutableString(CFStringCreateMutableCopy(NULL, 0, wxCFStringRef(fileName)));
+    CFStringNormalize(cfMutableString,kCFStringNormalizationFormD);
+    wxCFRef<CFURLRef> url(CFURLCreateWithFileSystemPath(kCFAllocatorDefault, cfMutableString , kCFURLPOSIXPathStyle, false));
 
     SystemSoundID soundID;
     OSStatus err = AudioServicesCreateSystemSoundID(url, &soundID);

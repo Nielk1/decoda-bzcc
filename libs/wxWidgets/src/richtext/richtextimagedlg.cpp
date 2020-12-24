@@ -39,19 +39,19 @@
  * wxRichTextObjectPropertiesDialog type definition
  */
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxRichTextObjectPropertiesDialog, wxRichTextFormattingDialog);
+IMPLEMENT_DYNAMIC_CLASS( wxRichTextObjectPropertiesDialog, wxRichTextFormattingDialog )
 
 
 /*!
  * wxRichTextObjectPropertiesDialog event table definition
  */
 
-wxBEGIN_EVENT_TABLE(wxRichTextObjectPropertiesDialog, wxRichTextFormattingDialog)
+BEGIN_EVENT_TABLE( wxRichTextObjectPropertiesDialog, wxRichTextFormattingDialog )
 
 ////@begin wxRichTextObjectPropertiesDialog event table entries
 ////@end wxRichTextObjectPropertiesDialog event table entries
 
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 
 /*!

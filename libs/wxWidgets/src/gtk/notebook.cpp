@@ -24,7 +24,9 @@
 #include "wx/imaglist.h"
 #include "wx/fontutil.h"
 
+#include <gtk/gtk.h>
 #include "wx/gtk/private.h"
+#include "wx/gtk/private/gtk2-compat.h"
 
 //-----------------------------------------------------------------------------
 // wxGtkNotebookPage
@@ -125,9 +127,9 @@ void wxNotebook::AddChildGTK(wxWindowGTK* child)
 // wxNotebook
 //-----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxNotebook, wxBookCtrlBase)
+BEGIN_EVENT_TABLE(wxNotebook, wxBookCtrlBase)
     EVT_NAVIGATION_KEY(wxNotebook::OnNavigationKey)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 void wxNotebook::Init()
 {
@@ -284,15 +286,17 @@ bool wxNotebook::SetPageImage( size_t page, int image )
     if (image >= 0)
     {
         wxCHECK_MSG(HasImageList(), false, "invalid notebook imagelist");
-        const wxBitmap bitmap = GetImageList()->GetBitmap(image);
+        const wxBitmap* bitmap = GetImageList()->GetBitmapPtr(image);
+        if (bitmap == NULL)
+            return false;
         if (pageData->m_image)
         {
             gtk_image_set_from_pixbuf(
-                GTK_IMAGE(pageData->m_image), bitmap.GetPixbuf());
+                GTK_IMAGE(pageData->m_image), bitmap->GetPixbuf());
         }
         else
         {
-            pageData->m_image = gtk_image_new_from_pixbuf(bitmap.GetPixbuf());
+            pageData->m_image = gtk_image_new_from_pixbuf(bitmap->GetPixbuf());
             gtk_widget_show(pageData->m_image);
             gtk_box_pack_start(GTK_BOX(pageData->m_box),
                 pageData->m_image, false, false, m_padding);
@@ -421,7 +425,7 @@ bool wxNotebook::InsertPage( size_t position,
 
     wxGtkNotebookPage* pageData = new wxGtkNotebookPage;
 
-    m_pages.insert(m_pages.begin() + position, win);
+    m_pages.Insert(win, position);
     m_pagesData.Insert(position, pageData);
 
     // set the label image and text
@@ -441,8 +445,8 @@ bool wxNotebook::InsertPage( size_t position,
     {
         if (HasImageList())
         {
-            const wxBitmap bitmap = GetImageList()->GetBitmap(imageId);
-            pageData->m_image = gtk_image_new_from_pixbuf(bitmap.GetPixbuf());
+            const wxBitmap* bitmap = GetImageList()->GetBitmapPtr(imageId);
+            pageData->m_image = gtk_image_new_from_pixbuf(bitmap->GetPixbuf());
             gtk_box_pack_start(GTK_BOX(pageData->m_box),
                 pageData->m_image, false, false, m_padding);
         }
@@ -454,22 +458,11 @@ bool wxNotebook::InsertPage( size_t position,
 
     /* set the label text */
     pageData->m_label = gtk_label_new(wxGTK_CONV(wxStripMenuCodes(text)));
-
-    if (m_windowStyle & wxBK_LEFT)
-        gtk_label_set_angle(GTK_LABEL(pageData->m_label), 90);
-    if (m_windowStyle & wxBK_RIGHT)
-        gtk_label_set_angle(GTK_LABEL(pageData->m_label), 270);
-
     gtk_box_pack_end(GTK_BOX(pageData->m_box),
         pageData->m_label, false, false, m_padding);
 
     gtk_widget_show_all(pageData->m_box);
-
-    // Inserting the page may generate selection changing events that are not
-    // expected here: we will send them ourselves below if necessary.
-    g_signal_handlers_block_by_func(m_widget, (void*)switch_page, this);
     gtk_notebook_insert_page(notebook, win->m_widget, pageData->m_box, position);
-    g_signal_handlers_unblock_by_func(m_widget, (void*)switch_page, this);
 
     /* apply current style */
 #ifdef __WXGTK3__
@@ -483,7 +476,10 @@ bool wxNotebook::InsertPage( size_t position,
     }
 #endif
 
-    DoSetSelectionAfterInsertion(position, select);
+    if (select && GetPageCount() > 1)
+    {
+        SetSelection( position );
+    }
 
     InvalidateBestSize();
     return true;
@@ -607,7 +603,8 @@ GdkWindow *wxNotebook::GTKGetWindow(wxArrayGdkWindows& windows) const
 {
     windows.push_back(gtk_widget_get_window(m_widget));
 #ifdef __WXGTK3__
-    GdkWindow* window = GTKFindWindow(m_widget);
+    GdkWindow* wxGTKFindWindow(GtkWidget* widget);
+    GdkWindow* window = wxGTKFindWindow(m_widget);
     if (window)
         windows.push_back(window);
 #else

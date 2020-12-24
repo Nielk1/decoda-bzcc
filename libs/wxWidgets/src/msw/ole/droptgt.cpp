@@ -31,12 +31,21 @@
 #endif
 
 #include "wx/msw/private.h"
-#include "wx/msw/private/comptr.h"
 
-#include "wx/msw/wrapshl.h"            // for DROPFILES structure
+#ifdef __WXWINCE__
+    #include <winreg.h>
+    #include <ole2.h>
+#endif
+
+#ifdef __WIN32__
+    #if !defined(__GNUWIN32__) || wxUSE_NORLANDER_HEADERS
+        #include "wx/msw/wrapshl.h"            // for DROPFILES structure
+    #endif
+#else
+    #include <shellapi.h>
+#endif
 
 #include "wx/dnd.h"
-#include "wx/except.h"
 
 #include "wx/msw/ole/oleutils.h"
 
@@ -83,38 +92,21 @@ public:
     void SetHwnd(HWND hwnd) { m_hwnd = hwnd; }
 
     // IDropTarget methods
-    STDMETHODIMP DragEnter(LPDATAOBJECT, DWORD, POINTL, LPDWORD) wxOVERRIDE;
-    STDMETHODIMP DragOver(DWORD, POINTL, LPDWORD) wxOVERRIDE;
-    STDMETHODIMP DragLeave() wxOVERRIDE;
-    STDMETHODIMP Drop(LPDATAOBJECT, DWORD, POINTL, LPDWORD) wxOVERRIDE;
+    STDMETHODIMP DragEnter(LPDATAOBJECT, DWORD, POINTL, LPDWORD);
+    STDMETHODIMP DragOver(DWORD, POINTL, LPDWORD);
+    STDMETHODIMP DragLeave();
+    STDMETHODIMP Drop(LPDATAOBJECT, DWORD, POINTL, LPDWORD);
 
     DECLARE_IUNKNOWN_METHODS;
 
 protected:
-    // This pointer is !NULL between the calls to DragEnter and DragLeave/Drop
-    wxCOMPtr<IDataObject> m_pIDataObject;
-
+    IDataObject  *m_pIDataObject; // !NULL between DragEnter and DragLeave/Drop
     wxDropTarget *m_pTarget;      // the real target (we're just a proxy)
 
     HWND          m_hwnd;         // window we're associated with
 
     // get default drop effect for given keyboard flags
     static DWORD GetDropEffect(DWORD flags, wxDragResult defaultAction, DWORD pdwEffect);
-
-#if wxUSE_EXCEPTIONS
-    // Helper function called if an exceptions happens in any of the
-    // user-defined methods: it ensures that the exception doesn't escape and
-    // also resets the data object, as drag-and-drop operation will be aborted
-    // if this happens.
-    HRESULT HandleException()
-    {
-        wxEvtHandler::WXConsumeException();
-
-        m_pIDataObject.reset();
-
-        return E_UNEXPECTED;
-    }
-#endif // wxUSE_EXCEPTIONS
 
     wxDECLARE_NO_COPY_CLASS(wxIDropTarget);
 };
@@ -171,6 +163,7 @@ DWORD wxIDropTarget::GetDropEffect(DWORD flags,
 wxIDropTarget::wxIDropTarget(wxDropTarget *pTarget)
 {
   m_pTarget      = pTarget;
+  m_pIDataObject = NULL;
 }
 
 wxIDropTarget::~wxIDropTarget()
@@ -199,71 +192,68 @@ STDMETHODIMP wxIDropTarget::DragEnter(IDataObject *pIDataSource,
                                       POINTL       pt,
                                       DWORD       *pdwEffect)
 {
-    wxTRY
-    {
-        wxLogTrace(wxTRACE_OleCalls, wxT("IDropTarget::DragEnter"));
+    wxLogTrace(wxTRACE_OleCalls, wxT("IDropTarget::DragEnter"));
 
-        wxASSERT_MSG( !m_pIDataObject,
-                      wxT("drop target can't already have a data object") );
+    wxASSERT_MSG( m_pIDataObject == NULL,
+                  wxT("drop target must have data object") );
 
-        // show the list of formats supported by the source data object for the
-        // debugging purposes, this is quite useful sometimes - please don't remove
+    // show the list of formats supported by the source data object for the
+    // debugging purposes, this is quite useful sometimes - please don't remove
 #if 0
-        IEnumFORMATETC *penumFmt;
-        if ( SUCCEEDED(pIDataSource->EnumFormatEtc(DATADIR_GET, &penumFmt)) )
+    IEnumFORMATETC *penumFmt;
+    if ( SUCCEEDED(pIDataSource->EnumFormatEtc(DATADIR_GET, &penumFmt)) )
+    {
+        FORMATETC fmt;
+        while ( penumFmt->Next(1, &fmt, NULL) == S_OK )
         {
-            FORMATETC fmt;
-            while ( penumFmt->Next(1, &fmt, NULL) == S_OK )
-            {
-                wxLogDebug(wxT("Drop source supports format %s"),
-                           wxDataObject::GetFormatName(fmt.cfFormat));
-            }
+            wxLogDebug(wxT("Drop source supports format %s"),
+                       wxDataObject::GetFormatName(fmt.cfFormat));
+        }
 
-            penumFmt->Release();
-        }
-        else
-        {
-            wxLogLastError(wxT("IDataObject::EnumFormatEtc"));
-        }
+        penumFmt->Release();
+    }
+    else
+    {
+        wxLogLastError(wxT("IDataObject::EnumFormatEtc"));
+    }
 #endif // 0
 
-        if ( !m_pTarget->MSWIsAcceptedData(pIDataSource) ) {
-          // we don't accept this kind of data
-          *pdwEffect = DROPEFFECT_NONE;
+    if ( !m_pTarget->MSWIsAcceptedData(pIDataSource) ) {
+      // we don't accept this kind of data
+      *pdwEffect = DROPEFFECT_NONE;
 
-          // Don't do anything else if we don't support this format at all, notably
-          // don't call our OnEnter() below which would show misleading cursor to
-          // the user.
-          return S_OK;
-        }
-
-        // for use in OnEnter and OnDrag calls
-        m_pTarget->MSWSetDataSource(pIDataSource);
-
-        // get hold of the data object
-        m_pIDataObject = pIDataSource;
-
-        // we need client coordinates to pass to wxWin functions
-        if ( !ScreenToClient(m_hwnd, (POINT *)&pt) )
-        {
-            wxLogLastError(wxT("ScreenToClient"));
-        }
-
-        // give some visual feedback
-        *pdwEffect = ConvertDragResultToEffect(
-            m_pTarget->OnEnter(pt.x, pt.y, ConvertDragEffectToResult(
-                GetDropEffect(grfKeyState, m_pTarget->GetDefaultAction(), *pdwEffect))
-                        )
-                      );
-
-        // update drag image
-        const wxDragResult res = ConvertDragEffectToResult(*pdwEffect);
-        m_pTarget->MSWUpdateDragImageOnEnter(pt.x, pt.y, res);
-        m_pTarget->MSWUpdateDragImageOnDragOver(pt.x, pt.y, res);
-
-        return S_OK;
+      // Don't do anything else if we don't support this format at all, notably
+      // don't call our OnEnter() below which would show misleading cursor to
+      // the user.
+      return S_OK;
     }
-    wxCATCH_ALL( return HandleException(); )
+
+    // for use in OnEnter and OnDrag calls
+    m_pTarget->MSWSetDataSource(pIDataSource);
+
+    // get hold of the data object
+    m_pIDataObject = pIDataSource;
+    m_pIDataObject->AddRef();
+
+    // we need client coordinates to pass to wxWin functions
+    if ( !ScreenToClient(m_hwnd, (POINT *)&pt) )
+    {
+        wxLogLastError(wxT("ScreenToClient"));
+    }
+
+    // give some visual feedback
+    *pdwEffect = ConvertDragResultToEffect(
+        m_pTarget->OnEnter(pt.x, pt.y, ConvertDragEffectToResult(
+            GetDropEffect(grfKeyState, m_pTarget->GetDefaultAction(), *pdwEffect))
+                    )
+                  );
+
+    // update drag image
+    const wxDragResult res = ConvertDragEffectToResult(*pdwEffect);
+    m_pTarget->MSWUpdateDragImageOnEnter(pt.x, pt.y, res);
+    m_pTarget->MSWUpdateDragImageOnDragOver(pt.x, pt.y, res);
+
+    return S_OK;
 }
 
 
@@ -281,42 +271,38 @@ STDMETHODIMP wxIDropTarget::DragOver(DWORD   grfKeyState,
                                      POINTL  pt,
                                      LPDWORD pdwEffect)
 {
-    wxTRY
-    {
-        // there are too many of them... wxLogDebug("IDropTarget::DragOver");
+    // there are too many of them... wxLogDebug("IDropTarget::DragOver");
 
-        wxDragResult result;
-        if ( m_pIDataObject ) {
-            result = ConvertDragEffectToResult(
-                GetDropEffect(grfKeyState, m_pTarget->GetDefaultAction(), *pdwEffect));
-        }
-        else {
-            // can't accept data anyhow normally
-            result = wxDragNone;
-        }
-
-        if ( result != wxDragNone ) {
-            // we need client coordinates to pass to wxWin functions
-            if ( !ScreenToClient(m_hwnd, (POINT *)&pt) )
-            {
-                wxLogLastError(wxT("ScreenToClient"));
-            }
-
-            *pdwEffect = ConvertDragResultToEffect(
-                            m_pTarget->OnDragOver(pt.x, pt.y, result)
-                         );
-        }
-        else {
-            *pdwEffect = DROPEFFECT_NONE;
-        }
-
-        // update drag image
-        m_pTarget->MSWUpdateDragImageOnDragOver(pt.x, pt.y,
-                                                ConvertDragEffectToResult(*pdwEffect));
-
-        return S_OK;
+    wxDragResult result;
+    if ( m_pIDataObject ) {
+        result = ConvertDragEffectToResult(
+            GetDropEffect(grfKeyState, m_pTarget->GetDefaultAction(), *pdwEffect));
     }
-    wxCATCH_ALL( return HandleException(); )
+    else {
+        // can't accept data anyhow normally
+        result = wxDragNone;
+    }
+
+    if ( result != wxDragNone ) {
+        // we need client coordinates to pass to wxWin functions
+        if ( !ScreenToClient(m_hwnd, (POINT *)&pt) )
+        {
+            wxLogLastError(wxT("ScreenToClient"));
+        }
+
+        *pdwEffect = ConvertDragResultToEffect(
+                        m_pTarget->OnDragOver(pt.x, pt.y, result)
+                     );
+    }
+    else {
+        *pdwEffect = DROPEFFECT_NONE;
+    }
+
+    // update drag image
+    m_pTarget->MSWUpdateDragImageOnDragOver(pt.x, pt.y,
+                                            ConvertDragEffectToResult(*pdwEffect));
+
+    return S_OK;
 }
 
 // Name    : wxIDropTarget::DragLeave
@@ -325,22 +311,18 @@ STDMETHODIMP wxIDropTarget::DragOver(DWORD   grfKeyState,
 // Notes   : good place to do any clean-up
 STDMETHODIMP wxIDropTarget::DragLeave()
 {
-    wxTRY
-    {
-        wxLogTrace(wxTRACE_OleCalls, wxT("IDropTarget::DragLeave"));
+  wxLogTrace(wxTRACE_OleCalls, wxT("IDropTarget::DragLeave"));
 
-        // remove the UI feedback
-        m_pTarget->OnLeave();
+  // remove the UI feedback
+  m_pTarget->OnLeave();
 
-        // release the held object
-        m_pIDataObject.reset();
+  // release the held object
+  RELEASE_AND_NULL(m_pIDataObject);
 
-        // update drag image
-        m_pTarget->MSWUpdateDragImageOnLeave();
+  // update drag image
+  m_pTarget->MSWUpdateDragImageOnLeave();
 
-        return S_OK;
-    }
-    wxCATCH_ALL( return HandleException(); )
+  return S_OK;
 }
 
 // Name    : wxIDropTarget::Drop
@@ -357,74 +339,48 @@ STDMETHODIMP wxIDropTarget::Drop(IDataObject *pIDataSource,
                                  POINTL       pt,
                                  DWORD       *pdwEffect)
 {
-    wxTRY
+    wxLogTrace(wxTRACE_OleCalls, wxT("IDropTarget::Drop"));
+
+    // TODO I don't know why there is this parameter, but so far I assume
+    //      that it's the same we've already got in DragEnter
+    wxASSERT( m_pIDataObject == pIDataSource );
+
+    // we need client coordinates to pass to wxWin functions
+    if ( !ScreenToClient(m_hwnd, (POINT *)&pt) )
     {
-        wxLogTrace(wxTRACE_OleCalls, wxT("IDropTarget::Drop"));
-
-        // TODO I don't know why there is this parameter, but so far I assume
-        //      that it's the same we've already got in DragEnter
-        wxASSERT( m_pIDataObject == pIDataSource );
-
-        // we need client coordinates to pass to wxWin functions
-        if ( !ScreenToClient(m_hwnd, (POINT *)&pt) )
-        {
-            wxLogLastError(wxT("ScreenToClient"));
-        }
-
-        // Create a guard that will clean things up in case of exception: we
-        // must perform it in any case, as if we don't update the drag image it
-        // would remain on screen under Windows 10, see #18499.
-        class DropCleanup
-        {
-        public:
-            DropCleanup(wxCOMPtr<IDataObject>& pIDataObject,
-                        wxDropTarget* pTarget,
-                        POINTL pt,
-                        DWORD* pdwEffect)
-                : m_pIDataObject(pIDataObject),
-                  m_pTarget(pTarget),
-                  m_pdwEffect(pdwEffect),
-                  m_pt(pt)
-            {
-            }
-
-            ~DropCleanup()
-            {
-                // release the held object
-                m_pIDataObject.reset();
-
-                // update drag image
-                m_pTarget->MSWUpdateDragImageOnData
-                           (
-                                m_pt.x, m_pt.y,
-                                ConvertDragEffectToResult(*m_pdwEffect)
-                           );
-            }
-        private:
-            wxCOMPtr<IDataObject>& m_pIDataObject;
-            wxDropTarget* m_pTarget;
-            DWORD* m_pdwEffect;
-            POINTL m_pt;
-        } dropCleanup(m_pIDataObject, m_pTarget, pt, pdwEffect);
-
-        // first ask the drop target if it wants data
-        if ( m_pTarget->OnDrop(pt.x, pt.y) ) {
-            // it does, so give it the data source
-            m_pTarget->MSWSetDataSource(pIDataSource);
-
-            // and now it has the data
-            wxDragResult rc = ConvertDragEffectToResult(
-                GetDropEffect(grfKeyState, m_pTarget->GetDefaultAction(), *pdwEffect));
-            rc = m_pTarget->OnData(pt.x, pt.y, rc);
-            if ( wxIsDragResultOk(rc) ) {
-                // operation succeeded
-                *pdwEffect = ConvertDragResultToEffect(rc);
-            }
-        }
-
-        return S_OK;
+        wxLogLastError(wxT("ScreenToClient"));
     }
-    wxCATCH_ALL( return HandleException(); )
+
+    // first ask the drop target if it wants data
+    if ( m_pTarget->OnDrop(pt.x, pt.y) ) {
+        // it does, so give it the data source
+        m_pTarget->MSWSetDataSource(pIDataSource);
+
+        // and now it has the data
+        wxDragResult rc = ConvertDragEffectToResult(
+            GetDropEffect(grfKeyState, m_pTarget->GetDefaultAction(), *pdwEffect));
+        rc = m_pTarget->OnData(pt.x, pt.y, rc);
+        if ( wxIsDragResultOk(rc) ) {
+            // operation succeeded
+            *pdwEffect = ConvertDragResultToEffect(rc);
+        }
+        else {
+            *pdwEffect = DROPEFFECT_NONE;
+        }
+    }
+    else {
+        // OnDrop() returned false, no need to copy data
+        *pdwEffect = DROPEFFECT_NONE;
+    }
+
+    // release the held object
+    RELEASE_AND_NULL(m_pIDataObject);
+
+    // update drag image
+    m_pTarget->MSWUpdateDragImageOnData(pt.x, pt.y,
+                                        ConvertDragEffectToResult(*pdwEffect));
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -456,17 +412,31 @@ wxDropTarget::~wxDropTarget()
 
 bool wxDropTarget::Register(WXHWND hwnd)
 {
+    // FIXME
+    // RegisterDragDrop not available on Windows CE >= 400?
+    // Or maybe we can dynamically load them from ceshell.dll
+    // or similar.
+#if defined(__WXWINCE__) && _WIN32_WCE >= 400
+    wxUnusedVar(hwnd);
+    return false;
+#else
     HRESULT hr;
 
+    // May exist in later WinCE versions
+#ifndef __WXWINCE__
     hr = ::CoLockObjectExternal(m_pIDropTarget, TRUE, FALSE);
     if ( FAILED(hr) ) {
         wxLogApiError(wxT("CoLockObjectExternal"), hr);
         return false;
     }
+#endif
 
     hr = ::RegisterDragDrop((HWND) hwnd, m_pIDropTarget);
     if ( FAILED(hr) ) {
+    // May exist in later WinCE versions
+#ifndef __WXWINCE__
         ::CoLockObjectExternal(m_pIDropTarget, FALSE, FALSE);
+#endif
         wxLogApiError(wxT("RegisterDragDrop"), hr);
         return false;
     }
@@ -477,22 +447,31 @@ bool wxDropTarget::Register(WXHWND hwnd)
     MSWInitDragImageSupport();
 
     return true;
+#endif
 }
 
 void wxDropTarget::Revoke(WXHWND hwnd)
 {
+#if defined(__WXWINCE__) && _WIN32_WCE >= 400
+    // Not available, see note above
+    wxUnusedVar(hwnd);
+#else
     HRESULT hr = ::RevokeDragDrop((HWND) hwnd);
 
     if ( FAILED(hr) ) {
         wxLogApiError(wxT("RevokeDragDrop"), hr);
     }
 
+    // May exist in later WinCE versions
+#ifndef __WXWINCE__
     ::CoLockObjectExternal(m_pIDropTarget, FALSE, TRUE);
+#endif
 
     MSWEndDragImageSupport();
 
     // remove window reference
     m_pIDropTarget->SetHwnd(0);
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -703,7 +682,7 @@ static wxDragResult ConvertDragEffectToResult(DWORD dwEffect)
 
         default:
             wxFAIL_MSG(wxT("invalid value in ConvertDragEffectToResult"));
-            wxFALLTHROUGH;
+            // fall through
 
         case DROPEFFECT_NONE:
             return wxDragNone;
@@ -724,7 +703,7 @@ static DWORD ConvertDragResultToEffect(wxDragResult result)
 
         default:
             wxFAIL_MSG(wxT("invalid value in ConvertDragResultToEffect"));
-            wxFALLTHROUGH;
+            // fall through
 
         case wxDragNone:
             return DROPEFFECT_NONE;

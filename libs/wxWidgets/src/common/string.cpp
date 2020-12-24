@@ -29,7 +29,9 @@
 
 #include <ctype.h>
 
-#include <errno.h>
+#ifndef __WXWINCE__
+    #include <errno.h>
+#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -46,15 +48,17 @@
     #include <sstream>
 #endif
 
-#ifndef HAVE_STD_STRING_COMPARE
 // string handling functions used by wxString:
 #if wxUSE_UNICODE_UTF8
+    #define wxStringMemcpy   memcpy
     #define wxStringMemcmp   memcmp
+    #define wxStringMemchr   memchr
     #define wxStringStrlen   strlen
 #else
+    #define wxStringMemcpy   wxTmemcpy
     #define wxStringMemcmp   wxTmemcmp
+    #define wxStringMemchr   wxTmemchr
     #define wxStringStrlen   wxStrlen
-#endif
 #endif
 
 // define a function declared in wx/buffer.h here as we don't have buffer.cpp
@@ -191,7 +195,13 @@ static wxStrCacheStatsDumper s_showCacheStats;
 wxSTD ostream& operator<<(wxSTD ostream& os, const wxCStrData& str)
 {
 #if wxUSE_UNICODE && !wxUSE_UNICODE_UTF8
-    return os << wxConvWhateverWorks.cWX2MB(str);
+    const wxScopedCharBuffer buf(str.AsCharBuf());
+    if ( !buf )
+        os.clear(wxSTD ios_base::failbit);
+    else
+        os << buf.data();
+
+    return os;
 #else
     return os << str.AsInternal();
 #endif
@@ -207,14 +217,12 @@ wxSTD ostream& operator<<(wxSTD ostream& os, const wxScopedCharBuffer& str)
     return os << str.data();
 }
 
+#ifndef __BORLANDC__
 wxSTD ostream& operator<<(wxSTD ostream& os, const wxScopedWCharBuffer& str)
 {
-    // There is no way to write wide character data to std::ostream directly,
-    // but we need to define this operator for compatibility, as we provided it
-    // since basically always, even if it never worked correctly before. So do
-    // the only reasonable thing and output it as UTF-8.
-    return os << wxConvWhateverWorks.cWC2MB(str.data());
+    return os << str.data();
 }
+#endif
 
 #if wxUSE_UNICODE && defined(HAVE_WOSTREAM)
 
@@ -557,7 +565,7 @@ bool wxString::Shrink()
 {
   wxString tmp(begin(), end());
   swap(tmp);
-  return true;
+  return tmp.length() == length();
 }
 
 // deprecated compatibility code:
@@ -1162,10 +1170,10 @@ int wxString::CmpNoCase(const wxString& s) const
 
 wxString wxString::FromAscii(const char *ascii, size_t len)
 {
-    wxString res;
-
     if (!ascii || len == 0)
-       return res;
+       return wxEmptyString;
+
+    wxString res;
 
     {
         wxStringInternalBuffer buf(res, len);
@@ -1177,7 +1185,7 @@ wxString wxString::FromAscii(const char *ascii, size_t len)
             wxASSERT_MSG( c < 0x80,
                           wxT("Non-ASCII value passed to FromAscii().") );
 
-            *dest++ = static_cast<wxStringCharType>(c);
+            *dest++ = (wchar_t)c;
         }
     }
 
@@ -1201,7 +1209,7 @@ wxString wxString::FromAscii(char ascii)
     return wxString(wxUniChar((wchar_t)c));
 }
 
-const wxScopedCharBuffer wxString::ToAscii(char replaceWith) const
+const wxScopedCharBuffer wxString::ToAscii() const
 {
     // this will allocate enough space for the terminating NUL too
     wxCharBuffer buffer(length());
@@ -1211,7 +1219,7 @@ const wxScopedCharBuffer wxString::ToAscii(char replaceWith) const
     {
         wxUniChar c(*i);
         // FIXME-UTF8: unify substituted char ('_') with wxUniChar ('?')
-        *dest++ = c.IsAscii() ? (char)c : replaceWith;
+        *dest++ = c.IsAscii() ? (char)c : '_';
 
         // the output string can't have embedded NULs anyhow, so we can safely
         // stop at first of them even if we do have any
@@ -1665,9 +1673,15 @@ int wxString::Find(wxUniChar ch, bool bFromEnd) const
 // it out. Note that number extraction works correctly on UTF-8 strings, so
 // we can use wxStringCharType and wx_str() for maximum efficiency.
 
+#ifndef __WXWINCE__
+    #define DO_IF_NOT_WINCE(x) x
+#else
+    #define DO_IF_NOT_WINCE(x)
+#endif
+
 #define WX_STRING_TO_X_TYPE_START                                           \
     wxCHECK_MSG( pVal, false, wxT("NULL output pointer") );                  \
-    errno = 0;                                                              \
+    DO_IF_NOT_WINCE( errno = 0; )                                           \
     const wxStringCharType *start = wx_str();                               \
     wxStringCharType *end;
 
@@ -1675,7 +1689,7 @@ int wxString::Find(wxUniChar ch, bool bFromEnd) const
 // nothing could be parsed but we do modify it and return false then if we did
 // parse something successfully but not the entire string
 #define WX_STRING_TO_X_TYPE_END                                             \
-    if ( end == start || errno == ERANGE )                                  \
+    if ( end == start DO_IF_NOT_WINCE(|| errno == ERANGE) )                 \
         return false;                                                       \
     *pVal = val;                                                            \
     return !*end;
@@ -2046,8 +2060,10 @@ static int DoStringPrintfV(wxString& str,
         va_list argptrcopy;
         wxVaCopy(argptrcopy, argptr);
 
+#ifndef __WXWINCE__
         // Set errno to 0 to make it determinate if wxVsnprintf fails to set it.
         errno = 0;
+#endif
         int len = wxVsnprintf(buf, size, format, argptrcopy);
         va_end(argptrcopy);
 
@@ -2077,11 +2093,13 @@ static int DoStringPrintfV(wxString& str,
             // assume it only returns error if there is not enough space, but
             // as we don't know how much we need, double the current size of
             // the buffer
+#ifndef __WXWINCE__
             if( (errno == EILSEQ) || (errno == EINVAL) )
             // If errno was set to one of the two well-known hard errors
             // then fail immediately to avoid an infinite loop.
                 return -1;
             else
+#endif // __WXWINCE__
             // still not enough, as we don't know how much we need, double the
             // current size of the buffer
                 size *= 2;
@@ -2185,7 +2203,7 @@ bool wxString::Matches(const wxString& mask) const
                 // (however note that we don't quote '[' and ']' to allow
                 // using them for Unix shell like matching)
                 pattern += wxT('\\');
-                wxFALLTHROUGH;
+                // fall through
 
             default:
                 pattern += *pszMask;

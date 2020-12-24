@@ -49,7 +49,7 @@ extern GtkWidget *wxGetRootWindow();
 // wxMask
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxMask, wxObject);
+IMPLEMENT_DYNAMIC_CLASS(wxMask,wxObject)
 
 wxMask::wxMask()
 {
@@ -172,9 +172,6 @@ bool wxMask::Create( const wxBitmap& bitmap,
 
     gdk_gc_unref( gc );
 
-    m_width = bitmap.GetWidth();
-    m_height = bitmap.GetHeight();
-
     return true;
 }
 
@@ -214,24 +211,12 @@ bool wxMask::Create( const wxBitmap& bitmap )
 
     gdk_gc_unref( gc );
 
-    m_width = bitmap.GetWidth();
-    m_height = bitmap.GetHeight();
-
     return true;
 }
 
-wxBitmap wxMask::GetBitmap() const
+GdkBitmap *wxMask::GetBitmap() const
 {
-   wxBitmap bitmap;
-
-   if (m_bitmap)
-     {
-	bitmap.SetBitmap( m_bitmap );
-	bitmap.SetWidth( m_width );
-	bitmap.SetHeight( m_height );
-     }
-
-   return bitmap;
+    return m_bitmap;
 }
 
 
@@ -369,7 +354,7 @@ wxBitmapRefData::~wxBitmapRefData()
 
 #define M_BMPDATA ((wxBitmapRefData *)m_refData)
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxBitmap, wxGDIObject);
+IMPLEMENT_DYNAMIC_CLASS(wxBitmap,wxGDIObject)
 
 wxGDIRefData *wxBitmap::CreateGDIRefData() const
 {
@@ -549,7 +534,7 @@ wxBitmap wxBitmap::Rescale( int clipx, int clipy, int clipwidth, int clipheight,
         if (width % 8 != 0)
             dstbyteperline++;
         dst = (char*) malloc(dstbyteperline*height);
-        img = gdk_image_get( GetMask()->m_bitmap, 0, 0, GetWidth(), GetHeight() );
+        img = gdk_image_get( GetMask()->GetBitmap(), 0, 0, GetWidth(), GetHeight() );
 
         for (int h = 0; h < height; h++)
         {
@@ -713,9 +698,9 @@ bool wxBitmap::CreateFromImageAsBitmap(const wxImage& img)
 
     if (image.HasMask())
     {
-        GdkGC *mask_gc = gdk_gc_new( GetMask()->m_bitmap );
+        GdkGC *mask_gc = gdk_gc_new( GetMask()->GetBitmap() );
 
-        gdk_draw_image( GetMask()->m_bitmap, mask_gc, mask_image, 0, 0, 0, 0, width, height );
+        gdk_draw_image( GetMask()->GetBitmap(), mask_gc, mask_image, 0, 0, 0, 0, width, height );
 
         gdk_image_destroy( mask_image );
         gdk_gc_unref( mask_gc );
@@ -953,9 +938,9 @@ bool wxBitmap::CreateFromImageAsPixmap(const wxImage& img)
 
     if (image.HasMask())
     {
-        GdkGC *mask_gc = gdk_gc_new( GetMask()->m_bitmap );
+        GdkGC *mask_gc = gdk_gc_new( GetMask()->GetBitmap() );
 
-        gdk_draw_image( GetMask()->m_bitmap, mask_gc, mask_image, 0, 0, 0, 0, width, height );
+        gdk_draw_image( GetMask()->GetBitmap(), mask_gc, mask_image, 0, 0, 0, 0, width, height );
 
         gdk_image_destroy( mask_image );
         gdk_gc_unref( mask_gc );
@@ -1010,7 +995,7 @@ wxImage wxBitmap::ConvertToImage() const
     GdkImage *gdk_image_mask = NULL;
     if (GetMask())
     {
-        gdk_image_mask = gdk_image_get( GetMask()->m_bitmap,
+        gdk_image_mask = gdk_image_get( GetMask()->GetBitmap(),
                                         0, 0,
                                         GetWidth(), GetHeight() );
 

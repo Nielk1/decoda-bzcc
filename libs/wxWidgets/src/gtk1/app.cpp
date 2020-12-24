@@ -377,7 +377,7 @@ GtkWidget* wxGetRootWindow()
 // wxApp
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxApp,wxEvtHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxApp,wxEvtHandler)
 
 wxApp::wxApp()
 {

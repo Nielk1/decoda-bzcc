@@ -58,9 +58,9 @@
 #include "wx/osx/printdlg.h"
 #include "wx/osx/private/print.h"
 #include "wx/osx/dcprint.h"
-#elif defined(__WXQT__)
-#include "wx/qt/dcprint.h"
-#include "wx/qt/printdlg.h"
+#elif defined(__WXPM__)
+#include "wx/os2/dcprint.h"
+#include "wx/generic/prntdlgg.h"
 #else
 #include "wx/generic/prntdlgg.h"
 #include "wx/dcps.h"
@@ -85,7 +85,9 @@ wxPrintFactory *wxPrintFactory::m_factory = NULL;
 
 void wxPrintFactory::SetPrintFactory( wxPrintFactory *factory )
 {
-    delete wxPrintFactory::m_factory;
+    if (wxPrintFactory::m_factory)
+        delete wxPrintFactory::m_factory;
+
     wxPrintFactory::m_factory = factory;
 }
 
@@ -107,8 +109,8 @@ wxPrinterBase *wxNativePrintFactory::CreatePrinter( wxPrintDialogData *data )
     return new wxWindowsPrinter( data );
 #elif defined(__WXMAC__)
     return new wxMacPrinter( data );
-#elif defined(__WXQT__)
-    return new wxQtPrinter( data );
+#elif defined(__WXPM__)
+    return new wxOS2Printer( data );
 #else
     return new wxPostScriptPrinter( data );
 #endif
@@ -121,8 +123,8 @@ wxPrintPreviewBase *wxNativePrintFactory::CreatePrintPreview( wxPrintout *previe
     return new wxWindowsPrintPreview( preview, printout, data );
 #elif defined(__WXMAC__)
     return new wxMacPrintPreview( preview, printout, data );
-#elif defined(__WXQT__)
-    return new wxQtPrintPreview( preview, printout, data );
+#elif defined(__WXPM__)
+    return new wxOS2PrintPreview( preview, printout, data );
 #else
     return new wxPostScriptPrintPreview( preview, printout, data );
 #endif
@@ -135,8 +137,8 @@ wxPrintPreviewBase *wxNativePrintFactory::CreatePrintPreview( wxPrintout *previe
     return new wxWindowsPrintPreview( preview, printout, data );
 #elif defined(__WXMAC__)
     return new wxMacPrintPreview( preview, printout, data );
-#elif defined(__WXQT__)
-    return new wxQtPrintPreview( preview, printout, data );
+#elif defined(__WXPM__)
+    return new wxOS2PrintPreview( preview, printout, data );
 #else
     return new wxPostScriptPrintPreview( preview, printout, data );
 #endif
@@ -149,8 +151,6 @@ wxPrintDialogBase *wxNativePrintFactory::CreatePrintDialog( wxWindow *parent,
     return new wxWindowsPrintDialog( parent, data );
 #elif defined(__WXMAC__)
     return new wxMacPrintDialog( parent, data );
-#elif defined(__WXQT__)
-    return new wxQtPrintDialog( parent, data );
 #else
     return new wxGenericPrintDialog( parent, data );
 #endif
@@ -163,8 +163,6 @@ wxPrintDialogBase *wxNativePrintFactory::CreatePrintDialog( wxWindow *parent,
     return new wxWindowsPrintDialog( parent, data );
 #elif defined(__WXMAC__)
     return new wxMacPrintDialog( parent, data );
-#elif defined(__WXQT__)
-    return new wxQtPrintDialog( parent, data );
 #else
     return new wxGenericPrintDialog( parent, data );
 #endif
@@ -177,8 +175,6 @@ wxPageSetupDialogBase *wxNativePrintFactory::CreatePageSetupDialog( wxWindow *pa
     return new wxWindowsPageSetupDialog( parent, data );
 #elif defined(__WXMAC__)
     return new wxMacPageSetupDialog( parent, data );
-#elif defined(__WXQT__)
-    return new wxQtPageSetupDialog( parent, data );
 #else
     return new wxGenericPageSetupDialog( parent, data );
 #endif
@@ -208,10 +204,6 @@ wxDialog *wxNativePrintFactory::CreatePrintSetupDialog( wxWindow *parent,
     wxUnusedVar(data);
     return NULL;
 #elif defined(__WXMAC__)
-    wxUnusedVar(parent);
-    wxUnusedVar(data);
-    return NULL;
-#elif defined(__WXQT__)
     wxUnusedVar(parent);
     wxUnusedVar(data);
     return NULL;
@@ -276,8 +268,6 @@ wxPrintNativeDataBase *wxNativePrintFactory::CreatePrintNativeData()
     return new wxWindowsPrintNativeData;
 #elif defined(__WXMAC__)
     return wxOSXCreatePrintData();
-#elif defined(__WXQT__)
-    return  new wxQtPrintNativeData;
 #else
     return new wxPostScriptPrintNativeData;
 #endif
@@ -287,7 +277,7 @@ wxPrintNativeDataBase *wxNativePrintFactory::CreatePrintNativeData()
 // wxPrintNativeDataBase
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxPrintNativeDataBase, wxObject);
+IMPLEMENT_ABSTRACT_CLASS(wxPrintNativeDataBase, wxObject)
 
 wxPrintNativeDataBase::wxPrintNativeDataBase()
 {
@@ -302,20 +292,20 @@ class wxPrintFactoryModule: public wxModule
 {
 public:
     wxPrintFactoryModule() {}
-    bool OnInit() wxOVERRIDE { return true; }
-    void OnExit() wxOVERRIDE { wxPrintFactory::SetPrintFactory( NULL ); }
+    bool OnInit() { return true; }
+    void OnExit() { wxPrintFactory::SetPrintFactory( NULL ); }
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxPrintFactoryModule);
+    DECLARE_DYNAMIC_CLASS(wxPrintFactoryModule)
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxPrintFactoryModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxPrintFactoryModule, wxModule)
 
 //----------------------------------------------------------------------------
 // wxPrinterBase
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPrinterBase, wxObject);
+IMPLEMENT_CLASS(wxPrinterBase, wxObject)
 
 wxPrinterBase::wxPrinterBase(wxPrintDialogData *data)
 {
@@ -347,14 +337,14 @@ void wxPrinterBase::ReportError(wxWindow *parent, wxPrintout *WXUNUSED(printout)
 
 wxPrintDialogData& wxPrinterBase::GetPrintDialogData() const
 {
-    return const_cast<wxPrintDialogData&>(m_printDialogData);
+    return (wxPrintDialogData&) m_printDialogData;
 }
 
 //----------------------------------------------------------------------------
 // wxPrinter
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPrinter, wxPrinterBase);
+IMPLEMENT_CLASS(wxPrinter, wxPrinterBase)
 
 wxPrinter::wxPrinter(wxPrintDialogData *data)
 {
@@ -413,7 +403,7 @@ wxPrintDialogData& wxPrinter::GetPrintDialogData() const
 // wxPrintDialogBase: the dialog for printing.
 // ---------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxPrintDialogBase, wxDialog);
+IMPLEMENT_ABSTRACT_CLASS(wxPrintDialogBase, wxDialog)
 
 wxPrintDialogBase::wxPrintDialogBase(wxWindow *parent,
                                      wxWindowID id,
@@ -430,7 +420,7 @@ wxPrintDialogBase::wxPrintDialogBase(wxWindow *parent,
 // wxPrintDialog: the dialog for printing
 // ---------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPrintDialog, wxObject);
+IMPLEMENT_CLASS(wxPrintDialog, wxObject)
 
 wxPrintDialog::wxPrintDialog(wxWindow *parent, wxPrintDialogData* data)
 {
@@ -471,7 +461,7 @@ wxDC *wxPrintDialog::GetPrintDC()
 // wxPageSetupDialogBase: the page setup dialog
 // ---------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxPageSetupDialogBase, wxDialog);
+IMPLEMENT_ABSTRACT_CLASS(wxPageSetupDialogBase, wxDialog)
 
 wxPageSetupDialogBase::wxPageSetupDialogBase(wxWindow *parent,
                                      wxWindowID id,
@@ -488,7 +478,7 @@ wxPageSetupDialogBase::wxPageSetupDialogBase(wxWindow *parent,
 // wxPageSetupDialog: the page setup dialog
 // ---------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPageSetupDialog, wxObject);
+IMPLEMENT_CLASS(wxPageSetupDialog, wxObject)
 
 wxPageSetupDialog::wxPageSetupDialog(wxWindow *parent, wxPageSetupDialogData *data )
 {
@@ -520,9 +510,9 @@ wxPageSetupDialogData& wxPageSetupDialog::GetPageSetupData()
 // wxPrintAbortDialog
 //----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxPrintAbortDialog, wxDialog)
+BEGIN_EVENT_TABLE(wxPrintAbortDialog, wxDialog)
     EVT_BUTTON(wxID_CANCEL, wxPrintAbortDialog::OnCancel)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxPrintAbortDialog::wxPrintAbortDialog(wxWindow *parent,
                                        const wxString& documentTitle,
@@ -575,6 +565,7 @@ void wxPrintAbortDialog::SetProgress(int currentPage, int totalPages,
 void wxPrintAbortDialog::OnCancel(wxCommandEvent& WXUNUSED(event))
 {
     wxCHECK_RET( wxPrinterBase::sm_abortWindow != NULL, "OnCancel called twice" );
+
     wxPrinterBase::sm_abortIt = true;
     wxPrinterBase::sm_abortWindow->Destroy();
     wxPrinterBase::sm_abortWindow = NULL;
@@ -584,11 +575,11 @@ void wxPrintAbortDialog::OnCancel(wxCommandEvent& WXUNUSED(event))
 // wxPrintout
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxPrintout, wxObject);
+IMPLEMENT_ABSTRACT_CLASS(wxPrintout, wxObject)
 
 wxPrintout::wxPrintout(const wxString& title)
-    : m_printoutTitle(title)
 {
+    m_printoutTitle = title ;
     m_printoutDC = NULL;
     m_pageWidthMM = 0;
     m_pageHeightMM = 0;
@@ -634,38 +625,6 @@ void wxPrintout::GetPageInfo(int *minPage, int *maxPage, int *fromPage, int *toP
     *maxPage = DEFAULT_MAX_PAGES;
     *fromPage = 1;
     *toPage = 1;
-}
-
-bool wxPrintout::SetUp(wxDC& dc)
-{
-    wxCHECK_MSG( dc.IsOk(), false, "should have a valid DC to set up" );
-
-    SetPPIScreen(wxGetDisplayPPI());
-
-    // We need to know printer PPI. In most ports, this can be retrieved from
-    // the printer DC, but in others it is computed (probably for legacy
-    // reasons) outside of wxDC code, so don't override it if it had been
-    // already set.
-    if ( !m_PPIPrinterX || !m_PPIPrinterY )
-    {
-        SetPPIPrinter(dc.GetPPI());
-        if ( !m_PPIPrinterX || !m_PPIPrinterY )
-        {
-            // But if we couldn't get it in any way, we can't continue.
-            return false;
-        }
-    }
-
-    SetDC(&dc);
-
-    dc.GetSize(&m_pageWidthPixels, &m_pageHeightPixels);
-    // This is ugly, but wxDCImpl itself has GetPaperRect() method while wxDC
-    // doesn't (only wxPrinterDC does), so use GetImpl() to avoid having to use
-    // a dynamic cast.
-    m_paperRectPixels = dc.GetImpl()->GetPaperRect();
-    dc.GetSizeMM(&m_pageWidthMM, &m_pageHeightMM);
-
-    return true;
 }
 
 void wxPrintout::FitThisSizeToPaper(const wxSize& imageSize)
@@ -900,9 +859,9 @@ void wxPrintout::OffsetLogicalOrigin(wxCoord xoff, wxCoord yoff)
 // wxPreviewCanvas
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPreviewCanvas, wxWindow);
+IMPLEMENT_CLASS(wxPreviewCanvas, wxWindow)
 
-wxBEGIN_EVENT_TABLE(wxPreviewCanvas, wxScrolledWindow)
+BEGIN_EVENT_TABLE(wxPreviewCanvas, wxScrolledWindow)
     EVT_PAINT(wxPreviewCanvas::OnPaint)
     EVT_CHAR(wxPreviewCanvas::OnChar)
     EVT_IDLE(wxPreviewCanvas::OnIdle)
@@ -910,7 +869,7 @@ wxBEGIN_EVENT_TABLE(wxPreviewCanvas, wxScrolledWindow)
 #if wxUSE_MOUSEWHEEL
     EVT_MOUSEWHEEL(wxPreviewCanvas::OnMouseWheel)
 #endif
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 // VZ: the current code doesn't refresh properly without
 //     wxFULL_REPAINT_ON_RESIZE, this must be fixed as otherwise we have
@@ -920,10 +879,6 @@ wxPreviewCanvas::wxPreviewCanvas(wxPrintPreviewBase *preview, wxWindow *parent,
                                  const wxPoint& pos, const wxSize& size, long style, const wxString& name):
 wxScrolledWindow(parent, wxID_ANY, pos, size, style | wxFULL_REPAINT_ON_RESIZE, name)
 {
-    // As we rely on getting idle events, do this to ensure that we do receive
-    // them even when using wxIDLE_PROCESS_SPECIFIED global idle mode.
-    SetExtraStyle(wxWS_EX_PROCESS_IDLE);
-
     m_printPreview = preview;
 #ifdef __WXMAC__
     // The app workspace colour is always white, but we should have
@@ -1169,8 +1124,10 @@ public:
         m_maxPage =
         m_page = 1;
 
-        Bind(wxEVT_KILL_FOCUS, &wxPrintPageTextCtrl::OnKillFocus, this);
-        Bind(wxEVT_TEXT_ENTER, &wxPrintPageTextCtrl::OnTextEnter, this);
+        Connect(wxEVT_KILL_FOCUS,
+                wxFocusEventHandler(wxPrintPageTextCtrl::OnKillFocus));
+        Connect(wxEVT_TEXT_ENTER,
+                wxCommandEventHandler(wxPrintPageTextCtrl::OnTextEnter));
     }
 
     // Update the pages range, must be called after OnPreparePrinting() as
@@ -1268,9 +1225,9 @@ private:
 // wxPreviewControlBar
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPreviewControlBar, wxWindow);
+IMPLEMENT_CLASS(wxPreviewControlBar, wxWindow)
 
-wxBEGIN_EVENT_TABLE(wxPreviewControlBar, wxPanel)
+BEGIN_EVENT_TABLE(wxPreviewControlBar, wxPanel)
     EVT_BUTTON(wxID_PREVIEW_CLOSE,    wxPreviewControlBar::OnWindowClose)
     EVT_BUTTON(wxID_PREVIEW_PRINT,    wxPreviewControlBar::OnPrintButton)
     EVT_BUTTON(wxID_PREVIEW_PREVIOUS, wxPreviewControlBar::OnPreviousButton)
@@ -1290,7 +1247,7 @@ wxBEGIN_EVENT_TABLE(wxPreviewControlBar, wxPanel)
     EVT_CHOICE(wxID_PREVIEW_ZOOM,     wxPreviewControlBar::OnZoomChoice)
     EVT_PAINT(wxPreviewControlBar::OnPaint)
 
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxPreviewControlBar::wxPreviewControlBar(wxPrintPreviewBase *preview, long buttons,
                                          wxWindow *parent, const wxPoint& pos, const wxSize& size,
@@ -1660,7 +1617,7 @@ void wxPreviewControlBar::SetZoomControl(int zoom)
 
 int wxPreviewControlBar::GetZoomControl()
 {
-    if (m_zoomControl && !m_zoomControl->GetStringSelection().empty())
+    if (m_zoomControl && (m_zoomControl->GetStringSelection() != wxEmptyString))
     {
         long val;
         if (m_zoomControl->GetStringSelection().BeforeFirst(wxT('%')).ToLong(&val))
@@ -1675,12 +1632,12 @@ int wxPreviewControlBar::GetZoomControl()
 * Preview frame
 */
 
-wxIMPLEMENT_CLASS(wxPreviewFrame, wxFrame);
+IMPLEMENT_CLASS(wxPreviewFrame, wxFrame)
 
-wxBEGIN_EVENT_TABLE(wxPreviewFrame, wxFrame)
+BEGIN_EVENT_TABLE(wxPreviewFrame, wxFrame)
     EVT_CHAR_HOOK(wxPreviewFrame::OnChar)
     EVT_CLOSE(wxPreviewFrame::OnCloseWindow)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 void wxPreviewFrame::OnChar(wxKeyEvent &event)
 {
@@ -1761,13 +1718,13 @@ void wxPreviewFrame::InitializeWithModality(wxPreviewFrameModalityKind kind)
     m_printPreview->SetCanvas(m_previewCanvas);
     m_printPreview->SetFrame(this);
 
-    wxBoxSizer* const sizer = new wxBoxSizer( wxVERTICAL );
+    wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    sizer->Add( m_controlBar, wxSizerFlags().Expand().Border() );
-    sizer->Add( m_previewCanvas, wxSizerFlags(1).Expand().Border() );
+    item0->Add( m_controlBar, 0, wxGROW|wxALIGN_CENTER_VERTICAL, 5 );
+    item0->Add( m_previewCanvas, 1, wxGROW|wxALIGN_CENTER_VERTICAL, 5 );
 
     SetAutoLayout( true );
-    SetSizer( sizer );
+    SetSizer( item0 );
 
     m_modalityKind = kind;
     switch ( m_modalityKind )
@@ -1822,7 +1779,7 @@ void wxPreviewFrame::CreateControlBar()
 * Print preview
 */
 
-wxIMPLEMENT_CLASS(wxPrintPreviewBase, wxObject);
+IMPLEMENT_CLASS(wxPrintPreviewBase, wxObject)
 
 wxPrintPreviewBase::wxPrintPreviewBase(wxPrintout *printout,
                                        wxPrintout *printoutForPrinting,
@@ -1871,9 +1828,12 @@ void wxPrintPreviewBase::Init(wxPrintout *printout,
 
 wxPrintPreviewBase::~wxPrintPreviewBase()
 {
-    delete m_previewPrintout;
-    delete m_previewBitmap;
-    delete m_printPrintout;
+    if (m_previewPrintout)
+        delete m_previewPrintout;
+    if (m_previewBitmap)
+        delete m_previewBitmap;
+    if (m_printPrintout)
+        delete m_printPrintout;
 }
 
 bool wxPrintPreviewBase::SetCurrentPage(int pageNum)
@@ -2170,7 +2130,7 @@ void wxPrintPreviewBase::SetOk(bool ok)
 // wxPrintPreview
 //----------------------------------------------------------------------------
 
-wxIMPLEMENT_CLASS(wxPrintPreview, wxPrintPreviewBase);
+IMPLEMENT_CLASS(wxPrintPreview, wxPrintPreviewBase)
 
 wxPrintPreview::wxPrintPreview(wxPrintout *printout,
                    wxPrintout *printoutForPrinting,

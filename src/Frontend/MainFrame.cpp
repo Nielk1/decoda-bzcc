@@ -384,7 +384,7 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
     m_mgr.GetPane(m_notebook).Name("notebook");
 
     m_statusBar = CreateStatusBar();
-
+    
     int statusWidth[] = { -1, 100, 100 };
     m_statusBar->SetFieldsCount(3, statusWidth);
 

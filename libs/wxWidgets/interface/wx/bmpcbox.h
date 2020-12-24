@@ -46,7 +46,7 @@
            the combobox.
     @endEventTable
 
-    @library{wxcore}
+    @library{wxadv}
     @category{ctrl}
     @appearance{bitmapcombobox}
 

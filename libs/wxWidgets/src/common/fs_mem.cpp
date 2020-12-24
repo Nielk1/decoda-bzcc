@@ -123,10 +123,6 @@ wxFSFile * wxMemoryFSHandlerBase::OpenFile(wxFileSystem& WXUNUSED(fs),
 
 wxString wxMemoryFSHandlerBase::FindFirst(const wxString& url, int flags)
 {
-    // Make sure to reset the find iterator, so that calling FindNext() doesn't
-    // reuse its value from the last search that could well be invalid.
-    m_findIter = m_Hash.end();
-
     if ( (flags & wxDIR) && !(flags & wxFILE) )
     {
         // we only store files, not directories, so we don't risk finding
@@ -151,16 +147,22 @@ wxString wxMemoryFSHandlerBase::FindFirst(const wxString& url, int flags)
 
 wxString wxMemoryFSHandlerBase::FindNext()
 {
-    while ( m_findIter != m_Hash.end() )
+    // m_findArgument is used to indicate that search is in progress, we reset
+    // it to empty string after iterating over all elements
+    while ( !m_findArgument.empty() )
     {
-        const wxString& path = m_findIter->first;
+        // test for the match before (possibly) clearing m_findArgument below
+        const bool found = m_findIter->first.Matches(m_findArgument);
 
         // advance m_findIter first as we need to do it anyhow, whether it
         // matches or not
-        ++m_findIter;
+        const wxMemoryFSHash::const_iterator current = m_findIter;
 
-        if ( path.Matches(m_findArgument) )
-            return "memory:" + path;
+        if ( ++m_findIter == m_Hash.end() )
+            m_findArgument.clear();
+
+        if ( found )
+            return "memory:" + current->first;
     }
 
     return wxString();

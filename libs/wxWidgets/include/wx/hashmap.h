@@ -62,7 +62,11 @@
 
 #define wxNEEDS_WX_HASH_MAP
 
+#ifdef __WXWINCE__
+typedef int ptrdiff_t;
+#else
 #include <stddef.h>             // for ptrdiff_t
+#endif
 
 // private
 struct WXDLLIMPEXP_BASE _wxHashTable_NodeBase
@@ -81,7 +85,7 @@ class WXDLLIMPEXP_BASE _wxHashTableBase2
 {
 public:
     typedef void (*NodeDtor)(_wxHashTable_NodeBase*);
-    typedef size_t (*BucketFromNode)(_wxHashTableBase2*,_wxHashTable_NodeBase*);
+    typedef unsigned long (*BucketFromNode)(_wxHashTableBase2*,_wxHashTable_NodeBase*);
     typedef _wxHashTable_NodeBase* (*ProcessNode)(_wxHashTable_NodeBase*);
 protected:
     static _wxHashTable_NodeBase* DummyProcessNode(_wxHashTable_NodeBase* node);
@@ -450,6 +454,11 @@ CLASSEXP CLASSNAME \
 public: \
     CLASSNAME() { } \
     const_key_reference operator()( const_pair_reference pair ) const { return pair.first; }\
+    \
+    /* the dummy assignment operator is needed to suppress compiler */ \
+    /* warnings from hash table class' operator=(): gcc complains about */ \
+    /* "statement with no effect" without it */ \
+    CLASSNAME& operator=(const CLASSNAME&) { return *this; } \
 };
 
 // grow/shrink predicates
@@ -465,6 +474,10 @@ inline bool grow_lf70( size_t buckets, size_t items )
 // ----------------------------------------------------------------------------
 // hashing and comparison functors
 // ----------------------------------------------------------------------------
+
+// NB: implementation detail: all of these classes must have dummy assignment
+//     operators to suppress warnings about "statement with no effect" from gcc
+//     in the hash table class assignment operator (where they're assigned)
 
 #ifndef wxNEEDS_WX_HASH_MAP
 
@@ -527,6 +540,8 @@ struct WXDLLIMPEXP_BASE wxIntegerHash
     wxULongLong_t operator()( wxLongLong_t x ) const { return static_cast<wxULongLong_t>(x); }
     wxULongLong_t operator()( wxULongLong_t x ) const { return x; }
 #endif // wxHAS_LONG_LONG_T_DIFFERENT_FROM_LONG
+
+    wxIntegerHash& operator=(const wxIntegerHash&) { return *this; }
 };
 
 #endif // !wxNEEDS_WX_HASH_MAP/wxNEEDS_WX_HASH_MAP
@@ -544,6 +559,8 @@ struct WXDLLIMPEXP_BASE wxIntegerEqual
     bool operator()( wxLongLong_t a, wxLongLong_t b ) const { return a == b; }
     bool operator()( wxULongLong_t a, wxULongLong_t b ) const { return a == b; }
 #endif // wxHAS_LONG_LONG_T_DIFFERENT_FROM_LONG
+
+    wxIntegerEqual& operator=(const wxIntegerEqual&) { return *this; }
 };
 
 // pointers
@@ -556,12 +573,16 @@ struct WXDLLIMPEXP_BASE wxPointerHash
 #else
     size_t operator()( const void* k ) const { return (size_t)k; }
 #endif
+
+    wxPointerHash& operator=(const wxPointerHash&) { return *this; }
 };
 
 struct WXDLLIMPEXP_BASE wxPointerEqual
 {
     wxPointerEqual() { }
     bool operator()( const void* a, const void* b ) const { return a == b; }
+
+    wxPointerEqual& operator=(const wxPointerEqual&) { return *this; }
 };
 
 // wxString, char*, wchar_t*
@@ -586,6 +607,8 @@ struct WXDLLIMPEXP_BASE wxStringHash
 
     static unsigned long stringHash( const wchar_t* );
     static unsigned long stringHash( const char* );
+
+    wxStringHash& operator=(const wxStringHash&) { return *this; }
 };
 
 struct WXDLLIMPEXP_BASE wxStringEqual
@@ -599,6 +622,8 @@ struct WXDLLIMPEXP_BASE wxStringEqual
     bool operator()( const char* a, const char* b ) const
         { return strcmp( a, b ) == 0; }
 #endif // wxUSE_UNICODE
+
+    wxStringEqual& operator=(const wxStringEqual&) { return *this; }
 };
 
 #ifdef wxNEEDS_WX_HASH_MAP
@@ -619,8 +644,8 @@ public: \
     typedef VALUE_T mapped_type; \
     _WX_DECLARE_PAIR( iterator, bool, Insert_Result, CLASSEXP ) \
  \
-    explicit CLASSNAME( size_type hint = 100, hasher hf = hasher(),          \
-                        key_equal eq = key_equal() )                         \
+    wxEXPLICIT CLASSNAME( size_type hint = 100, hasher hf = hasher(),        \
+                          key_equal eq = key_equal() )                       \
         : CLASSNAME##_wxImplementation_HashTable( hint, hf, eq,              \
                                    CLASSNAME##_wxImplementation_KeyEx() ) {} \
  \

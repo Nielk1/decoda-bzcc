@@ -14,7 +14,7 @@
 // Checkbox item (single checkbox)
 class WXDLLIMPEXP_CORE wxCheckBox: public wxCheckBoxBase
 {
-    wxDECLARE_DYNAMIC_CLASS(wxCheckBox);
+    DECLARE_DYNAMIC_CLASS(wxCheckBox)
 
 public:
     inline wxCheckBox() { Init(); }
@@ -22,7 +22,7 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize, long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxCheckBoxNameStr))
+        const wxString& name = wxCheckBoxNameStr)
     {
         Init();
 
@@ -33,7 +33,7 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize, long style = 0,
         const wxValidator& validator = wxDefaultValidator,
-        const wxString& name = wxASCII_STR(wxCheckBoxNameStr));
+        const wxString& name = wxCheckBoxNameStr);
     virtual void SetValue(bool);
     virtual bool GetValue() const ;
     virtual void Command(wxCommandEvent& event);

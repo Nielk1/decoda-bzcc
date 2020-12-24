@@ -14,6 +14,9 @@
 
 #endif /* __cplusplus */
 
+/* fill in with the string wxGetOsDescription() will return */
+#undef WXWIN_OS_DESCRIPTION
+
 /* the installation location prefix from configure */
 #undef wxINSTALL_PREFIX
 
@@ -56,20 +59,17 @@
 /* Define this if your version of GTK+ is greater than 2.0 */
 #undef __WXGTK20__
 
+/* Define this if your version of GTK+ is greater than 2.6 */
+#undef __WXGTK26__
+
 /* Define this if your version of GTK+ is greater than 2.10 */
 #undef __WXGTK210__
 
 /* Define this if your version of GTK+ is greater than 2.18 */
 #undef __WXGTK218__
 
-/* Define this if your version of GTK+ is greater than 2.20 */
-#undef __WXGTK220__
-
 /* Define this if your version of GTK+ is >= 3.0 */
 #undef __WXGTK3__
-
-/* Define this if your version of GTK+ is >= 3.90.0 */
-#undef __WXGTK4__
 
 /* Define this if you want to use GPE features */
 #undef __WXGPE__
@@ -116,6 +116,7 @@
 
 /* PowerPC Darwin & Mac OS X */
 #undef __POWERPC__
+#undef TARGET_CARBON
 
 /* Hack to make IOGraphicsTypes.h not define Point conflicting with MacTypes */
 #undef __Point__
@@ -141,6 +142,9 @@
 #undef WINVER
 #endif
 
+/* OS/2 with EMX */
+#undef __OS2__
+
 /* --- start common options --- */
 
 #ifndef wxUSE_GUI
@@ -148,15 +152,11 @@
 #endif
 
 
+#define WXWIN_COMPATIBILITY_2_6 0
+
 #define WXWIN_COMPATIBILITY_2_8 0
 
-#define WXWIN_COMPATIBILITY_3_0 0
-
 #define wxDIALOG_UNIT_COMPATIBILITY   0
-
-#define wxUSE_UNSAFE_WXSTRING_CONV 0
-
-#define wxUSE_REPRODUCIBLE_BUILD 0
 
 
 
@@ -181,6 +181,8 @@
 #ifndef wxUSE_UNICODE
     #define wxUSE_UNICODE 0
 #endif
+
+#define wxUSE_WCHAR_T 0
 
 
 #define wxUSE_EXCEPTIONS    0
@@ -208,9 +210,12 @@
 
 #define wxUSE_STL 0
 
-#define wxUSE_STD_DEFAULT  0
-
-#define wxUSE_STD_CONTAINERS_COMPATIBLY wxUSE_STD_DEFAULT
+#if defined(__DMC__) || defined(__WATCOMC__) \
+        || (defined(_MSC_VER) && _MSC_VER < 1200)
+    #define wxUSE_STD_DEFAULT  0
+#else
+    #define wxUSE_STD_DEFAULT  0
+#endif
 
 #define wxUSE_STD_CONTAINERS 0
 
@@ -219,6 +224,9 @@
 #define wxUSE_STD_STRING  wxUSE_STD_DEFAULT
 
 #define wxUSE_STD_STRING_CONV_IN_WXSTRING wxUSE_STL
+
+#define wxUSE_IOSTREAMH     0
+
 
 
 #define wxUSE_LONGLONG      0
@@ -231,8 +239,6 @@
 #define wxUSE_FFILE         0
 
 #define wxUSE_FSVOLUME      0
-
-#define wxUSE_SECRETSTORE   0
 
 #define wxUSE_STDPATHS      0
 
@@ -281,8 +287,6 @@
 #define wxUSE_TARSTREAM     0
 
 #define wxUSE_ZLIB          0
-
-#define wxUSE_LIBLZMA       0
 
 #define wxUSE_APPLE_IEEE          0
 
@@ -336,8 +340,6 @@
 #define wxUSE_WEBVIEW_IE 0
 #endif
 
-#define wxUSE_WEBVIEW_EDGE 0
-
 #if (defined(__WXGTK__) && !defined(__WXGTK3__)) || defined(__WXOSX__)
 #define wxUSE_WEBVIEW_WEBKIT 0
 #else
@@ -351,11 +353,23 @@
 #endif
 
 
-#if defined(_MSC_VER) || \
-    (defined(__MINGW32__) && (__GNUC__ > 4 || __GNUC_MINOR__ >= 8))
+#ifdef _MSC_VER
+#   if _MSC_VER >= 1310
+
+
 #define wxUSE_GRAPHICS_CONTEXT 0
+#   else
+
+
+#       define wxUSE_GRAPHICS_CONTEXT 0
+#   endif
 #else
-#define wxUSE_GRAPHICS_CONTEXT 0
+
+
+
+
+
+#   define wxUSE_GRAPHICS_CONTEXT 0
 #endif
 
 #define wxUSE_CAIRO 0
@@ -370,7 +384,6 @@
 
 #define wxUSE_TIPWINDOW    0
 
-#define wxUSE_ACTIVITYINDICATOR 0
 #define wxUSE_ANIMATIONCTRL 0
 #define wxUSE_BANNERWINDOW  0
 #define wxUSE_BUTTON        0
@@ -413,8 +426,6 @@
 #define wxUSE_TREECTRL      0
 #define wxUSE_TREELISTCTRL  0
 
-#define wxUSE_NATIVE_DATAVIEWCTRL 0
-
 #define wxUSE_STATUSBAR    0
 
 #define wxUSE_NATIVE_STATUSBAR        0
@@ -446,8 +457,6 @@
 
 #define wxUSE_REARRANGECTRL 0
 
-#define wxUSE_ADDREMOVECTRL 0
-
 
 #define wxUSE_ACCEL 0
 
@@ -469,13 +478,9 @@
 
 #define wxUSE_MENUS         0
 
-#define wxUSE_MENUBAR       0
-
 #define wxUSE_NOTIFICATION_MESSAGE 0
 
 #define wxUSE_PREFERENCES_EDITOR 0
-
-#define wxUSE_PRIVATE_FONTS 0
 
 #define wxUSE_RICHTOOLTIP 0
 
@@ -514,8 +519,6 @@
 #define wxUSE_MSGDLG        0
 
 #define wxUSE_PROGRESSDLG 0
-
-#define wxUSE_NATIVE_PROGRESSDLG 0
 
 #define wxUSE_STARTUP_TIPS 0
 
@@ -558,11 +561,7 @@
 
 #define wxUSE_DRAG_AND_DROP 0
 
-#ifdef __WXMSW__
 #define wxUSE_ACCESSIBILITY 0
-#else
-#define wxUSE_ACCESSIBILITY 0
-#endif
 
 
 #define wxUSE_SNGLINST_CHECKER  0
@@ -633,6 +632,7 @@
 #define wxUSE_THEME_MONO    0
 #define wxUSE_THEME_WIN32   0
 
+
 /* --- end common options --- */
 
 /*
@@ -654,41 +654,19 @@
  */
 #define wxUSE_GSTREAMER 0
 
-#define wxUSE_GSTREAMER_PLAYER 0
-
-/*
-   Use XTest extension to implement wxUIActionSimulator?
-
-   Default is 1, it is set to 0 if the necessary headers/libraries are not
-   found by configure.
-
-   Recommended setting: 1, wxUIActionSimulator won't work in wxGTK3 without it.
- */
-#define wxUSE_XTEST 0
-
 /* --- start MSW options --- */
 
-
-#define wxUSE_GRAPHICS_GDIPLUS wxUSE_GRAPHICS_CONTEXT
-
-#if defined(_MSC_VER) && _MSC_VER >= 1600
-    #define wxUSE_GRAPHICS_DIRECT2D wxUSE_GRAPHICS_CONTEXT
-#else
-    #define wxUSE_GRAPHICS_DIRECT2D 0
+#ifndef wxUSE_UNICODE_MSLU
+    #define wxUSE_UNICODE_MSLU 0
 #endif
 
+#define wxUSE_MFC           0
 
 #define wxUSE_OLE           0
 
 #define wxUSE_OLE_AUTOMATION 0
 
 #define wxUSE_ACTIVEX 0
-
-#if defined(_MSC_VER) && _MSC_VER >= 1700 && !defined(_USING_V110_SDK71_)
-    #define wxUSE_WINRT 0
-#else
-    #define wxUSE_WINRT 0
-#endif
 
 #define wxUSE_DC_CACHEING 0
 
@@ -706,15 +684,11 @@
 
 #define wxUSE_TASKBARICON_BALLOONS 0
 
-#define wxUSE_TASKBARBUTTON 0
-
 #define wxUSE_UXTHEME           0
 
 #define wxUSE_INKEDIT  0
 
 #define wxUSE_INICONF 0
-
-#define wxUSE_WINSOCK2 0
 
 
 #define wxUSE_DATEPICKCTRL_GENERIC 0
@@ -722,14 +696,13 @@
 #define wxUSE_TIMEPICKCTRL_GENERIC 0
 
 
-#if defined(__VISUALC__) || defined(__MINGW64_TOOLCHAIN__)
-    #define wxUSE_DBGHELP 0
-#else
-    #define wxUSE_DBGHELP 0
-#endif
-
 #define wxUSE_CRASHREPORT 0
 /* --- end MSW options --- */
+
+/*
+ * Define if your compiler supports the explicit keyword
+ */
+#undef HAVE_EXPLICIT
 
 /*
  * Define if your compiler has C99 va_copy
@@ -852,6 +825,14 @@
  */
 #define wxUSE_LIBGNOMEVFS 0
 /*
+ * Use the Hildon framework
+ */
+#define wxUSE_LIBHILDON 0
+/*
+ * Use the Hildon 2.0 framework
+ */
+#define wxUSE_LIBHILDON2 0
+/*
  * Use libnotify library.
  */
 #define wxUSE_LIBNOTIFY 0
@@ -897,6 +878,16 @@
 #define wxUSE_WEBKIT 0
 
 /*
+ * wxMediaCtrl on OS X
+ */
+#undef wxOSX_USE_QTKIT
+
+/*
+ * Objective-C class name uniquifying
+ */
+#define wxUSE_OBJC_UNIQUIFYING 0
+
+/*
  * The const keyword is being introduced more in wxWindows.
  * You can use this setting to maintain backward compatibility.
  * If 0: will use const wherever possible.
@@ -934,9 +925,6 @@
 
 /* struct tm doesn't always have the tm_gmtoff field, define this if it does */
 #undef WX_GMTOFF_IN_TM
-
-/* check if nl_langinfo() can be called with argument _NL_TIME_FIRST_WEEKDAY */
-#undef HAVE_NL_TIME_FIRST_WEEKDAY
 
 /* Define if you have poll(2) function */
 #undef HAVE_POLL
@@ -985,6 +973,9 @@
 
 /* Define if you have pthread_attr_setstacksize */
 #undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+
+/* Define if you have shl_load() */
+#undef HAVE_SHL_LOAD
 
 /* Define if you have snprintf() */
 #undef HAVE_SNPRINTF
@@ -1088,8 +1079,8 @@
 /* Define if wchar_t is distinct type in your compiler. */
 #undef wxWCHAR_T_IS_REAL_TYPE
 
-/* Define if you have the dladdr function.  */
-#undef HAVE_DLADDR
+/* Define if you have the dlerror function.  */
+#undef HAVE_DLERROR
 
 /* Define if you have Posix fnctl() function. */
 #undef HAVE_FCNTL
@@ -1264,9 +1255,6 @@
 
 /* Define if setpriority() is available. */
 #undef HAVE_SETPRIORITY
-
-/* Define if xlocale.h header file exists. */
-#undef HAVE_XLOCALE_H
 
 /* Define if locale_t is available */
 #undef HAVE_LOCALE_T

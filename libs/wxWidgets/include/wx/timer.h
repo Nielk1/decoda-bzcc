@@ -159,6 +159,9 @@ private:
 class WXDLLIMPEXP_BASE wxTimerEvent : public wxEvent
 {
 public:
+    wxTimerEvent()
+        : wxEvent(wxID_ANY, wxEVT_TIMER) { m_timer=NULL; }
+
     wxTimerEvent(wxTimer& timer)
         : wxEvent(timer.GetId(), wxEVT_TIMER),
           m_timer(&timer)
@@ -171,21 +174,13 @@ public:
     wxTimer& GetTimer() const { return *m_timer; }
 
     // implement the base class pure virtual
-    virtual wxEvent *Clone() const wxOVERRIDE { return new wxTimerEvent(*this); }
-    virtual wxEventCategory GetEventCategory() const wxOVERRIDE { return wxEVT_CATEGORY_TIMER; }
-
-    // default ctor creates an unusable event object and should not be used (in
-    // fact, no code outside wxWidgets is supposed to create event objects)
-#if WXWIN_COMPATIBILITY_3_0
-    wxDEPRECATED_MSG("wxTimerEvent not supposed to be created by user code")
-    wxTimerEvent()
-        : wxEvent(wxID_ANY, wxEVT_TIMER) { m_timer=NULL; }
-#endif // WXWIN_COMPATIBILITY_3_0
+    virtual wxEvent *Clone() const { return new wxTimerEvent(*this); }
+    virtual wxEventCategory GetEventCategory() const { return wxEVT_CATEGORY_TIMER; }
 
 private:
     wxTimer* m_timer;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxTimerEvent);
+    DECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxTimerEvent)
 };
 
 typedef void (wxEvtHandler::*wxTimerEventFunction)(wxTimerEvent&);

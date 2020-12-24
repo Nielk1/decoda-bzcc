@@ -38,7 +38,9 @@
     #include "wx/msw/wrapwin.h"
 #endif
 
-#if defined(__WINDOWS__)
+#if defined(__WXWINCE__)
+#define IsTopMostDir(dir) (dir == wxT("\\") || dir == wxT("/"))
+#elif (defined(__DOS__) || defined(__WINDOWS__) || defined (__OS2__))
 #define IsTopMostDir(dir)   (dir.empty())
 #else
 #define IsTopMostDir(dir)   (dir == wxT("/"))
@@ -173,7 +175,7 @@ void wxFileData::ReadData()
         return;
     }
 
-#if defined(__WINDOWS__)
+#if defined(__DOS__) || (defined(__WINDOWS__) && !defined(__WXWINCE__)) || defined(__OS2__)
     // c:\.. is a drive don't stat it
     if ((m_fileName == wxT("..")) && (m_filePath.length() <= 5))
     {
@@ -181,13 +183,45 @@ void wxFileData::ReadData()
         m_size = 0;
         return;
     }
-#endif // __WINDOWS__
+#endif // __DOS__ || __WINDOWS__
+
+#ifdef __WXWINCE__
+
+    // WinCE
+
+    DWORD fileAttribs = GetFileAttributes(m_filePath.fn_str());
+    m_type |= (fileAttribs & FILE_ATTRIBUTE_DIRECTORY) != 0 ? is_dir : 0;
+
+    wxString p, f, ext;
+    wxFileName::SplitPath(m_filePath, & p, & f, & ext);
+    if (wxStricmp(ext, wxT("exe")) == 0)
+        m_type |= is_exe;
+
+    // Find out size
+    m_size = 0;
+    HANDLE fileHandle = CreateFile(m_filePath.fn_str(),
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+    if (fileHandle != INVALID_HANDLE_VALUE)
+    {
+        m_size = GetFileSize(fileHandle, 0);
+        CloseHandle(fileHandle);
+    }
+
+    m_dateTime = wxFileModificationTime(m_filePath);
+
+#else
 
     // OTHER PLATFORMS
 
     wxStructStat buff;
 
-#if defined(__UNIX__) && !defined(__VMS)
+#if defined(__UNIX__) && (!defined( __OS2__ ) && !defined(__VMS))
     const bool hasStat = lstat( m_filePath.fn_str(), &buff ) == 0;
     if ( hasStat )
         m_type |= S_ISLNK(buff.st_mode) ? is_link : 0;
@@ -204,6 +238,8 @@ void wxFileData::ReadData()
 
         m_dateTime = buff.st_mtime;
     }
+#endif
+    // __WXWINCE__
 
 #if defined(__UNIX__)
     if ( hasStat )
@@ -357,15 +393,14 @@ void wxFileData::MakeItem( wxListItem &item )
 //  wxFileListCtrl
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxFileListCtrl,wxListCtrl);
+IMPLEMENT_DYNAMIC_CLASS(wxFileListCtrl,wxListCtrl)
 
-wxBEGIN_EVENT_TABLE(wxFileListCtrl,wxListCtrl)
+BEGIN_EVENT_TABLE(wxFileListCtrl,wxListCtrl)
     EVT_LIST_DELETE_ITEM(wxID_ANY, wxFileListCtrl::OnListDeleteItem)
     EVT_LIST_DELETE_ALL_ITEMS(wxID_ANY, wxFileListCtrl::OnListDeleteAllItems)
     EVT_LIST_END_LABEL_EDIT(wxID_ANY, wxFileListCtrl::OnListEndLabelEdit)
     EVT_LIST_COL_CLICK(wxID_ANY, wxFileListCtrl::OnListColClick)
-    EVT_SIZE (wxFileListCtrl::OnSize)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 
 wxFileListCtrl::wxFileListCtrl()
@@ -422,7 +457,7 @@ void wxFileListCtrl::ChangeToReportMode()
     GetTextExtent(txt, &w, &h);
 
     InsertColumn( 0, _("Name"), wxLIST_FORMAT_LEFT, w );
-    InsertColumn( 1, _("Size"), wxLIST_FORMAT_RIGHT, w/2 );
+    InsertColumn( 1, _("Size"), wxLIST_FORMAT_LEFT, w/2 );
     InsertColumn( 2, _("Type"), wxLIST_FORMAT_LEFT, w/2 );
     InsertColumn( 3, _("Modified"), wxLIST_FORMAT_LEFT, w );
 #if defined(__UNIX__)
@@ -499,7 +534,7 @@ void wxFileListCtrl::UpdateFiles()
     item.m_itemId = 0;
     item.m_col = 0;
 
-#if defined(__WINDOWS__) || defined(__WXMAC__)
+#if (defined(__WINDOWS__) || defined(__DOS__) || defined(__WXMAC__) || defined(__OS2__)) && !defined(__WXWINCE__)
     if ( IsTopMostDir(m_dirName) )
     {
         wxArrayString names, paths;
@@ -528,13 +563,13 @@ void wxFileListCtrl::UpdateFiles()
         }
     }
     else
-#endif // defined(__WINDOWS__) || defined(__WXMAC__)
+#endif // defined(__DOS__) || defined(__WINDOWS__)
     {
         // Real directory...
         if ( !IsTopMostDir(m_dirName) && !m_dirName.empty() )
         {
             wxString p(wxPathOnly(m_dirName));
-#if defined(__UNIX__)
+#if (defined(__UNIX__) || defined(__WXWINCE__)) && !defined(__OS2__)
             if (p.empty()) p = wxT("/");
 #endif // __UNIX__
             wxFileData *fd = new wxFileData(p, wxT(".."), wxFileData::is_dir, wxFileIconsTable::folder);
@@ -545,10 +580,10 @@ void wxFileListCtrl::UpdateFiles()
         }
 
         wxString dirname(m_dirName);
-#if defined(__WINDOWS__)
+#if defined(__DOS__) || defined(__WINDOWS__) || defined(__OS2__)
         if (dirname.length() == 2 && dirname[1u] == wxT(':'))
             dirname << wxT('\\');
-#endif // defined(__WINDOWS__)
+#endif // defined(__DOS__) || defined(__WINDOWS__) || defined(__OS2__)
 
         if (dirname.empty())
             dirname = wxFILE_SEP_PATH;
@@ -670,11 +705,11 @@ void wxFileListCtrl::GoToParentDir()
             m_dirName.Remove( len-1, 1 );
         wxString fname( wxFileNameFromPath(m_dirName) );
         m_dirName = wxPathOnly( m_dirName );
-#if defined(__WINDOWS__)
+#if defined(__DOS__) || defined(__WINDOWS__) || defined(__OS2__)
         if (!m_dirName.empty())
         {
             if (m_dirName.Last() == wxT('.'))
-                m_dirName.clear();
+                m_dirName = wxEmptyString;
         }
 #elif defined(__UNIX__)
         if (m_dirName.empty())
@@ -810,25 +845,6 @@ void wxFileListCtrl::OnListColClick( wxListEvent &event )
     SortItems(m_sort_field, m_sort_forward);
 }
 
-void wxFileListCtrl::OnSize( wxSizeEvent &event )
-{
-    event.Skip();
-
-    if ( InReportView() )
-    {
-        // In report mode, set name column to use remaining width.
-        int newNameWidth = GetClientSize().GetWidth();
-        for ( int i = 1; i < GetColumnCount(); i++ )
-        {
-            newNameWidth -= GetColumnWidth(i);
-            if ( newNameWidth <= 0 )
-                return;
-        }
-
-        SetColumnWidth(0, newNameWidth);
-    }
-}
-
 void wxFileListCtrl::SortItems(wxFileData::fileListFieldType field, bool forward)
 {
     m_sort_field = field;
@@ -873,16 +889,16 @@ wxFileListCtrl::~wxFileListCtrl()
 // wxGenericFileCtrl implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-wxIMPLEMENT_DYNAMIC_CLASS( wxGenericFileCtrl, wxNavigationEnabled<wxControl> );
+IMPLEMENT_DYNAMIC_CLASS( wxGenericFileCtrl, wxNavigationEnabled<wxControl> )
 
-wxBEGIN_EVENT_TABLE( wxGenericFileCtrl, wxNavigationEnabled<wxControl> )
+BEGIN_EVENT_TABLE( wxGenericFileCtrl, wxNavigationEnabled<wxControl> )
     EVT_LIST_ITEM_SELECTED( ID_FILELIST_CTRL, wxGenericFileCtrl::OnSelected )
     EVT_LIST_ITEM_ACTIVATED( ID_FILELIST_CTRL, wxGenericFileCtrl::OnActivated )
     EVT_CHOICE( ID_CHOICE, wxGenericFileCtrl::OnChoiceFilter )
     EVT_TEXT_ENTER( ID_TEXT, wxGenericFileCtrl::OnTextEnter )
     EVT_TEXT( ID_TEXT, wxGenericFileCtrl::OnTextChange )
     EVT_CHECKBOX( ID_CHECK, wxGenericFileCtrl::OnCheck )
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 bool wxGenericFileCtrl::Create( wxWindow *parent,
                                 wxWindowID id,
@@ -927,7 +943,7 @@ bool wxGenericFileCtrl::Create( wxWindow *parent,
     if ( ( len > 1 ) && ( wxEndsWithPathSeparator( m_dir ) ) )
         m_dir.Remove( len - 1, 1 );
 
-    m_filterExtension.clear();
+    m_filterExtension = wxEmptyString;
 
     // layout
 
@@ -947,7 +963,11 @@ bool wxGenericFileCtrl::Create( wxWindow *parent,
     if ( !( m_style & wxFC_MULTIPLE ) )
         style2 |= wxLC_SINGLE_SEL;
 
+#ifdef __WXWINCE__
+    style2 |= wxSIMPLE_BORDER;
+#else
     style2 |= wxSUNKEN_BORDER;
+#endif
 
     m_list = new wxFileListCtrl( this, ID_FILELIST_CTRL,
                                  wxEmptyString, false,
@@ -1125,16 +1145,15 @@ bool wxGenericFileCtrl::SetDirectory( const wxString& dir )
 
 bool wxGenericFileCtrl::SetFilename( const wxString& name )
 {
-    wxString dir, fn, ext;
-    wxFileName::SplitPath(name, &dir, &fn, &ext);
-    wxCHECK_MSG( dir.empty(), false,
-                 wxS( "can't specify directory component to SetFilename" ) );
+    const long item = m_list->FindItem( -1, name );
+
+    if ( item == -1 ) // file not found either because it doesn't exist or the
+        // current filter doesn't show it.
+        return false;
 
     m_noSelChgEvent = true;
 
-    m_text->ChangeValue( name );
-
-    // Deselect previously selected items
+    // Deselect selected items
     {
         const int numSelectedItems = m_list->GetSelectedItemCount();
 
@@ -1145,7 +1164,7 @@ bool wxGenericFileCtrl::SetFilename( const wxString& name )
             for ( ;; )
             {
                 itemIndex = m_list->GetNextItem( itemIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED );
-                if ( itemIndex == wxNOT_FOUND )
+                if ( itemIndex == -1 )
                     break;
 
                 m_list->SetItemState( itemIndex, 0, wxLIST_STATE_SELECTED );
@@ -1153,14 +1172,8 @@ bool wxGenericFileCtrl::SetFilename( const wxString& name )
         }
     }
 
-    // Select new filename if it's in the list
-    long item = m_list->FindItem(wxNOT_FOUND, name);
-
-    if ( item != wxNOT_FOUND )
-    {
-        m_list->SetItemState( item, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED );
-        m_list->EnsureVisible( item );
-    }
+    m_list->SetItemState( item, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED );
+    m_list->EnsureVisible( item );
 
     m_noSelChgEvent = false;
 
@@ -1187,7 +1200,7 @@ void wxGenericFileCtrl::DoSetFilterIndex( int filterindex )
         m_filterExtension.clear();
     }
 
-    wxGenerateFilterChangedEvent( this, this );
+    GenerateFilterChangedEvent( this, this );
 }
 
 void wxGenericFileCtrl::SetWildcard( const wxString& wildCard )
@@ -1274,6 +1287,10 @@ void wxGenericFileCtrl::OnSelected( wxListEvent &event )
     m_inSelected = true;
     const wxString filename( event.m_item.m_text );
 
+#ifdef __WXWINCE__
+    // No double-click on most WinCE devices, so do action immediately.
+    HandleAction( filename );
+#else
     if ( filename == wxT( ".." ) )
     {
         m_inSelected = false;
@@ -1301,9 +1318,10 @@ void wxGenericFileCtrl::OnSelected( wxListEvent &event )
     }
 
     if ( !m_noSelChgEvent )
-        wxGenerateSelectionChangedEvent( this, this );
+        GenerateSelectionChangedEvent( this, this );
 
     m_ignoreChanges = false;
+#endif
     m_inSelected = false;
 }
 
@@ -1331,7 +1349,7 @@ void wxGenericFileCtrl::HandleAction( const wxString &fn )
         m_ignoreChanges = true;
         m_list->GoToParentDir();
 
-        wxGenerateFolderChangedEvent( this, this );
+        GenerateFolderChangedEvent( this, this );
 
         UpdateControls();
         m_ignoreChanges = false;
@@ -1344,7 +1362,7 @@ void wxGenericFileCtrl::HandleAction( const wxString &fn )
         m_ignoreChanges = true;
         m_list->GoToHomeDir();
 
-        wxGenerateFolderChangedEvent( this, this );
+        GenerateFolderChangedEvent( this, this );
 
         UpdateControls();
         m_ignoreChanges = false;
@@ -1387,7 +1405,7 @@ void wxGenericFileCtrl::HandleAction( const wxString &fn )
         m_list->GoToDir( filename );
         UpdateControls();
 
-        wxGenerateFolderChangedEvent( this, this );
+        GenerateFolderChangedEvent( this, this );
 
         m_ignoreChanges = false;
         return;
@@ -1409,24 +1427,21 @@ void wxGenericFileCtrl::HandleAction( const wxString &fn )
     if ( !( m_style & wxFC_OPEN ) || !wxFileExists( filename ) )
     {
         filename = wxFileDialogBase::AppendExtension( filename, m_filterExtension );
-        wxGenerateFileActivatedEvent( this, this, wxFileName( filename ).GetFullName() );
+        GenerateFileActivatedEvent( this, this, wxFileName( filename ).GetFullName() );
         return;
     }
 
-    wxGenerateFileActivatedEvent( this, this );
+    GenerateFileActivatedEvent( this, this );
 }
 
 bool wxGenericFileCtrl::SetPath( const wxString& path )
 {
-    wxString dir, fn, ext;
-    wxFileName::SplitPath(path, &dir, &fn, &ext);
-
-    if ( !dir.empty() && !wxFileName::DirExists(dir) )
+    if ( !wxFileName::FileExists( ( path ) ) )
         return false;
 
-    m_dir = dir;
-    m_fileName = fn;
-    if ( !ext.empty() || path.Last() == '.' )
+    wxString ext;
+    wxFileName::SplitPath( path, &m_dir, &m_fileName, &ext );
+    if ( !ext.empty() )
     {
         m_fileName += wxT( "." );
         m_fileName += ext;

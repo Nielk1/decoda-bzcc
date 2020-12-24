@@ -54,13 +54,13 @@ wxXLocale wxNullXLocale;
 class wxXLocaleModule : public wxModule
 {
 public:
-    virtual bool OnInit() wxOVERRIDE { return true; }
-    virtual void OnExit() wxOVERRIDE { wxDELETE(gs_cLocale); }
+    virtual bool OnInit() { return true; }
+    virtual void OnExit() { wxDELETE(gs_cLocale); }
 
-    wxDECLARE_DYNAMIC_CLASS(wxXLocaleModule);
+    DECLARE_DYNAMIC_CLASS(wxXLocaleModule)
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxXLocaleModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxXLocaleModule, wxModule)
 
 
 // ============================================================================
@@ -87,18 +87,18 @@ wxXLocale& wxXLocale::GetCLocale()
 
 #ifdef wxHAS_XLOCALE_SUPPORT
 
-#if wxUSE_INTL
 wxXLocale::wxXLocale(wxLanguage lang)
 {
-    m_locale = NULL;
-
     const wxLanguageInfo * const info = wxLocale::GetLanguageInfo(lang);
-    if ( info )
+    if ( !info )
+    {
+        m_locale = NULL;
+    }
+    else
     {
         Init(info->GetLocaleName().c_str());
     }
 }
-#endif // wxUSE_INTL
 
 #if wxCHECK_VISUALC_VERSION(8)
 

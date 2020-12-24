@@ -8,7 +8,7 @@
 /**
     Identifiers for common settings on ribbon art providers which can be used
     to tweak the appearance of the art provider.
-
+    
     @see wxRibbonArtProvider::GetColour()
     @see wxRibbonArtProvider::GetFont()
     @see wxRibbonArtProvider::GetMetric()
@@ -66,10 +66,6 @@ enum wxRibbonArtSetting
     wxRIBBON_ART_GALLERY_BUTTON_DISABLED_FACE_COLOUR,
     wxRIBBON_ART_GALLERY_ITEM_BORDER_COLOUR,
     wxRIBBON_ART_TAB_LABEL_COLOUR,
-    /// @since 3.1.3
-    wxRIBBON_ART_TAB_ACTIVE_LABEL_COLOUR,
-    /// @since 3.1.3
-    wxRIBBON_ART_TAB_HOVER_LABEL_COLOUR,
     wxRIBBON_ART_TAB_SEPARATOR_COLOUR,
     wxRIBBON_ART_TAB_SEPARATOR_GRADIENT_COLOUR,
     wxRIBBON_ART_TAB_CTRL_BACKGROUND_COLOUR,
@@ -122,16 +118,12 @@ enum wxRibbonArtSetting
     wxRIBBON_ART_TOOL_ACTIVE_BACKGROUND_TOP_GRADIENT_COLOUR,
     wxRIBBON_ART_TOOL_ACTIVE_BACKGROUND_COLOUR,
     wxRIBBON_ART_TOOL_ACTIVE_BACKGROUND_GRADIENT_COLOUR,
-    wxRIBBON_ART_BUTTON_BAR_LABEL_HIGHLIGHT_COLOUR, //< @since 3.1.0
-    wxRIBBON_ART_BUTTON_BAR_LABEL_HIGHLIGHT_GRADIENT_COLOUR, //< @since 3.1.0
-    wxRIBBON_ART_BUTTON_BAR_LABEL_HIGHLIGHT_TOP_COLOUR, //< @since 3.1.0
-    wxRIBBON_ART_BUTTON_BAR_LABEL_HIGHLIGHT_GRADIENT_TOP_COLOUR, //< @since 3.1.0
 };
 
 /**
     Flags used to describe the direction, state, and/or purpose of a
     ribbon-style scroll button.
-
+    
     @see wxRibbonArtProvider::DrawScrollButton()
     @see wxRibbonArtProvider::GetScrollButtonMinimumSize()
 */
@@ -171,19 +163,19 @@ enum wxRibbonButtonKind
         action.
     */
     wxRIBBON_BUTTON_NORMAL    = 1 << 0,
-
+    
     /**
         Dropdown button or tool with a clickable area which typically causes a
         dropdown menu.
     */
     wxRIBBON_BUTTON_DROPDOWN  = 1 << 1,
-
+    
     /**
         Button or tool with two clickable areas - one which causes a dropdown
         menu, and one which causes a generic action.
     */
     wxRIBBON_BUTTON_HYBRID    = wxRIBBON_BUTTON_NORMAL | wxRIBBON_BUTTON_DROPDOWN,
-
+    
     /**
         Normal button or tool with a clickable area which toggles the button
         between a pressed and unpressed state.
@@ -220,7 +212,7 @@ public:
         Constructor.
     */
     wxRibbonArtProvider();
-
+    
     /**
         Destructor.
     */
@@ -230,16 +222,16 @@ public:
         Create a new art provider which is a clone of this one.
     */
     virtual wxRibbonArtProvider* Clone() const = 0;
-
+    
     /**
         Set the style flags.
-
+        
         Normally called automatically by wxRibbonBar::SetArtProvider with the ribbon
         bar's style flags, so that the art provider has the same flags as the bar which
         it is serving.
     */
     virtual void SetFlags(long flags) = 0;
-
+    
     /**
         Get the previously set style flags.
     */
@@ -250,53 +242,53 @@ public:
         @a id can be one of the size values of @ref wxRibbonArtSetting.
     */
     virtual int GetMetric(int id) const = 0;
-
+    
     /**
         Set the value of a certain integer setting to the value @e new_val.
         @a id can be one of the size values of @ref wxRibbonArtSetting.
     */
     virtual void SetMetric(int id, int new_val) = 0;
-
+    
     /**
         Set the value of a certain font setting to the value @e font.
         @a id can be one of the font values of @ref wxRibbonArtSetting.
     */
     virtual void SetFont(int id, const wxFont& font) = 0;
-
+    
     /**
         Get the value of a certain font setting.
         @a id can be one of the font values of @ref wxRibbonArtSetting.
     */
     virtual wxFont GetFont(int id) const = 0;
-
+    
     /**
         Get the value of a certain colour setting.
         @a id can be one of the colour values of @ref wxRibbonArtSetting.
     */
     virtual wxColour GetColour(int id) const = 0;
-
+    
     /**
         Set the value of a certain colour setting to the value @e colour.
         @a id can be one of the colour values of @ref wxRibbonArtSetting, though
         not all colour settings will have an effect on every art provider.
-
+        
         @see SetColourScheme()
     */
     virtual void SetColour(int id, const wxColour& colour) = 0;
-
+    
     /**
         @see wxRibbonArtProvider::GetColour()
     */
     wxColour GetColor(int id) const;
-
+    
     /**
         @see wxRibbonArtProvider::SetColour()
     */
     void SetColor(int id, const wxColour& color);
-
+    
     /**
         Get the current colour scheme.
-
+        
         Returns three colours such that if SetColourScheme() were called with
         them, the colour scheme would be restored to what it was when
         SetColourScheme() was last called. In practice, this usually means that
@@ -312,7 +304,7 @@ public:
         and return a colour scheme similar to colours being used - it's return
         values are dependent upon the last values given to SetColourScheme(),
         as described above.
-
+        
         @param[out] primary
             Pointer to a location to store the primary colour, or NULL.
         @param[out] secondary
@@ -323,26 +315,26 @@ public:
     virtual void GetColourScheme(wxColour* primary,
                         wxColour* secondary,
                         wxColour* tertiary) const = 0;
-
+    
     /**
         Set all applicable colour settings from a few base colours.
-
+        
         Uses any or all of the three given colours to create a colour scheme,
         and then sets all colour settings which are relevant to the art
         provider using that scheme.
         Note that some art providers may not use the tertiary colour for
         anything, and some may not use the secondary colour either.
-
+        
         @see SetColour()
         @see GetColourScheme()
-    */
+    */    
     virtual void SetColourScheme(const wxColour& primary,
                         const wxColour& secondary,
                         const wxColour& tertiary) = 0;
 
     /**
         Draw the background of the tab region of a ribbon bar.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -357,7 +349,7 @@ public:
 
     /**
         Draw a single tab in the tab region of a ribbon bar.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -377,7 +369,7 @@ public:
 
     /**
         Draw a separator between two tabs in a ribbon bar.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -397,7 +389,7 @@ public:
 
     /**
         Draw the background of a ribbon page.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -405,7 +397,7 @@ public:
             whose background is being drawn, but doesn't have to be).
         @param rect
             The rectangle within which to draw.
-
+        
         @sa GetPageBackgroundRedrawArea
     */
     virtual void DrawPageBackground(
@@ -415,7 +407,7 @@ public:
 
     /**
         Draw a ribbon-style scroll button.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -443,11 +435,11 @@ public:
         Draw the background and chrome for a ribbon panel. This should draw
         the border, background, label, and any other items of a panel which
         are outside the client area of a panel.
-
+        
         Note that when a panel is minimised, this function is not called - only
         DrawMinimisedPanel() is called, so a background should be explicitly
         painted by that if required.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -461,13 +453,13 @@ public:
                         wxDC& dc,
                         wxRibbonPanel* wnd,
                         const wxRect& rect) = 0;
-
+    
     /**
         Draw the background and chrome for a wxRibbonGallery control. This
         should draw the border, background, scroll buttons, extension button,
         and any other UI elements which are not attached to a specific gallery
         item.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -492,7 +484,7 @@ public:
         is painted on top of a gallery background, and behind the items bitmap.
         Unlike DrawButtonBarButton() and DrawTool(), it is not expected to draw
         the item bitmap - that is done by the gallery control itself.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -519,10 +511,10 @@ public:
                         wxRibbonGallery* wnd,
                         const wxRect& rect,
                         wxRibbonGalleryItem* item) = 0;
-
+    
     /**
         Draw a minimised ribbon panel.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -543,10 +535,10 @@ public:
                         wxRibbonPanel* wnd,
                         const wxRect& rect,
                         wxBitmap& bitmap) = 0;
-
+    
     /**
         Draw the background for a wxRibbonButtonBar control.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -562,7 +554,7 @@ public:
 
     /**
         Draw a single button for a wxRibbonButtonBar control.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -595,10 +587,10 @@ public:
                         const wxString& label,
                         const wxBitmap& bitmap_large,
                         const wxBitmap& bitmap_small) = 0;
-
+    
     /**
         Draw the background for a wxRibbonToolBar control.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -617,7 +609,7 @@ public:
 
     /**
         Draw the background for a group of tools on a wxRibbonToolBar control.
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -640,7 +632,7 @@ public:
 
     /**
         Draw a single tool (for a wxRibbonToolBar control).
-
+        
         @param dc
             The device context to draw onto.
         @param wnd
@@ -714,7 +706,7 @@ public:
     /**
         Calculate the ideal and minimum width (in pixels) of a tab in a ribbon
         bar.
-
+        
         @param dc
             A device context to use when one is required for size calculations.
         @param wnd
@@ -750,7 +742,7 @@ public:
         Note that as the tab region can contain scroll buttons, the height
         should be greater than or equal to the minimum height for a tab scroll
         button.
-
+        
         @param dc
             A device context to use when one is required for size calculations.
         @param wnd
@@ -765,7 +757,7 @@ public:
 
     /**
         Calculate the minimum size (in pixels) of a scroll button.
-
+        
         @param dc
             A device context to use when one is required for size calculations.
         @param wnd
@@ -785,7 +777,7 @@ public:
         Calculate the size of a panel for a given client size. This should
         increment the given size by enough to fit the panel label and other
         chrome.
-
+        
         @param dc
             A device context to use if one is required for size calculations.
         @param wnd
@@ -795,7 +787,7 @@ public:
         @param[out] client_offset
             The offset where the client rectangle begins within the panel (may
             be NULL).
-
+            
         @sa GetPanelClientSize()
     */
     virtual wxSize GetPanelSize(
@@ -803,12 +795,12 @@ public:
                         const wxRibbonPanel* wnd,
                         wxSize client_size,
                         wxPoint* client_offset) = 0;
-
+    
     /**
         Calculate the client size of a panel for a given overall size. This
         should act as the inverse to GetPanelSize(), and decrement the given
         size by enough to fit the panel label and other chrome.
-
+        
         @param dc
             A device context to use if one is required for size calculations.
         @param wnd
@@ -818,7 +810,7 @@ public:
         @param[out] client_offset
             The offset where the returned client size begins within the given
             @a size (may be NULL).
-
+        
         @sa GetPanelSize()
     */
     virtual wxSize GetPanelClientSize(
@@ -848,14 +840,14 @@ public:
         Calculate the size of a wxRibbonGallery control for a given client
         size. This should increment the given size by enough to fit the gallery
         border, buttons, and any other chrome.
-
+        
         @param dc
             A device context to use if one is required for size calculations.
         @param wnd
             The gallery in question.
         @param client_size
             The client size.
-
+            
         @sa GetGalleryClientSize()
     */
     virtual wxSize GetGallerySize(
@@ -868,7 +860,7 @@ public:
         size. This should act as the inverse to GetGallerySize(), and decrement
         the given size by enough to fit the gallery border, buttons, and other
         chrome.
-
+        
         @param dc
             A device context to use if one is required for size calculations.
         @param wnd
@@ -903,7 +895,7 @@ public:
         small an area as possible should be returned. Of course, if the way in
         which a background is drawn means that the entire background needs to
         be repainted on resize, then the entire new size should be returned.
-
+        
         @param dc
             A device context to use when one is required for size calculations.
         @param wnd
@@ -919,10 +911,10 @@ public:
                         const wxRibbonPage* wnd,
                         wxSize page_old_size,
                         wxSize page_new_size) = 0;
-
+    
     /**
         Calculate the size of a button within a wxRibbonButtonBar.
-
+        
         @param dc
             A device context to use when one is required for size calculations.
         @param wnd
@@ -938,9 +930,6 @@ public:
             be returned.
         @param label
             The label of the button.
-        @param text_min_width
-            The minimum width of the button label.
-            Set this to 0 if it is not used.
         @param bitmap_size_large
             The size of all "large" bitmaps on the button bar.
         @param bitmap_size_small
@@ -951,7 +940,7 @@ public:
             The region of the button which constitutes the normal button.
         @param[out] dropdown_region
             The region of the button which constitutes the dropdown button.
-
+        
         @return @true if a size exists for the button, @false otherwise.
     */
     virtual bool GetButtonBarButtonSize(
@@ -960,44 +949,15 @@ public:
                         wxRibbonButtonKind kind,
                         wxRibbonButtonBarButtonState size,
                         const wxString& label,
-                        wxCoord text_min_width,
                         wxSize bitmap_size_large,
                         wxSize bitmap_size_small,
                         wxSize* button_size,
                         wxRect* normal_region,
                         wxRect* dropdown_region) = 0;
-
-    /**
-        Gets the width of the string if it is used as
-        a wxRibbonButtonBar button label.
-
-        @param dc
-            A device context to use when one is required for size calculations.
-        @param label
-            The string whose width shall be calculated.
-        @param kind
-            The kind of button.
-        @param size
-            The size-class to calculate the size for. Buttons on a button bar
-            can have three distinct sizes: wxRIBBON_BUTTONBAR_BUTTON_SMALL,
-            wxRIBBON_BUTTONBAR_BUTTON_MEDIUM, and wxRIBBON_BUTTONBAR_BUTTON_LARGE.
-            If the requested size-class is not applicable, then NULL should
-            be returned.
-
-        @return Width of the given label text in pixel.
-
-        @note This function only works with single-line strings.
-
-        @since 3.1.2
-    */
-    virtual wxCoord GetButtonBarButtonTextWidth(
-                        wxDC& dc, const wxString& label,
-                        wxRibbonButtonKind kind,
-                        wxRibbonButtonBarButtonState size) = 0;
-
+    
     /**
         Calculate the size of a minimised ribbon panel.
-
+        
         @param dc
             A device context to use when one is required for size calculations.
         @param wnd
@@ -1015,10 +975,10 @@ public:
                         const wxRibbonPanel* wnd,
                         wxSize* desired_bitmap_size,
                         wxDirection* expanded_panel_direction) = 0;
-
+    
     /**
         Calculate the size of a tool within a wxRibbonToolBar.
-
+        
         @param dc
             A device context to use when one is required for size calculations.
         @param wnd
@@ -1244,7 +1204,6 @@ public:
                         wxRibbonButtonKind kind,
                         wxRibbonButtonBarButtonState size,
                         const wxString& label,
-                        wxCoord text_min_width,
                         wxSize bitmap_size_large,
                         wxSize bitmap_size_small,
                         wxSize* button_size,

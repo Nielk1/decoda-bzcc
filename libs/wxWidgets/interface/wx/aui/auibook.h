@@ -405,29 +405,6 @@ public:
         Returns the image index for the given page.
     */
     virtual int GetPageImage(size_t nPage) const;
-
-    /**
-        Returns tab control based on point coordinates inside the tab frame.
-
-        @since 3.1.4
-    */
-    wxAuiTabCtrl* GetTabCtrlFromPoint(const wxPoint& pt);
-
-    /**
-        Returns active tab control for this notebook.
-
-        @since 3.1.4
-    */
-    wxAuiTabCtrl* GetActiveTabCtrl();
-
-    /**
-        Finds tab control associated with a given window and its tab index.
-
-        @return @true when the tab control is found, @false otherwise.
-
-        @since 3.1.4
-    */
-    bool FindTab(wxWindow* page, wxAuiTabCtrl** ctrl, int* idx);
 };
 
 
@@ -731,20 +708,21 @@ public:
 };
 
 wxEventType wxEVT_AUINOTEBOOK_PAGE_CLOSE;
+wxEventType wxEVT_AUINOTEBOOK_PAGE_CLOSED;
 wxEventType wxEVT_AUINOTEBOOK_PAGE_CHANGED;
 wxEventType wxEVT_AUINOTEBOOK_PAGE_CHANGING;
-wxEventType wxEVT_AUINOTEBOOK_PAGE_CLOSED;
 wxEventType wxEVT_AUINOTEBOOK_BUTTON;
 wxEventType wxEVT_AUINOTEBOOK_BEGIN_DRAG;
 wxEventType wxEVT_AUINOTEBOOK_END_DRAG;
 wxEventType wxEVT_AUINOTEBOOK_DRAG_MOTION;
 wxEventType wxEVT_AUINOTEBOOK_ALLOW_DND;
+wxEventType wxEVT_AUINOTEBOOK_DRAG_DONE;
 wxEventType wxEVT_AUINOTEBOOK_TAB_MIDDLE_DOWN;
 wxEventType wxEVT_AUINOTEBOOK_TAB_MIDDLE_UP;
 wxEventType wxEVT_AUINOTEBOOK_TAB_RIGHT_DOWN;
 wxEventType wxEVT_AUINOTEBOOK_TAB_RIGHT_UP;
-wxEventType wxEVT_AUINOTEBOOK_DRAG_DONE;
 wxEventType wxEVT_AUINOTEBOOK_BG_DCLICK;
+
 
 /**
     Default art provider for wxAuiNotebook.

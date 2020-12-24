@@ -26,7 +26,7 @@ public:
                const wxSize& size = wxDefaultSize,
                long style = 0,
                const wxValidator& validator = wxDefaultValidator,
-               const wxString& name = wxASCII_STR(wxTextCtrlNameStr))
+               const wxString& name = wxTextCtrlNameStr)
     {
         Create(parent, id, value, pos, size, style, validator, name);
     }
@@ -36,7 +36,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize, long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxASCII_STR(wxTextCtrlNameStr));
+                const wxString& name = wxTextCtrlNameStr);
 
     // accessors
     // ---------
@@ -106,8 +106,8 @@ public:
     bool      m_processedDefault;
 
 private:
-    wxDECLARE_EVENT_TABLE();
-    wxDECLARE_DYNAMIC_CLASS(wxTextCtrl);
+    DECLARE_EVENT_TABLE()
+    DECLARE_DYNAMIC_CLASS(wxTextCtrl)
 };
 
 #endif

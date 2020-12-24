@@ -33,11 +33,11 @@ public:
     virtual ~wxMacPrintDialog();
 
     bool Create(wxWindow *parent, wxPrintDialogData* data = NULL);
-    virtual int ShowModal() wxOVERRIDE;
+    virtual int ShowModal();
 
-    virtual wxPrintDialogData& GetPrintDialogData() wxOVERRIDE { return m_printDialogData; }
-    virtual wxPrintData& GetPrintData() wxOVERRIDE { return m_printDialogData.GetPrintData(); }
-    virtual wxDC *GetPrintDC() wxOVERRIDE;
+    virtual wxPrintDialogData& GetPrintDialogData() { return m_printDialogData; }
+    virtual wxPrintData& GetPrintData() { return m_printDialogData.GetPrintData(); }
+    virtual wxDC *GetPrintDC();
 
 private:
     wxPrintDialogData   m_printDialogData;
@@ -46,7 +46,7 @@ private:
     wxWindow*           m_dialogParent;
 
 private:
-    wxDECLARE_DYNAMIC_CLASS(wxPrintDialog);
+    DECLARE_DYNAMIC_CLASS(wxPrintDialog)
 };
 
 /*
@@ -60,17 +60,17 @@ public:
     wxMacPageSetupDialog(wxWindow *parent, wxPageSetupDialogData *data = NULL);
     virtual ~wxMacPageSetupDialog();
 
-    virtual wxPageSetupDialogData& GetPageSetupDialogData() wxOVERRIDE;
+    virtual wxPageSetupDialogData& GetPageSetupDialogData();
 
     bool Create(wxWindow *parent, wxPageSetupDialogData *data = NULL);
-    virtual int ShowModal() wxOVERRIDE;
+    virtual int ShowModal();
 
 private:
     wxPageSetupDialogData   m_pageSetupData;
     wxWindow*               m_dialogParent;
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxMacPageSetupDialog);
+    DECLARE_DYNAMIC_CLASS_NO_COPY(wxMacPageSetupDialog)
 };
 
 class WXDLLIMPEXP_FWD_CORE wxTextCtrl;
@@ -86,7 +86,7 @@ class WXDLLIMPEXP_CORE wxMacPageMarginsDialog : public wxDialog
 public:
     wxMacPageMarginsDialog(wxFrame* parent, wxPageSetupDialogData* data);
     bool TransferToWindow();
-    bool TransferDataFromWindow() wxOVERRIDE;
+    bool TransferDataFromWindow();
 
     virtual wxPageSetupDialogData& GetPageSetupDialogData() { return *m_pageSetupDialogData; }
 
@@ -104,7 +104,7 @@ private:
     bool CheckValue(wxTextCtrl* textCtrl, int *value, int minValue, const wxString& name);
 
 private:
-    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxMacPageMarginsDialog);
+    DECLARE_DYNAMIC_CLASS_NO_COPY(wxMacPageMarginsDialog)
 };
 
 

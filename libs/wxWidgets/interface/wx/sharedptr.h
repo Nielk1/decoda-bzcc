@@ -26,7 +26,7 @@ public:
         Creates shared pointer from the raw pointer @a ptr and takes ownership
         of it.
     */
-    explicit wxSharedPtr(T* ptr = NULL);
+    wxEXPLICIT wxSharedPtr(T* ptr = NULL);
 
     /**
         Constructor.
@@ -42,7 +42,7 @@ public:
         @since 3.0
     */
     template<typename Deleter>
-    explicit wxSharedPtr(T* ptr, Deleter d);
+    wxEXPLICIT wxSharedPtr(T* ptr, Deleter d);
 
     /**
         Copy constructor.

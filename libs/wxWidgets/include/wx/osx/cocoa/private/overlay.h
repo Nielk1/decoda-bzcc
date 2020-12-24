@@ -38,7 +38,7 @@ public:
     void Clear( wxDC* dc);
 
 private:
-    void CreateOverlayWindow( wxDC* dc );
+    void CreateOverlayWindow();
 
     WXWindow m_overlayWindow;
     WXWindow m_overlayParentWindow;

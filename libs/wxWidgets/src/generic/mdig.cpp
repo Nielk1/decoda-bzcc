@@ -51,14 +51,14 @@ enum MDI_MENU_ID
 // wxGenericMDIParentFrame
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGenericMDIParentFrame, wxFrame);
+IMPLEMENT_DYNAMIC_CLASS(wxGenericMDIParentFrame, wxFrame)
 
-wxBEGIN_EVENT_TABLE(wxGenericMDIParentFrame, wxFrame)
+BEGIN_EVENT_TABLE(wxGenericMDIParentFrame, wxFrame)
     EVT_CLOSE(wxGenericMDIParentFrame::OnClose)
 #if wxUSE_MENUS
     EVT_MENU(wxID_ANY, wxGenericMDIParentFrame::OnWindowMenu)
 #endif
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 void wxGenericMDIParentFrame::Init()
 {
@@ -379,15 +379,13 @@ bool wxGenericMDIParentFrame::ProcessEvent(wxEvent& event)
 // wxGenericMDIChildFrame
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGenericMDIChildFrame, wxFrame);
+IMPLEMENT_DYNAMIC_CLASS(wxGenericMDIChildFrame, wxFrame)
 
-wxBEGIN_EVENT_TABLE(wxGenericMDIChildFrame, wxFrame)
-#if wxUSE_MENUS
+BEGIN_EVENT_TABLE(wxGenericMDIChildFrame, wxFrame)
     EVT_MENU_HIGHLIGHT_ALL(wxGenericMDIChildFrame::OnMenuHighlight)
-#endif // wxUSE_MENUS
 
     EVT_CLOSE(wxGenericMDIChildFrame::OnClose)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 void wxGenericMDIChildFrame::Init()
 {
@@ -495,7 +493,6 @@ void wxGenericMDIChildFrame::Activate()
     parent->WXActivateChild(this);
 }
 
-#if wxUSE_MENUS
 void wxGenericMDIChildFrame::OnMenuHighlight(wxMenuEvent& event)
 {
     wxGenericMDIParentFrame * const parent = GetGenericMDIParent();
@@ -506,7 +503,6 @@ void wxGenericMDIChildFrame::OnMenuHighlight(wxMenuEvent& event)
         parent->OnMenuHighlight(event);
     }
 }
-#endif // wxUSE_MENUS
 
 void wxGenericMDIChildFrame::OnClose(wxCloseEvent& WXUNUSED(event))
 {
@@ -529,7 +525,7 @@ bool wxGenericMDIChildFrame::TryAfter(wxEvent& event)
 // wxGenericMDIClientWindow
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGenericMDIClientWindow, wxWindow);
+IMPLEMENT_DYNAMIC_CLASS(wxGenericMDIClientWindow, wxWindow)
 
 bool
 wxGenericMDIClientWindow::CreateGenericClient(wxWindow *parent)
@@ -538,15 +534,17 @@ wxGenericMDIClientWindow::CreateGenericClient(wxWindow *parent)
         return false;
 
     m_notebook = new wxNotebook(this, wxID_ANY);
-    m_notebook->Bind
+    m_notebook->Connect
                 (
                     wxEVT_NOTEBOOK_PAGE_CHANGED,
-                    &wxGenericMDIClientWindow::OnPageChanged,
+                    wxNotebookEventHandler(
+                        wxGenericMDIClientWindow::OnPageChanged),
+                    NULL,
                     this
                 );
 
     // now that we have a notebook to resize, hook up OnSize() too
-    Bind(wxEVT_SIZE, &wxGenericMDIClientWindow::OnSize, this);
+    Connect(wxEVT_SIZE, wxSizeEventHandler(wxGenericMDIClientWindow::OnSize));
 
     return true;
 }

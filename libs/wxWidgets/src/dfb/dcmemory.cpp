@@ -36,7 +36,7 @@
 
 #warning "FIXME: verify/fix that wxMemoryDCImpl works correctly with mono bitmaps"
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxMemoryDCImpl, wxDFBDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxMemoryDCImpl, wxDFBDCImpl)
 
 void wxMemoryDCImpl::Init()
 {

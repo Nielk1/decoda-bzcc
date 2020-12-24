@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     19.06.2003 (extracted from common/appcmn.cpp)
-// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,50 +45,18 @@
 #include "wx/sysopt.h"
 #include "wx/tokenzr.h"
 #include "wx/thread.h"
-#include "wx/stdpaths.h"
 
-#if wxUSE_EXCEPTIONS
-    // Do we have a C++ compiler with enough C++11 support for
-    // std::exception_ptr and functions working with it?
-    #if __cplusplus >= 201103L
-        // Any conforming C++11 compiler should have it, but g++ implementation
-        // of exception handling depends on the availability of the atomic int
-        // operations apparently, so all known version of g++ with C++11 support
-        // (4.7..4.9) fail to provide exception_ptr if the symbol below is not
-        // set to 2 (meaning "always available"), which is notably the case for
-        // MinGW-w64 without -march=486 switch, see #16634.
-        #ifdef __GNUC__
-            // This symbol is always defined in the known g++ version, so
-            // assume that if it isn't defined, things changed for the better
-            // and optimistically suppose that exception_ptr is available.
-            #if !defined(__GCC_ATOMIC_INT_LOCK_FREE) \
-                    || __GCC_ATOMIC_INT_LOCK_FREE > 1
-                #define HAS_EXCEPTION_PTR
-            #endif
-        #else
-            #define HAS_EXCEPTION_PTR
-        #endif
-    #elif wxCHECK_VISUALC_VERSION(11)
-        // VC++ supports it since version 10, even though it doesn't define
-        // __cplusplus to C++11 value, but MSVC 2010 doesn't have a way to test
-        // whether exception_ptr is valid, so we'd need to use a separate bool
-        // flag for it if we wanted to make it work. For now just settle for
-        // only using exception_ptr for VC11 and later.
-        #define HAS_EXCEPTION_PTR
-    #endif
-
-    #ifdef HAS_EXCEPTION_PTR
-        #include <exception>        // for std::current_exception()
-        #include <utility>          // for std::swap()
-    #endif
-
-    #if wxUSE_STL
+#if wxUSE_STL
+    #if wxUSE_EXCEPTIONS
         #include <exception>
         #include <typeinfo>
     #endif
-#endif // wxUSE_EXCEPTIONS
+    #if wxUSE_INTL
+        #include <locale>
+    #endif
+#endif // wxUSE_STL
 
-#if !defined(__WINDOWS__)
+#if !defined(__WINDOWS__) || defined(__WXMICROWIN__)
   #include  <signal.h>      // for SIGTRAP used by wxTrap()
 #endif  //Win/Unix
 
@@ -173,7 +141,7 @@ wxAppConsoleBase::wxAppConsoleBase()
     m_mainLoop = NULL;
     m_bDoPendingEventProcessing = true;
 
-    ms_appInstance = reinterpret_cast<wxAppConsole *>(this);
+    ms_appInstance = static_cast<wxAppConsole *>(this);
 
 #ifdef __WXDEBUG__
     SetTraceMasks();
@@ -205,7 +173,7 @@ wxAppConsoleBase::~wxAppConsoleBase()
 
 bool wxAppConsoleBase::Initialize(int& WXUNUSED(argc), wxChar **WXUNUSED(argv))
 {
-#if defined(__WINDOWS__)
+#if defined(__WINDOWS__) && !defined(__WXWINCE__)
     SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOOPENFILEERRORBOX);
 #endif
 
@@ -222,16 +190,6 @@ wxString wxAppConsoleBase::GetAppName() const
             // the application name is, by default, the name of its executable file
             wxFileName::SplitPath(argv[0], NULL, &name, NULL);
         }
-#if wxUSE_STDPATHS
-        else // fall back to the executable file name, if we can determine it
-        {
-            const wxString pathExe = wxStandardPaths::Get().GetExecutablePath();
-            if ( !pathExe.empty() )
-            {
-                wxFileName::SplitPath(pathExe, NULL, &name, NULL);
-            }
-        }
-#endif // wxUSE_STDPATHS
     }
     return name;
 }
@@ -302,15 +260,11 @@ int wxAppConsoleBase::OnRun()
 }
 
 void wxAppConsoleBase::OnLaunched()
-{
+{    
 }
 
 int wxAppConsoleBase::OnExit()
 {
-    // Delete all pending objects first, they might use wxConfig to save their
-    // state during their destruction.
-    DeletePendingObjects();
-
 #if wxUSE_CONFIG
     // delete the config object if any (don't use Get() here, but Set()
     // because Get() could create a new config object)
@@ -376,7 +330,7 @@ int wxAppConsoleBase::MainLoop()
 
     if (wxTheApp)
         wxTheApp->OnLaunched();
-
+    
     return m_mainLoop ? m_mainLoop->Run() : -1;
 }
 
@@ -673,6 +627,7 @@ void wxAppConsoleBase::CallEventHandler(wxEvtHandler *handler,
 
 void wxAppConsoleBase::OnUnhandledException()
 {
+#ifdef __WXDEBUG__
     // we're called from an exception handler so we can re-throw the exception
     // to recover its type
     wxString what;
@@ -684,9 +639,9 @@ void wxAppConsoleBase::OnUnhandledException()
     catch ( std::exception& e )
     {
 #ifdef wxNO_RTTI
-        what.Printf("standard exception with message \"%s\"", e.what());
+        what.Printf("std::exception, what() = \"%s\"", e.what());
 #else
-        what.Printf("standard exception of type \"%s\" with message \"%s\"",
+        what.Printf("std::exception of type \"%s\", what() = \"%s\"",
                     typeid(e).name(), e.what());
 #endif
     }
@@ -697,10 +652,9 @@ void wxAppConsoleBase::OnUnhandledException()
     }
 
     wxMessageOutputBest().Printf(
-        "Unhandled %s; terminating %s.\n",
-        what,
-        wxIsMainThread() ? "the application" : "the thread in which it happened"
+        "*** Caught unhandled %s; terminating\n", what
     );
+#endif // __WXDEBUG__
 }
 
 // ----------------------------------------------------------------------------
@@ -710,50 +664,12 @@ void wxAppConsoleBase::OnUnhandledException()
 bool wxAppConsoleBase::OnExceptionInMainLoop()
 {
     throw;
-}
 
-#ifdef HAS_EXCEPTION_PTR
-static std::exception_ptr gs_storedException;
-
-bool wxAppConsoleBase::StoreCurrentException()
-{
-    if ( gs_storedException )
-    {
-        // We can't store more than one exception currently: while we could
-        // support this by just using a vector<exception_ptr>, it shouldn't be
-        // actually necessary because we should never have more than one active
-        // exception anyhow.
-        return false;
-    }
-
-    gs_storedException = std::current_exception();
-
-    return true;
-}
-
-void wxAppConsoleBase::RethrowStoredException()
-{
-    if ( gs_storedException )
-    {
-        std::exception_ptr storedException;
-        std::swap(storedException, gs_storedException);
-
-        std::rethrow_exception(storedException);
-    }
-}
-
-#else // !HAS_EXCEPTION_PTR
-
-bool wxAppConsoleBase::StoreCurrentException()
-{
+    // some compilers are too stupid to know that we never return after throw
+#if defined(__DMC__) || (defined(_MSC_VER) && _MSC_VER < 1200)
     return false;
+#endif
 }
-
-void wxAppConsoleBase::RethrowStoredException()
-{
-}
-
-#endif // HAS_EXCEPTION_PTR/!HAS_EXCEPTION_PTR
 
 #endif // wxUSE_EXCEPTIONS
 
@@ -1016,37 +932,25 @@ wxString wxAppTraitsBase::GetAssertStackTrace()
 #endif // !__WINDOWS__
 
 
+    wxString stackTrace;
+
     class StackDump : public wxStackWalker
     {
     public:
-        StackDump() { m_numFrames = 0; }
+        StackDump() { }
 
         const wxString& GetStackTrace() const { return m_stackTrace; }
 
     protected:
-        virtual void OnStackFrame(const wxStackFrame& frame) wxOVERRIDE
+        virtual void OnStackFrame(const wxStackFrame& frame)
         {
-            // don't show more than maxLines or we could get a dialog too tall
-            // to be shown on screen: 20 should be ok everywhere as even with
-            // 15 pixel high characters it is still only 300 pixels...
-            if ( m_numFrames++ > 20 )
-                return;
+            m_stackTrace << wxString::Format
+                            (
+                              wxT("[%02d] "),
+                              wx_truncate_cast(int, frame.GetLevel())
+                            );
 
-            m_stackTrace << wxString::Format(wxT("[%02u] "), m_numFrames);
-
-            const wxString name = frame.GetName();
-            if ( name.StartsWith("wxOnAssert") )
-            {
-                // Ignore all frames until the wxOnAssert() one, they are
-                // internal to wxWidgets and not interesting for the user
-                // (but notice that if we never find the wxOnAssert() frame,
-                // e.g. because we don't have symbol info at all, we would show
-                // everything which is better than not showing anything).
-                m_stackTrace.clear();
-                m_numFrames = 0;
-                return;
-            }
-
+            wxString name = frame.GetName();
             if ( !name.empty() )
             {
                 m_stackTrace << wxString::Format(wxT("%-40s"), name.c_str());
@@ -1069,12 +973,22 @@ wxString wxAppTraitsBase::GetAssertStackTrace()
 
     private:
         wxString m_stackTrace;
-        unsigned m_numFrames;
     };
 
+    // don't show more than maxLines or we could get a dialog too tall to be
+    // shown on screen: 20 should be ok everywhere as even with 15 pixel high
+    // characters it is still only 300 pixels...
+    static const int maxLines = 20;
+
     StackDump dump;
-    dump.Walk();
-    return dump.GetStackTrace();
+    dump.Walk(8, maxLines); // 8 is chosen to hide all OnAssert() calls
+    stackTrace = dump.GetStackTrace();
+
+    const int count = stackTrace.Freq(wxT('\n'));
+    for ( int i = 0; i < count - maxLines; i++ )
+        stackTrace = stackTrace.BeforeLast(wxT('\n'));
+
+    return stackTrace;
 #else // !wxDEBUG_LEVEL
     // this function is still present for ABI-compatibility even in debug level
     // 0 build but is not used there and so can simply do nothing
@@ -1118,7 +1032,11 @@ bool wxAssertIsEqual(int x, int y)
 
 void wxAbort()
 {
+#ifdef __WXWINCE__
+    ExitThread(3);
+#else
     abort();
+#endif
 }
 
 #if wxDEBUG_LEVEL
@@ -1128,7 +1046,7 @@ void wxAbort()
 
 void wxTrap()
 {
-#if defined(__WINDOWS__)
+#if defined(__WINDOWS__) && !defined(__WXMICROWIN__)
     DebugBreak();
 #elif defined(_MSL_USING_MW_C_HEADERS) && _MSL_USING_MW_C_HEADERS
     Debugger();
@@ -1296,7 +1214,7 @@ static
 bool DoShowAssertDialog(const wxString& msg)
 {
     // under Windows we can show the dialog even in the console mode
-#if defined(__WINDOWS__)
+#if defined(__WINDOWS__) && !defined(__WXMICROWIN__)
     wxString msgDlg(msg);
 
     // this message is intentionally not translated -- it is for developers
@@ -1307,7 +1225,7 @@ bool DoShowAssertDialog(const wxString& msg)
               wxT("further warnings.");
 
     switch ( ::MessageBox(NULL, msgDlg.t_str(), wxT("wxWidgets Debug Alert"),
-                          MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONSTOP ) )
+                          MB_YESNOCANCEL | MB_ICONSTOP ) )
     {
         case IDYES:
             // If we called wxTrap() directly from here, the programmer would
@@ -1369,6 +1287,8 @@ void ShowAssertDialog(const wxString& file,
     }
 
 #if wxUSE_THREADS
+    // if we are not in the main thread, output the assert directly and trap
+    // since dialogs cannot be displayed
     if ( !wxThread::IsMain() )
     {
         msg += wxString::Format(" [in thread %lx]", wxThread::GetCurrentId());

@@ -19,7 +19,7 @@
 #include "wx/xrc/xh_filectrl.h"
 #include "wx/filectrl.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxFileCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxFileCtrlXmlHandler, wxXmlResourceHandler)
 
 wxFileCtrlXmlHandler::wxFileCtrlXmlHandler() : wxXmlResourceHandler()
 {

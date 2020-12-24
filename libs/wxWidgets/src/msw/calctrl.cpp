@@ -122,8 +122,10 @@ wxCalendarCtrl::Create(wxWindow *parent,
     SetHolidayAttrs();
     UpdateMarks();
 
-    Bind(wxEVT_LEFT_DOWN, &wxCalendarCtrl::MSWOnClick, this);
-    Bind(wxEVT_LEFT_DCLICK, &wxCalendarCtrl::MSWOnDoubleClick, this);
+    Connect(wxEVT_LEFT_DOWN,
+            wxMouseEventHandler(wxCalendarCtrl::MSWOnClick));
+    Connect(wxEVT_LEFT_DCLICK,
+            wxMouseEventHandler(wxCalendarCtrl::MSWOnDoubleClick));
 
     return true;
 }
@@ -150,11 +152,11 @@ WXDWORD wxCalendarCtrl::MSWGetStyle(long style, WXDWORD *exstyle) const
 
 void wxCalendarCtrl::SetWindowStyleFlag(long style)
 {
-    const bool hadMondayFirst = WeekStartsOnMonday();
+    const bool hadMondayFirst = HasFlag(wxCAL_MONDAY_FIRST);
 
     wxCalendarCtrlBase::SetWindowStyleFlag(style);
 
-    if ( WeekStartsOnMonday() != hadMondayFirst )
+    if ( HasFlag(wxCAL_MONDAY_FIRST) != hadMondayFirst )
         UpdateFirstDayOfWeek();
 }
 
@@ -171,7 +173,9 @@ wxSize wxCalendarCtrl::DoGetBestSize() const
         return wxCalendarCtrlBase::DoGetBestSize();
     }
 
-    return wxRectFromRECT(rc).GetSize() + GetWindowBorderSize();
+    const wxSize best = wxRectFromRECT(rc).GetSize() + GetWindowBorderSize();
+    CacheBestSize(best);
+    return best;
 }
 
 wxCalendarHitTestResult
@@ -196,7 +200,7 @@ wxCalendarCtrl::HitTest(const wxPoint& pos,
         default:
         case MCHT_CALENDARWEEKNUM:
             wxFAIL_MSG( "unexpected" );
-            wxFALLTHROUGH;
+            // fall through
 
         case MCHT_NOWHERE:
         case MCHT_CALENDARBK:
@@ -425,7 +429,7 @@ void wxCalendarCtrl::UpdateMarks()
 void wxCalendarCtrl::UpdateFirstDayOfWeek()
 {
     MonthCal_SetFirstDayOfWeek(GetHwnd(),
-                               WeekStartsOnMonday() ? MonthCal_Monday
+                               HasFlag(wxCAL_MONDAY_FIRST) ? MonthCal_Monday
                                                            : MonthCal_Sunday);
 }
 

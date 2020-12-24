@@ -78,7 +78,7 @@ public:
             ::DeleteObject(m_hPalette);
     }
 
-    virtual bool IsOk() const wxOVERRIDE { return m_hPalette != 0; }
+    virtual bool IsOk() const { return m_hPalette != 0; }
 
     UINT GetEntries() const
     {
@@ -111,7 +111,7 @@ private:
 // wxPalette
 // ============================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxPalette, wxGDIObject);
+IMPLEMENT_DYNAMIC_CLASS(wxPalette, wxGDIObject)
 
 #define M_PALETTEDATA ((wxPaletteRefData *)m_refData)
 

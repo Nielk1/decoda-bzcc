@@ -133,13 +133,15 @@ bool CheckDocTypeMatchesExt( CFDictionaryRef docType, CFStringRef requiredExt )
 // if a match is found, or null otherwise
 CFDictionaryRef GetDocTypeForExt( CFTypeRef docTypeData, CFStringRef requiredExt )
 {
+    CFDictionaryRef docType;
+    CFArrayRef docTypes;
+    CFTypeRef item;
+
     if( !docTypeData )
         return NULL;
 
     if( CFGetTypeID( docTypeData ) == CFArrayGetTypeID() )
     {
-        CFTypeRef item;
-        CFArrayRef docTypes;
         docTypes = reinterpret_cast< CFArrayRef >( docTypeData );
 
         for( CFIndex i = 0, n = CFArrayGetCount( docTypes ); i < n; i++ )
@@ -148,7 +150,6 @@ CFDictionaryRef GetDocTypeForExt( CFTypeRef docTypeData, CFStringRef requiredExt
 
             if( CFGetTypeID( item ) == CFDictionaryGetTypeID() )
             {
-                CFDictionaryRef docType;
                 docType = reinterpret_cast< CFDictionaryRef >( item );
 
                 if( CheckDocTypeMatchesExt( docType, requiredExt ) )
@@ -426,14 +427,16 @@ void wxMimeTypesManagerImpl::LoadDisplayDataForUti(const wxString& uti)
     const static wxCFStringRef descKey( "CFBundleTypeName" );
     const static wxCFStringRef iconKey( "CFBundleTypeIconFile" );
 
-    wxCFStringRef cfuti(uti);
-
-    wxCFStringRef ext = UTTypeCopyPreferredTagWithClass( cfuti, kUTTagClassFilenameExtension );
+    // The call for finding the preferred application for a UTI is LSCopyDefaultRoleHandlerForContentType
+    // This returns an empty string on OS X 10.5
+    // Instead it is necessary to get the primary extension and use LSGetApplicationForInfo
+    wxCFStringRef ext = UTTypeCopyPreferredTagWithClass( wxCFStringRef( uti ), kUTTagClassFilenameExtension );
 
     // Look up the preferred application
-    wxCFRef<CFURLRef> appUrl = LSCopyDefaultApplicationURLForContentType( cfuti, kLSRolesAll, NULL);
+    CFURLRef appUrl;
+    OSStatus status = LSGetApplicationForInfo( kLSUnknownType, kLSUnknownCreator, ext, kLSRolesAll, NULL, &appUrl );
 
-    if( !appUrl )
+    if( status != noErr )
         return;
 
     // Create a bundle object for that application
@@ -537,7 +540,7 @@ bool wxMimeTypesManagerImpl::GetMimeType(const wxString& uti, wxString *mimeType
 
     if( itr == m_utiMap.end() || itr->second.mimeTypes.GetCount() < 1 )
     {
-        mimeType->clear();
+        *mimeType = wxEmptyString;
         return false;
     }
 
@@ -579,7 +582,7 @@ bool wxMimeTypesManagerImpl::GetDescription(const wxString& uti, wxString *desc)
 
     if( itr == m_utiMap.end() || itr->second.description.empty() )
     {
-        desc->clear();
+        *desc = wxEmptyString;
         return false;
     }
 
@@ -696,12 +699,6 @@ bool wxFileTypeImpl::Unassociate(wxFileType *WXUNUSED(ft))
     return false;
 }
 
-wxString
-wxFileTypeImpl::GetExpandedCommand(const wxString& WXUNUSED(verb),
-                                   const wxFileType::MessageParameters& WXUNUSED(params)) const
-{
-    return wxString();
-}
 
 #endif // wxUSE_MIMETYPE
 

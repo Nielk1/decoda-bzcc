@@ -29,15 +29,15 @@
 using namespace Scintilla;
 #endif
 
-static void ColouriseNncrontabDoc(Sci_PositionU startPos, Sci_Position length, int, WordList
+static void ColouriseNncrontabDoc(unsigned int startPos, int length, int, WordList
 *keywordLists[], Accessor &styler)
 {
 	int state = SCE_NNCRONTAB_DEFAULT;
 	char chNext = styler[startPos];
-	Sci_Position lengthDoc = startPos + length;
+	int lengthDoc = startPos + length;
 	// create a buffer large enough to take the largest chunk...
-	char *buffer = new char[length+1];
-	Sci_Position bufferCount = 0;
+	char *buffer = new char[length];
+	int bufferCount = 0;
 	// used when highliting environment variables inside quoted string:
 	bool insideString = false;
 
@@ -50,7 +50,7 @@ static void ColouriseNncrontabDoc(Sci_PositionU startPos, Sci_Position length, i
 	// using the hand-written state machine shown below
 	styler.StartAt(startPos);
 	styler.StartSegment(startPos);
-	for (Sci_Position i = startPos; i < lengthDoc; i++) {
+	for (int i = startPos; i < lengthDoc; i++) {
 		char ch = chNext;
 		chNext = styler.SafeGetCharAt(i + 1);
 
@@ -98,12 +98,12 @@ static void ColouriseNncrontabDoc(Sci_PositionU startPos, Sci_Position length, i
 					// signals an asterisk
 					// no state jump necessary for this simple case...
 					styler.ColourTo(i,SCE_NNCRONTAB_ASTERISK);
-				} else if( (IsASCII(ch) && isalpha(ch)) || ch == '<' ) {
+				} else if( (isascii(ch) && isalpha(ch)) || ch == '<' ) {
 					// signals the start of an identifier
 					bufferCount = 0;
 					buffer[bufferCount++] = ch;
 					state = SCE_NNCRONTAB_IDENTIFIER;
-				} else if( IsASCII(ch) && isdigit(ch) ) {
+				} else if( isascii(ch) && isdigit(ch) ) {
 					// signals the start of a number
 					bufferCount = 0;
 					buffer[bufferCount++] = ch;
@@ -171,7 +171,7 @@ static void ColouriseNncrontabDoc(Sci_PositionU startPos, Sci_Position length, i
 
 			case SCE_NNCRONTAB_IDENTIFIER:
 				// stay  in CONF_IDENTIFIER state until we find a non-alphanumeric
-				if( (IsASCII(ch) && isalnum(ch)) || (ch == '_') || (ch == '-') || (ch == '/') ||
+				if( (isascii(ch) && isalnum(ch)) || (ch == '_') || (ch == '-') || (ch == '/') ||
 					(ch == '$') || (ch == '.') || (ch == '<') || (ch == '>') ||
 					(ch == '@') ) {
 					buffer[bufferCount++] = ch;
@@ -200,7 +200,7 @@ static void ColouriseNncrontabDoc(Sci_PositionU startPos, Sci_Position length, i
 
 			case SCE_NNCRONTAB_NUMBER:
 				// stay  in CONF_NUMBER state until we find a non-numeric
-				if( IsASCII(ch) && isdigit(ch) /* || ch == '.' */ ) {
+				if( isascii(ch) && isdigit(ch) /* || ch == '.' */ ) {
 					buffer[bufferCount++] = ch;
 				} else {
 					state = SCE_NNCRONTAB_DEFAULT;

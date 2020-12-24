@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     22.06.2003
-// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -86,7 +86,6 @@ wxTimerImpl *wxConsoleAppTraits::CreateTimerImpl(wxTimer *timer)
 
 #endif // wxUSE_TIMER
 
-// Why can't this be disabled for __WXQT__ ??? There is an implementation in src/qt/apptraits.cpp
 wxEventLoopBase *wxConsoleAppTraits::CreateEventLoop()
 {
 #if wxUSE_CONSOLE_EVENTLOOP

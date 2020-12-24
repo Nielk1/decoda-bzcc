@@ -26,8 +26,8 @@
 #pragma mark -
 #pragma mark Tool Implementation
 
-wxBEGIN_EVENT_TABLE(wxToolBar, wxToolBarBase)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxToolBar, wxToolBarBase)
+END_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
 // private classes
@@ -122,12 +122,12 @@ wxToolBarToolBase(
     
     if ( id == wxID_SEPARATOR )
     {
-        bui = [bui initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+        [bui initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
         bui.width = 25.0f;
     }
     else if ( bmpNormal.IsOk() )
     {
-        bui = [bui initWithImage:bmpNormal.GetUIImage() style:UIBarButtonItemStylePlain target:toolbar
+        [bui initWithImage:bmpNormal.GetUIImage() style:UIBarButtonItemStylePlain target:toolbar
                       action:@selector(clickedAction:)];
     }
     else
@@ -137,7 +137,7 @@ wxToolBarToolBase(
         else
             style = UIBarButtonItemStyleBordered;
         
-        bui = [bui initWithTitle:wxCFStringRef(label).AsNSString() style:style target:toolbar
+        [bui initWithTitle:wxCFStringRef(label).AsNSString() style:style target:toolbar
                       action:@selector(clickedAction:)];
     }
 

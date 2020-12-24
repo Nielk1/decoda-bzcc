@@ -25,13 +25,14 @@
 #endif
 
 #include "wx/osx/private.h"
-#include "wx/osx/private/available.h"
+
+#include <vector>
 
 // forward decls
 
 class wxListWidgetCocoaImpl;
 
-@interface wxNSTableDataSource : NSObject <NSTableViewDataSource>
+@interface wxNSTableDataSource : NSObject wxOSX_10_6_AND_LATER(<NSTableViewDataSource>)
 {
     wxListWidgetCocoaImpl* impl;
 }
@@ -51,7 +52,7 @@ class wxListWidgetCocoaImpl;
 
 @end
 
-@interface wxNSTableView : NSTableView <NSTableViewDelegate>
+@interface wxNSTableView : NSTableView wxOSX_10_6_AND_LATER(<NSTableViewDelegate>)
 {
 }
 
@@ -105,49 +106,46 @@ public :
     ~wxListWidgetCocoaImpl();
 
     virtual wxListWidgetColumn*     InsertTextColumn( unsigned pos, const wxString& title, bool editable = false,
-                                wxAlignment just = wxALIGN_LEFT , int defaultWidth = -1) wxOVERRIDE  ;
+                                wxAlignment just = wxALIGN_LEFT , int defaultWidth = -1)  ;
     virtual wxListWidgetColumn*     InsertCheckColumn( unsigned pos , const wxString& title, bool editable = false,
-                                wxAlignment just = wxALIGN_LEFT , int defaultWidth =  -1) wxOVERRIDE  ;
+                                wxAlignment just = wxALIGN_LEFT , int defaultWidth =  -1)  ;
 
     // add and remove
 
-    virtual void            ListDelete( unsigned int n ) wxOVERRIDE ;
-    virtual void            ListInsert( unsigned int n ) wxOVERRIDE ;
-    virtual void            ListClear() wxOVERRIDE ;
+    virtual void            ListDelete( unsigned int n ) ;
+    virtual void            ListInsert( unsigned int n ) ;
+    virtual void            ListClear() ;
 
     // selecting
 
-    virtual void            ListDeselectAll() wxOVERRIDE;
+    virtual void            ListDeselectAll();
 
-    virtual void            ListSetSelection( unsigned int n, bool select, bool multi ) wxOVERRIDE ;
-    virtual int             ListGetSelection() const wxOVERRIDE ;
+    virtual void            ListSetSelection( unsigned int n, bool select, bool multi ) ;
+    virtual int             ListGetSelection() const ;
 
-    virtual int             ListGetSelections( wxArrayInt& aSelections ) const wxOVERRIDE ;
+    virtual int             ListGetSelections( wxArrayInt& aSelections ) const ;
 
-    virtual bool            ListIsSelected( unsigned int n ) const wxOVERRIDE ;
+    virtual bool            ListIsSelected( unsigned int n ) const ;
 
     // display
 
-    virtual void            ListScrollTo( unsigned int n ) wxOVERRIDE ;
-
-    virtual int             ListGetTopItem() const wxOVERRIDE;
-    virtual int             ListGetCountPerPage() const wxOVERRIDE;
+    virtual void            ListScrollTo( unsigned int n ) ;
 
     // accessing content
 
-    virtual unsigned int    ListGetCount() const wxOVERRIDE ;
-    virtual int             DoListHitTest( const wxPoint& inpoint ) const wxOVERRIDE;
+    virtual unsigned int    ListGetCount() const ;
+    virtual int             DoListHitTest( const wxPoint& inpoint ) const;
 
     int                     ListGetColumnType( int col )
     {
         return col;
     }
-    virtual void            UpdateLine( unsigned int n, wxListWidgetColumn* col = NULL ) wxOVERRIDE ;
-    virtual void            UpdateLineToEnd( unsigned int n) wxOVERRIDE;
+    virtual void            UpdateLine( unsigned int n, wxListWidgetColumn* col = NULL ) ;
+    virtual void            UpdateLineToEnd( unsigned int n);
 
-    virtual void            controlDoubleAction(WXWidget slf, void* _cmd, void *sender) wxOVERRIDE;
+    virtual void            controlDoubleAction(WXWidget slf, void* _cmd, void *sender);
 
-
+    
 protected :
     wxNSTableView*          m_tableView ;
 
@@ -162,10 +160,8 @@ protected :
 
 - (id) init
 {
-    if ( self = [super init] )
-    {
-        column = nil;
-    }
+    self = [super init];
+    column = nil;
     return self;
 }
 
@@ -190,20 +186,20 @@ public :
 
     virtual ~wxNSTableViewCellValue() {}
 
-    virtual void Set( CFStringRef v ) wxOVERRIDE
+    virtual void Set( CFStringRef v )
     {
         value = [[(NSString*)v retain] autorelease];
     }
-    virtual void Set( const wxString& value ) wxOVERRIDE
+    virtual void Set( const wxString& value )
     {
         Set( (CFStringRef) wxCFStringRef( value ) );
     }
-    virtual void Set( int v ) wxOVERRIDE
+    virtual void Set( int v )
     {
         value = [NSNumber numberWithInt:v];
     }
 
-    virtual int GetIntValue() const wxOVERRIDE
+    virtual int GetIntValue() const
     {
         if ( [value isKindOfClass:[NSNumber class]] )
             return [ (NSNumber*) value intValue ];
@@ -211,7 +207,7 @@ public :
         return 0;
     }
 
-    virtual wxString GetStringValue() const wxOVERRIDE
+    virtual wxString GetStringValue() const
     {
         if ( [value isKindOfClass:[NSString class]] )
             return wxCFStringRef::AsString( (NSString*) value );
@@ -227,10 +223,8 @@ protected:
 
 - (id) init
 {
-    if ( self = [super init] )
-    {
-        impl = nil;
-    }
+    self = [super init];
+    impl = nil;
     return self;
 }
 
@@ -295,7 +289,7 @@ protected:
 - (void) tableViewSelectionDidChange: (NSNotification *) notification
 {
     wxUnusedVar(notification);
-
+    
     int row = [self selectedRow];
 
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( self );
@@ -378,11 +372,11 @@ wxListWidgetColumn* wxListWidgetCocoaImpl::InsertTextColumn( unsigned pos, const
         [col1 setWidth:1000];
     }
     [col1 setResizingMask: NSTableColumnAutoresizingMask];
-
+    
     wxListBox *list = static_cast<wxListBox*> ( GetWXPeer());
     if ( list != NULL )
         [[col1 dataCell] setFont:list->GetFont().OSXGetNSFont()];
-
+    
     wxCocoaTableColumn* wxcol = new wxCocoaTableColumn( col1, editable );
     [col1 setColumn:wxcol];
 
@@ -402,35 +396,30 @@ wxListWidgetColumn* wxListWidgetCocoaImpl::InsertCheckColumn( unsigned pos , con
     [checkbox setTitle:@""];
     [checkbox setButtonType:NSSwitchButton];
     [col1 setDataCell:checkbox] ;
-
+    
     wxListBox *list = static_cast<wxListBox*> ( GetWXPeer());
     if ( list != NULL )
     {
         NSControlSize size = NSRegularControlSize;
-
+        
         switch ( list->GetWindowVariant() )
         {
             case wxWINDOW_VARIANT_NORMAL :
                 size = NSRegularControlSize;
                 break ;
-
+                
             case wxWINDOW_VARIANT_SMALL :
                 size = NSSmallControlSize;
                 break ;
-
+                
             case wxWINDOW_VARIANT_MINI :
                 size = NSMiniControlSize;
                 break ;
-
+                
             case wxWINDOW_VARIANT_LARGE :
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_16
-                if ( WX_IS_MACOS_AVAILABLE( 10, 16 ))
-                    size = NSControlSizeLarge;
-                else
-#endif
                 size = NSRegularControlSize;
                 break ;
-
+                
             default:
                 break ;
         }
@@ -497,7 +486,7 @@ void wxListWidgetCocoaImpl::ListSetSelection( unsigned int n, bool select, bool 
     // TODO
     if ( select )
         [m_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:n]
-             byExtendingSelection:multi];
+		     byExtendingSelection:multi];
     else
         [m_tableView deselectRow: n];
 
@@ -535,20 +524,6 @@ void wxListWidgetCocoaImpl::ListScrollTo( unsigned int n )
     [m_tableView scrollRowToVisible:n];
 }
 
-int wxListWidgetCocoaImpl::ListGetTopItem() const
-{
-    NSScrollView *scrollView = [m_tableView enclosingScrollView];
-    NSRect visibleRect = scrollView.contentView.visibleRect;
-    NSRange range = [m_tableView rowsInRect:visibleRect];
-    return range.location;
-}
-
-int wxListWidgetCocoaImpl::ListGetCountPerPage() const
-{
-    NSScrollView *scrollView = [m_tableView enclosingScrollView];
-    NSRect visibleRect = scrollView.contentView.visibleRect;
-    return (int) (visibleRect.size.height / [m_tableView rowHeight]);
-}
 
 void wxListWidgetCocoaImpl::UpdateLine( unsigned int WXUNUSED(n), wxListWidgetColumn* WXUNUSED(col) )
 {

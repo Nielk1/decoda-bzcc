@@ -15,7 +15,6 @@
 #include "wx/bitmap.h"
 
 class WXDLLIMPEXP_FWD_CORE wxSelectionStore;
-
 extern WXDLLIMPEXP_DATA_CORE(const char) wxVListBoxNameStr[];
 
 // ----------------------------------------------------------------------------
@@ -46,7 +45,7 @@ public:
                const wxPoint& pos = wxDefaultPosition,
                const wxSize& size = wxDefaultSize,
                long style = 0,
-               const wxString& name = wxASCII_STR(wxVListBoxNameStr))
+               const wxString& name = wxVListBoxNameStr)
     {
         Init();
 
@@ -64,7 +63,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
-                const wxString& name = wxASCII_STR(wxVListBoxNameStr));
+                const wxString& name = wxVListBoxNameStr);
 
     // dtor does some internal cleanup (deletes m_selStore if any)
     virtual ~wxVListBox();
@@ -194,7 +193,7 @@ public:
     void RefreshSelected();
 
 
-    virtual wxVisualAttributes GetDefaultAttributes() const wxOVERRIDE
+    virtual wxVisualAttributes GetDefaultAttributes() const
     {
         return GetClassDefaultAttributes(GetWindowVariant());
     }
@@ -203,7 +202,7 @@ public:
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
 
 protected:
-    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_THEME; }
+    virtual wxBorder GetDefaultBorder() const { return wxBORDER_THEME; }
 
     // the derived class must implement this function to actually draw the item
     // with the given index on the provided DC
@@ -233,7 +232,7 @@ protected:
     // allows us to add borders to the items easily
     //
     // this function is not supposed to be overridden by the derived classes
-    virtual wxCoord OnGetRowHeight(size_t line) const wxOVERRIDE;
+    virtual wxCoord OnGetRowHeight(size_t line) const;
 
 
     // event handlers
@@ -303,9 +302,9 @@ private:
     // the selection bg colour
     wxColour m_colBgSel;
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
     wxDECLARE_NO_COPY_CLASS(wxVListBox);
-    wxDECLARE_ABSTRACT_CLASS(wxVListBox);
+    DECLARE_ABSTRACT_CLASS(wxVListBox)
 };
 
 #endif // _WX_VLBOX_H_

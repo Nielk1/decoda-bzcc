@@ -10,11 +10,10 @@
 #ifndef _WX_IMAGLISTG_H_
 #define _WX_IMAGLISTG_H_
 
-#include "wx/bitmap.h"
-#include "wx/gdicmn.h"
-#include "wx/vector.h"
+#include "wx/list.h"
 
 class WXDLLIMPEXP_FWD_CORE wxDC;
+class WXDLLIMPEXP_FWD_CORE wxBitmap;
 class WXDLLIMPEXP_FWD_CORE wxIcon;
 class WXDLLIMPEXP_FWD_CORE wxColour;
 
@@ -22,23 +21,22 @@ class WXDLLIMPEXP_FWD_CORE wxColour;
 class WXDLLIMPEXP_CORE wxGenericImageList: public wxObject
 {
 public:
-    wxGenericImageList() { }
+    wxGenericImageList() { m_width = m_height = 0; }
     wxGenericImageList( int width, int height, bool mask = true, int initialCount = 1 );
     virtual ~wxGenericImageList();
     bool Create( int width, int height, bool mask = true, int initialCount = 1 );
+    bool Create();
 
     virtual int GetImageCount() const;
     virtual bool GetSize( int index, int &width, int &height ) const;
-    virtual wxSize GetSize() const { return m_size; }
 
     int Add( const wxBitmap& bitmap );
     int Add( const wxBitmap& bitmap, const wxBitmap& mask );
     int Add( const wxBitmap& bitmap, const wxColour& maskColour );
     wxBitmap GetBitmap(int index) const;
     wxIcon GetIcon(int index) const;
-    bool Replace( int index,
-                  const wxBitmap& bitmap,
-                  const wxBitmap& mask = wxNullBitmap );
+    bool Replace( int index, const wxBitmap &bitmap );
+    bool Replace( int index, const wxBitmap &bitmap, const wxBitmap& mask );
     bool Remove( int index );
     bool RemoveAll();
 
@@ -46,23 +44,15 @@ public:
               int flags = wxIMAGELIST_DRAW_NORMAL,
               bool solidBackground = false);
 
-#if WXWIN_COMPATIBILITY_3_0
-    wxDEPRECATED_MSG("Don't use this overload: it's not portable and does nothing")
-    bool Create() { return true; }
-
-    wxDEPRECATED_MSG("Use GetBitmap() instead")
-    const wxBitmap *GetBitmapPtr(int index) const { return DoGetPtr(index); }
-#endif // WXWIN_COMPATIBILITY_3_0
-
+    // Internal use only
+    const wxBitmap *GetBitmapPtr(int index) const;
 private:
-    const wxBitmap *DoGetPtr(int index) const;
+    wxObjectList  m_images;
 
-    wxVector<wxBitmap> m_images;
+    int     m_width;
+    int     m_height;
 
-    // Size of a single bitmap in the list.
-    wxSize m_size;
-
-    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxGenericImageList);
+    DECLARE_DYNAMIC_CLASS_NO_COPY(wxGenericImageList)
 };
 
 #ifndef wxHAS_NATIVE_IMAGELIST
@@ -74,7 +64,7 @@ private:
 
 class WXDLLIMPEXP_CORE wxImageList: public wxGenericImageList
 {
-    wxDECLARE_DYNAMIC_CLASS(wxImageList);
+    DECLARE_DYNAMIC_CLASS(wxImageList)
 
 public:
     wxImageList() {}

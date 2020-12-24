@@ -30,6 +30,7 @@ wxChoice::~wxChoice()
         for ( i = 0; i < max; ++i )
             delete GetClientObject( i );
     }
+    delete m_popUpMenu;
 }
 
 bool wxChoice::Create(wxWindow *parent,
@@ -69,7 +70,10 @@ bool wxChoice::Create(wxWindow *parent,
     if ( !wxChoiceBase::Create( parent, id, pos, size, style, validator, name ) )
         return false;
 
-    SetPeer(wxWidgetImpl::CreateChoice( this, parent, id, NULL, pos, size, style, GetExtraStyle() ));
+    m_popUpMenu = new wxMenu();
+    m_popUpMenu->SetNoEventsMode(true);
+
+    SetPeer(wxWidgetImpl::CreateChoice( this, parent, id, m_popUpMenu, pos, size, style, GetExtraStyle() ));
 
     MacPostControlCreate( pos, size );
 
@@ -127,9 +131,9 @@ int wxChoice::DoInsertItems(const wxArrayStringsAdapter & items,
         }
 
         wxString text = items[i];
-        if (text.empty())
+        if (text == wxEmptyString)
             text = " ";  // menu items can't have empty labels
-        dynamic_cast<wxChoiceWidgetImpl*>(GetPeer())->InsertItem( idx, i+1, text );
+        m_popUpMenu->Insert( idx, i+1, text );
         m_datas.Insert( NULL, idx );
         AssignNewItemClientData(idx, clientData, i, type);
     }
@@ -146,7 +150,8 @@ void wxChoice::DoDeleteOneItem(unsigned int n)
     if ( HasClientObjectData() )
         delete GetClientObject( n );
 
-    dynamic_cast<wxChoiceWidgetImpl*>(GetPeer())->RemoveItem(n);
+    m_popUpMenu->Delete( m_popUpMenu->FindItemByPosition( n ) );
+
     m_strings.RemoveAt( n ) ;
     m_datas.RemoveAt( n ) ;
 
@@ -155,7 +160,10 @@ void wxChoice::DoDeleteOneItem(unsigned int n)
 
 void wxChoice::DoClear()
 {
-    dynamic_cast<wxChoiceWidgetImpl*>(GetPeer())->Clear();
+    for ( unsigned int i = 0 ; i < GetCount() ; i++ )
+    {
+        m_popUpMenu->Delete( m_popUpMenu->FindItemByPosition( 0 ) );
+    }
 
     m_strings.Empty() ;
     m_datas.Empty() ;
@@ -202,7 +210,7 @@ void wxChoice::SetString(unsigned int n, const wxString& s)
 
     m_strings[n] = s ;
 
-    dynamic_cast<wxChoiceWidgetImpl*>(GetPeer())->SetItem(n,s);
+    m_popUpMenu->FindItemByPosition( n )->SetItemLabel( s ) ;
 }
 
 wxString wxChoice::GetString(unsigned int n) const
@@ -239,7 +247,7 @@ wxSize wxChoice::DoGetBestSize() const
     // computed by the base class method to account for the arrow.
     const int lbHeight = wxWindow::DoGetBestSize().y;
 
-    return wxSize(wxChoiceBase::DoGetBestSize().x + 4*GetCharWidth(),
+    return wxSize(wxChoiceBase::DoGetBestSize().x + 2*lbHeight + GetCharWidth(),
                   lbHeight);
 }
 

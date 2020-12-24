@@ -51,13 +51,13 @@
 #endif
 
 // Doesn't work with Cygwin at present
-#if wxUSE_SOCKETS && (defined(__CYGWIN32__))
+#if wxUSE_SOCKETS && (defined(__GNUWIN32_OLD__) || defined(__WXWINCE__) || defined(__CYGWIN32__))
     // apparently we need to include winsock.h to get WSADATA and other stuff
     // used in wxGetFullHostName() with the old mingw32 versions
     #include <winsock.h>
 #endif
 
-#if !defined(__GNUWIN32__)
+#if !defined(__GNUWIN32__) && !defined(__WXMICROWIN__) && !defined(__WXWINCE__)
     #include <direct.h>
 
     #include <dos.h>
@@ -87,15 +87,21 @@
     #include <lm.h>
 #endif // USE_NET_API
 
-#ifndef __UNIX__
-    #include <io.h>
+#if defined(__WIN32__) && !defined(__WXMICROWIN__) && !defined(__WXWINCE__)
+    #ifndef __UNIX__
+        #include <io.h>
+    #endif
+
+    #ifndef __GNUWIN32__
+        #include <shellapi.h>
+    #endif
 #endif
 
-#ifndef __GNUWIN32__
-    #include <shellapi.h>
+#ifndef __WATCOMC__
+    #if !(defined(_MSC_VER) && (_MSC_VER > 800))
+        #include <errno.h>
+    #endif
 #endif
-
-#include <errno.h>
 
 // For wxKillAllChildren
 #include <tlhelp32.h>
@@ -105,11 +111,11 @@
 // ----------------------------------------------------------------------------
 
 // In the WIN.INI file
-#if !defined(USE_NET_API)
+#if (!defined(USE_NET_API) && !defined(__WXWINCE__)) || defined(__WXMICROWIN__)
 static const wxChar WX_SECTION[] = wxT("wxWindows");
 #endif
 
-#if !defined(USE_NET_API)
+#if (!defined(USE_NET_API) && !defined(__WXWINCE__))
 static const wxChar eUSERNAME[]  = wxT("UserName");
 #endif
 
@@ -126,6 +132,17 @@ WXDLLIMPEXP_DATA_BASE(const wxChar *) wxUserResourceStr = wxT("TEXT");
 // Get hostname only (without domain name)
 bool wxGetHostName(wxChar *buf, int maxSize)
 {
+#if defined(__WXWINCE__)
+    // GetComputerName() is not supported but the name seems to be stored in
+    // this location in the registry, at least for PPC2003 and WM5
+    wxString hostName;
+    wxRegKey regKey(wxRegKey::HKLM, wxT("Ident"));
+    if ( !regKey.HasValue(wxT("Name")) ||
+            !regKey.QueryValue(wxT("Name"), hostName) )
+        return false;
+
+    wxStrlcpy(buf, hostName.t_str(), maxSize);
+#else // !__WXWINCE__
     DWORD nSize = maxSize;
     if ( !::GetComputerName(buf, &nSize) )
     {
@@ -133,6 +150,7 @@ bool wxGetHostName(wxChar *buf, int maxSize)
 
         return false;
     }
+#endif // __WXWINCE__/!__WXWINCE__
 
     return true;
 }
@@ -140,7 +158,7 @@ bool wxGetHostName(wxChar *buf, int maxSize)
 // get full hostname (with domain name if possible)
 bool wxGetFullHostName(wxChar *buf, int maxSize)
 {
-#if wxUSE_DYNLIB_CLASS && wxUSE_SOCKETS
+#if !defined( __WXMICROWIN__) && wxUSE_DYNLIB_CLASS && wxUSE_SOCKETS
     // TODO should use GetComputerNameEx() when available
 
     // we don't want to always link with Winsock DLL as we might not use it at
@@ -197,7 +215,7 @@ bool wxGetFullHostName(wxChar *buf, int maxSize)
 
                         if ( pHostEnt )
                         {
-                            host = pHostEnt->h_name;
+                            host = wxString::FromAscii(pHostEnt->h_name);
                         }
                     }
                 }
@@ -216,19 +234,23 @@ bool wxGetFullHostName(wxChar *buf, int maxSize)
             }
         }
     }
-#endif // wxUSE_DYNLIB_CLASS && wxUSE_SOCKETS
+#endif // !__WXMICROWIN__
 
     return wxGetHostName(buf, maxSize);
 }
 
 // Get user ID e.g. jacs
-bool wxGetUserId(wxChar *buf,
-                 int maxSize)
+bool wxGetUserId(wxChar *WXUNUSED_IN_WINCE(buf),
+                 int WXUNUSED_IN_WINCE(maxSize))
 {
+#if defined(__WXWINCE__)
+    // TODO-CE
+    return false;
+#else
     DWORD nSize = maxSize;
     if ( ::GetUserName(buf, &nSize) == 0 )
     {
-        // actually, it does happen if the user didn't log on
+        // actually, it does happen on Win9x if the user didn't log on
         DWORD res = ::GetEnvironmentVariable(wxT("username"), buf, maxSize);
         if ( res == 0 )
         {
@@ -238,6 +260,7 @@ bool wxGetUserId(wxChar *buf,
     }
 
     return true;
+#endif
 }
 
 // Get user name e.g. Julian Smart
@@ -245,7 +268,17 @@ bool wxGetUserName(wxChar *buf, int maxSize)
 {
     wxCHECK_MSG( buf && ( maxSize > 0 ), false,
                     wxT("empty buffer in wxGetUserName") );
-#if defined(USE_NET_API)
+#if defined(__WXWINCE__) && wxUSE_REGKEY
+    wxLogNull noLog;
+    wxRegKey key(wxRegKey::HKCU, wxT("ControlPanel\\Owner"));
+    if(!key.Open(wxRegKey::Read))
+        return false;
+    wxString name;
+    if(!key.QueryValue(wxT("Owner"),name))
+        return false;
+    wxStrlcpy(buf, name.c_str(), maxSize);
+    return true;
+#elif defined(USE_NET_API)
     CHAR szUserName[256];
     if ( !wxGetUserId(szUserName, WXSIZEOF(szUserName)) )
         return false;
@@ -358,6 +391,8 @@ const wxChar* wxGetHomeDir(wxString *pstr)
         #endif
         strDir = windowsPath;
     #endif
+#elif defined(__WXWINCE__)
+    strDir = wxT("\\");
 #else
     strDir.clear();
 
@@ -427,62 +462,136 @@ wxString wxGetUserHome(const wxString& user)
     return home;
 }
 
-bool wxGetDiskSpace(const wxString& path,
-                    wxDiskspaceSize_t *pTotal,
-                    wxDiskspaceSize_t *pFree)
+bool wxGetDiskSpace(const wxString& WXUNUSED_IN_WINCE(path),
+                    wxDiskspaceSize_t *WXUNUSED_IN_WINCE(pTotal),
+                    wxDiskspaceSize_t *WXUNUSED_IN_WINCE(pFree))
 {
+#ifdef __WXWINCE__
+    // TODO-CE
+    return false;
+#else
     if ( path.empty() )
         return false;
 
-    ULARGE_INTEGER bytesFree, bytesTotal;
+// old w32api don't have ULARGE_INTEGER
+#if defined(__WIN32__) && \
+    (!defined(__GNUWIN32__) || wxCHECK_W32API_VERSION( 0, 3 ))
+    // GetDiskFreeSpaceEx() is not available under original Win95, check for
+    // it
+    typedef BOOL (WINAPI *GetDiskFreeSpaceEx_t)(LPCTSTR,
+                                                PULARGE_INTEGER,
+                                                PULARGE_INTEGER,
+                                                PULARGE_INTEGER);
 
-    // may pass the path as is, GetDiskFreeSpaceEx() is smart enough
-    if ( !::GetDiskFreeSpaceEx(path.t_str(),
-                               &bytesFree,
-                               &bytesTotal,
-                               NULL) )
+    GetDiskFreeSpaceEx_t
+        pGetDiskFreeSpaceEx = (GetDiskFreeSpaceEx_t)::GetProcAddress
+                              (
+                                ::GetModuleHandle(wxT("kernel32.dll")),
+#if wxUSE_UNICODE
+                                "GetDiskFreeSpaceExW"
+#else
+                                "GetDiskFreeSpaceExA"
+#endif
+                              );
+
+    if ( pGetDiskFreeSpaceEx )
     {
-        wxLogLastError(wxT("GetDiskFreeSpaceEx"));
+        ULARGE_INTEGER bytesFree, bytesTotal;
 
-        return false;
-    }
+        // may pass the path as is, GetDiskFreeSpaceEx() is smart enough
+        if ( !pGetDiskFreeSpaceEx(path.t_str(),
+                                  &bytesFree,
+                                  &bytesTotal,
+                                  NULL) )
+        {
+            wxLogLastError(wxT("GetDiskFreeSpaceEx"));
 
-    // ULARGE_INTEGER is a union of a 64 bit value and a struct containing
-    // two 32 bit fields which may be or may be not named - try to make it
-    // compile in all cases
+            return false;
+        }
+
+        // ULARGE_INTEGER is a union of a 64 bit value and a struct containing
+        // two 32 bit fields which may be or may be not named - try to make it
+        // compile in all cases
 #if defined(__BORLANDC__) && !defined(_ANONYMOUS_STRUCT)
-    #define UL(ul) ul.u
+        #define UL(ul) ul.u
 #else // anon union
-    #define UL(ul) ul
+        #define UL(ul) ul
 #endif
-    if ( pTotal )
-    {
+        if ( pTotal )
+        {
 #if wxUSE_LONGLONG
-        *pTotal = wxDiskspaceSize_t(UL(bytesTotal).HighPart, UL(bytesTotal).LowPart);
+            *pTotal = wxDiskspaceSize_t(UL(bytesTotal).HighPart, UL(bytesTotal).LowPart);
 #else
-        *pTotal = wxDiskspaceSize_t(UL(bytesTotal).LowPart);
+            *pTotal = wxDiskspaceSize_t(UL(bytesTotal).LowPart);
 #endif
-    }
+        }
 
-    if ( pFree )
-    {
+        if ( pFree )
+        {
 #if wxUSE_LONGLONG
-        *pFree = wxLongLong(UL(bytesFree).HighPart, UL(bytesFree).LowPart);
+            *pFree = wxLongLong(UL(bytesFree).HighPart, UL(bytesFree).LowPart);
 #else
-        *pFree = wxDiskspaceSize_t(UL(bytesFree).LowPart);
+            *pFree = wxDiskspaceSize_t(UL(bytesFree).LowPart);
 #endif
+        }
+    }
+    else
+#endif // Win32
+    {
+        // there's a problem with drives larger than 2GB, GetDiskFreeSpaceEx()
+        // should be used instead - but if it's not available, fall back on
+        // GetDiskFreeSpace() nevertheless...
+
+        DWORD lSectorsPerCluster,
+              lBytesPerSector,
+              lNumberOfFreeClusters,
+              lTotalNumberOfClusters;
+
+        // FIXME: this is wrong, we should extract the root drive from path
+        //        instead, but this is the job for wxFileName...
+        if ( !::GetDiskFreeSpace(path.t_str(),
+                                 &lSectorsPerCluster,
+                                 &lBytesPerSector,
+                                 &lNumberOfFreeClusters,
+                                 &lTotalNumberOfClusters) )
+        {
+            wxLogLastError(wxT("GetDiskFreeSpace"));
+
+            return false;
+        }
+
+        wxDiskspaceSize_t lBytesPerCluster = (wxDiskspaceSize_t) lSectorsPerCluster;
+        lBytesPerCluster *= lBytesPerSector;
+
+        if ( pTotal )
+        {
+            *pTotal = lBytesPerCluster;
+            *pTotal *= lTotalNumberOfClusters;
+        }
+
+        if ( pFree )
+        {
+            *pFree = lBytesPerCluster;
+            *pFree *= lNumberOfFreeClusters;
+        }
     }
 
     return true;
+#endif
+    // __WXWINCE__
 }
 
 // ----------------------------------------------------------------------------
 // env vars
 // ----------------------------------------------------------------------------
 
-bool wxGetEnv(const wxString& var,
-              wxString *value)
+bool wxGetEnv(const wxString& WXUNUSED_IN_WINCE(var),
+              wxString *WXUNUSED_IN_WINCE(value))
 {
+#ifdef __WXWINCE__
+    // no environment variables under CE
+    return false;
+#else // Win32
     // first get the size of the buffer
     DWORD dwRet = ::GetEnvironmentVariable(var.t_str(), NULL, 0);
     if ( !dwRet )
@@ -499,10 +608,17 @@ bool wxGetEnv(const wxString& var,
     }
 
     return true;
+#endif // WinCE/32
 }
 
 bool wxDoSetEnv(const wxString& var, const wxChar *value)
 {
+#ifdef __WXWINCE__
+    // no environment variables under CE
+    wxUnusedVar(var);
+    wxUnusedVar(value);
+    return false;
+#else // !__WXWINCE__
     // update the CRT environment if possible as people expect getenv() to also
     // work and it is not affected by Win32 SetEnvironmentVariable() call (OTOH
     // the CRT does use Win32 call to update the process environment block so
@@ -532,6 +648,7 @@ bool wxDoSetEnv(const wxString& var, const wxChar *value)
 #endif // compiler
 
     return true;
+#endif // __WXWINCE__/!__WXWINCE__
 }
 
 bool wxSetEnv(const wxString& variable, const wxString& value)
@@ -713,11 +830,11 @@ int wxKill(long pid, wxSignal sig, wxKillError *krc, int flags)
 
             default:
                 wxFAIL_MSG( wxT("unexpected WaitForSingleObject() return") );
-                wxFALLTHROUGH;
+                // fall through
 
             case WAIT_FAILED:
                 wxLogLastError(wxT("WaitForSingleObject"));
-                wxFALLTHROUGH;
+                // fall through
 
             case WAIT_TIMEOUT:
                 // Process didn't terminate: normally this is a failure but not
@@ -745,36 +862,61 @@ int wxKill(long pid, wxSignal sig, wxKillError *krc, int flags)
     return 0;
 }
 
-// This is used by wxProcess::Activate().
-extern
-bool wxMSWActivatePID(long pid)
+typedef HANDLE (WINAPI *CreateToolhelp32Snapshot_t)(DWORD,DWORD);
+typedef BOOL (WINAPI *Process32_t)(HANDLE,LPPROCESSENTRY32);
+
+CreateToolhelp32Snapshot_t lpfCreateToolhelp32Snapshot;
+Process32_t lpfProcess32First, lpfProcess32Next;
+
+static void InitToolHelp32()
 {
-    wxFindByPidParams params;
-    params.pid = (DWORD)pid;
+    static bool s_initToolHelpDone = false;
 
-    if ( ::EnumWindows(wxEnumFindByPidProc, (LPARAM)&params) != 0 )
-    {
-        // No windows corresponding to this PID were found.
-        return false;
-    }
+    if (s_initToolHelpDone)
+        return;
 
-    if ( !::BringWindowToTop(params.hwnd) )
-    {
-        wxLogLastError(wxS("BringWindowToTop"));
-        return false;
-    }
+    s_initToolHelpDone = true;
 
-    return true;
+    lpfCreateToolhelp32Snapshot = NULL;
+    lpfProcess32First = NULL;
+    lpfProcess32Next = NULL;
+
+#if wxUSE_DYNLIB_CLASS
+
+    wxDynamicLibrary dllKernel(wxT("kernel32.dll"), wxDL_VERBATIM);
+
+    // Get procedure addresses.
+    // We are linking to these functions of Kernel32
+    // explicitly, because otherwise a module using
+    // this code would fail to load under Windows NT,
+    // which does not have the Toolhelp32
+    // functions in the Kernel 32.
+    lpfCreateToolhelp32Snapshot =
+        (CreateToolhelp32Snapshot_t)dllKernel.RawGetSymbol(wxT("CreateToolhelp32Snapshot"));
+
+    lpfProcess32First =
+        (Process32_t)dllKernel.RawGetSymbol(wxT("Process32First"));
+
+    lpfProcess32Next =
+        (Process32_t)dllKernel.RawGetSymbol(wxT("Process32Next"));
+
+#endif // wxUSE_DYNLIB_CLASS
 }
 
 // By John Skiff
 int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc)
 {
+    InitToolHelp32();
+
     if (krc)
         *krc = wxKILL_OK;
 
+    // If not implemented for this platform (e.g. NT 4.0), silently ignore
+    if (!lpfCreateToolhelp32Snapshot || !lpfProcess32First || !lpfProcess32Next)
+        return 0;
+
     // Take a snapshot of all processes in the system.
-    HANDLE hProcessSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    HANDLE hProcessSnap = lpfCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hProcessSnap == INVALID_HANDLE_VALUE) {
         if (krc)
             *krc = wxKILL_ERROR;
@@ -788,7 +930,7 @@ int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc)
 
     // Walk the snapshot of the processes, and for each process,
     // kill it if its parent is pid.
-    if (!::Process32First(hProcessSnap, &pe)) {
+    if (!lpfProcess32First(hProcessSnap, &pe)) {
         // Can't get first process.
         if (krc)
             *krc = wxKILL_ERROR;
@@ -801,7 +943,7 @@ int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc)
             if (wxKill(pe.th32ProcessID, sig, krc))
                 return -1;
         }
-    } while (::Process32Next (hProcessSnap, &pe));
+    } while (lpfProcess32Next (hProcessSnap, &pe));
 
 
     return 0;
@@ -812,9 +954,12 @@ bool wxShell(const wxString& command)
 {
     wxString cmd;
 
-    const wxChar* shell = wxGetenv(wxT("COMSPEC"));
+#ifdef __WXWINCE__
+    cmd = command;
+#else
+    wxChar *shell = wxGetenv(wxT("COMSPEC"));
     if ( !shell )
-        shell = wxT("\\COMMAND.COM");
+        shell = (wxChar*) wxT("\\COMMAND.COM");
 
     if ( !command )
     {
@@ -826,42 +971,50 @@ bool wxShell(const wxString& command)
         // pass the command to execute to the command processor
         cmd.Printf(wxT("%s /c %s"), shell, command.c_str());
     }
+#endif
 
     return wxExecute(cmd, wxEXEC_SYNC) == 0;
 }
 
 // Shutdown or reboot the PC
-bool wxShutdown(int flags)
+bool wxShutdown(int WXUNUSED_IN_WINCE(flags))
 {
+#ifdef __WXWINCE__
+    // TODO-CE
+    return false;
+#elif defined(__WIN32__)
     bool bOK = true;
 
-    // Get a token for this process.
-    HANDLE hToken;
-    bOK = ::OpenProcessToken(GetCurrentProcess(),
-                                TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
-                                &hToken) != 0;
-    if ( bOK )
+    if ( wxGetOsVersion(NULL, NULL) == wxOS_WINDOWS_NT ) // if is NT or 2K
     {
-        TOKEN_PRIVILEGES tkp;
-
-        // Get the LUID for the shutdown privilege.
-        bOK = ::LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME,
-                                        &tkp.Privileges[0].Luid) != 0;
-
+        // Get a token for this process.
+        HANDLE hToken;
+        bOK = ::OpenProcessToken(GetCurrentProcess(),
+                                 TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+                                 &hToken) != 0;
         if ( bOK )
         {
-            tkp.PrivilegeCount = 1;  // one privilege to set
-            tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+            TOKEN_PRIVILEGES tkp;
 
-            // Get the shutdown privilege for this process.
-            ::AdjustTokenPrivileges(hToken, FALSE, &tkp, 0,
-                                    (PTOKEN_PRIVILEGES)NULL, 0);
+            // Get the LUID for the shutdown privilege.
+            bOK = ::LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME,
+                                         &tkp.Privileges[0].Luid) != 0;
 
-            // Cannot test the return value of AdjustTokenPrivileges.
-            bOK = ::GetLastError() == ERROR_SUCCESS;
+            if ( bOK )
+            {
+                tkp.PrivilegeCount = 1;  // one privilege to set
+                tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+                // Get the shutdown privilege for this process.
+                ::AdjustTokenPrivileges(hToken, FALSE, &tkp, 0,
+                                        (PTOKEN_PRIVILEGES)NULL, 0);
+
+                // Cannot test the return value of AdjustTokenPrivileges.
+                bOK = ::GetLastError() == ERROR_SUCCESS;
+            }
+
+            ::CloseHandle(hToken);
         }
-
-        ::CloseHandle(hToken);
     }
 
     if ( bOK )
@@ -896,6 +1049,7 @@ bool wxShutdown(int flags)
     }
 
     return bOK;
+#endif // WinCE/!WinCE
 }
 
 // ----------------------------------------------------------------------------
@@ -925,7 +1079,21 @@ unsigned long wxGetProcessId()
 
 bool wxIsDebuggerRunning()
 {
-    return ::IsDebuggerPresent() != 0;
+#if wxUSE_DYNLIB_CLASS
+    // IsDebuggerPresent() is not available under Win95, so load it dynamically
+    wxDynamicLibrary dll(wxT("kernel32.dll"), wxDL_VERBATIM);
+
+    typedef BOOL (WINAPI *IsDebuggerPresent_t)();
+    if ( !dll.HasSymbol(wxT("IsDebuggerPresent")) )
+    {
+        // no way to know, assume no
+        return false;
+    }
+
+    return (*(IsDebuggerPresent_t)dll.GetSymbol(wxT("IsDebuggerPresent")))() != 0;
+#else
+    return false;
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -998,37 +1166,23 @@ wxLoadUserResource(const wxString& resourceName,
 namespace
 {
 
-// Helper trying to get the real Windows version which is needed because
-// GetVersionEx() doesn't return it any more since Windows 8.
-OSVERSIONINFOEXW wxGetWindowsVersionInfo()
+// Helper function wrapping Windows GetVersionEx() which is deprecated since
+// Windows 8. For now, all we do in this wrapper is to avoid the deprecation
+// warnings but this is not enough as the function now actually doesn't return
+// the correct value any more and we need to use VerifyVersionInfo() to perform
+// binary search to find the real Windows version.
+OSVERSIONINFOEX wxGetWindowsVersionInfo()
 {
-    OSVERSIONINFOEXW info;
+    OSVERSIONINFOEX info;
     wxZeroMemory(info);
-    info.dwOSVersionInfoSize = sizeof(info);
-
-    // The simplest way to get the version is to call the kernel
-    // RtlGetVersion() directly, if it is available.
-#if wxUSE_DYNLIB_CLASS
-    wxDynamicLibrary dllNtDll;
-    if ( dllNtDll.Load(wxS("ntdll.dll"), wxDL_VERBATIM | wxDL_QUIET) )
-    {
-        typedef LONG /* NTSTATUS */ (WINAPI *RtlGetVersion_t)(OSVERSIONINFOEXW*);
-
-        RtlGetVersion_t wxDL_INIT_FUNC(pfn, RtlGetVersion, dllNtDll);
-        if ( pfnRtlGetVersion &&
-                (pfnRtlGetVersion(&info) == 0 /* STATUS_SUCCESS */) )
-        {
-            return info;
-        }
-    }
-#endif // wxUSE_DYNLIB_CLASS
 
 #ifdef __VISUALC__
     #pragma warning(push)
     #pragma warning(disable:4996) // 'xxx': was declared deprecated
 #endif
 
-    if ( !::GetVersionExW(reinterpret_cast<OSVERSIONINFOW *>(&info)) )
+    info.dwOSVersionInfoSize = sizeof(info);
+    if ( !::GetVersionEx(reinterpret_cast<OSVERSIONINFO *>(&info)) )
     {
         // This really shouldn't ever happen.
         wxFAIL_MSG( "GetVersionEx() unexpectedly failed" );
@@ -1071,29 +1225,83 @@ wxString wxGetOsDescription()
 {
     wxString str;
 
-    const OSVERSIONINFOEXW info = wxGetWindowsVersionInfo();
+    const OSVERSIONINFOEX info = wxGetWindowsVersionInfo();
     switch ( info.dwPlatformId )
     {
+#ifdef VER_PLATFORM_WIN32_CE
+        case VER_PLATFORM_WIN32_CE:
+            str.Printf(_("Windows CE (%d.%d)"),
+                       info.dwMajorVersion,
+                       info.dwMinorVersion);
+            break;
+#endif
+        case VER_PLATFORM_WIN32s:
+            str = _("Win32s on Windows 3.1");
+            break;
+
+        case VER_PLATFORM_WIN32_WINDOWS:
+            switch (info.dwMinorVersion)
+            {
+                case 0:
+                    if ( info.szCSDVersion[1] == 'B' ||
+                         info.szCSDVersion[1] == 'C' )
+                    {
+                        str = _("Windows 95 OSR2");
+                    }
+                    else
+                    {
+                        str = _("Windows 95");
+                    }
+                    break;
+                case 10:
+                    if ( info.szCSDVersion[1] == 'B' ||
+                         info.szCSDVersion[1] == 'C' )
+                    {
+                        str = _("Windows 98 SE");
+                    }
+                    else
+                    {
+                        str = _("Windows 98");
+                    }
+                    break;
+                case 90:
+                    str = _("Windows ME");
+                    break;
+                default:
+                    str.Printf(_("Windows 9x (%d.%d)"),
+                               info.dwMajorVersion,
+                               info.dwMinorVersion);
+                    break;
+            }
+            if ( !wxIsEmpty(info.szCSDVersion) )
+            {
+                str << wxT(" (") << info.szCSDVersion << wxT(')');
+            }
+            break;
+
         case VER_PLATFORM_WIN32_NT:
             switch ( info.dwMajorVersion )
             {
                 case 5:
                     switch ( info.dwMinorVersion )
                     {
+                        case 0:
+                            str = _("Windows 2000");
+                            break;
+
                         case 2:
                             // we can't distinguish between XP 64 and 2003
                             // as they both are 5.2, so examine the product
                             // type to resolve this ambiguity
                             if ( wxIsWindowsServer() == 1 )
                             {
-                                str = "Windows Server 2003";
+                                str = _("Windows Server 2003");
                                 break;
                             }
                             //else: must be XP, fall through
-                            wxFALLTHROUGH;
 
                         case 1:
-                            str = "Windows XP";
+                            str = _("Windows XP");
                             break;
                     }
                     break;
@@ -1103,40 +1311,40 @@ wxString wxGetOsDescription()
                     {
                         case 0:
                             str = wxIsWindowsServer() == 1
-                                    ? "Windows Server 2008"
-                                    : "Windows Vista";
+                                    ? _("Windows Server 2008")
+                                    : _("Windows Vista");
                             break;
 
                         case 1:
                             str = wxIsWindowsServer() == 1
-                                    ? "Windows Server 2008 R2"
-                                    : "Windows 7";
+                                    ? _("Windows Server 2008 R2")
+                                    : _("Windows 7");
                             break;
 
                         case 2:
                             str = wxIsWindowsServer() == 1
-                                    ? "Windows Server 2012"
-                                    : "Windows 8";
+                                    ? _("Windows Server 2012")
+                                    : _("Windows 8");
                             break;
 
                         case 3:
                             str = wxIsWindowsServer() == 1
-                                    ? "Windows Server 2012 R2"
-                                    : "Windows 8.1";
+                                    ? _("Windows Server 2012 R2")
+                                    : _("Windows 8.1");
                             break;
                     }
                     break;
 
                 case 10:
                     str = wxIsWindowsServer() == 1
-                            ? "Windows Server 2016"
-                            : "Windows 10";
+                            ? _("Windows Server 2016")
+                            : _("Windows 10");
                     break;
             }
 
             if ( str.empty() )
             {
-                str.Printf("Windows %lu.%lu",
+                str.Printf(_("Windows NT %lu.%lu"),
                            info.dwMajorVersion,
                            info.dwMinorVersion);
             }
@@ -1182,7 +1390,7 @@ bool wxIsPlatform64Bit()
 #endif // Win64/Win32
 }
 
-wxOperatingSystemId wxGetOsVersion(int *verMaj, int *verMin, int *verMicro)
+wxOperatingSystemId wxGetOsVersion(int *verMaj, int *verMin)
 {
     static struct
     {
@@ -1191,46 +1399,43 @@ wxOperatingSystemId wxGetOsVersion(int *verMaj, int *verMin, int *verMicro)
         wxOperatingSystemId os;
 
         int verMaj,
-            verMin,
-            verMicro;
+            verMin;
     } s_version;
 
     // query the OS info only once as it's not supposed to change
     if ( !s_version.initialized )
     {
-        const OSVERSIONINFOEXW info = wxGetWindowsVersionInfo();
+        const OSVERSIONINFOEX info = wxGetWindowsVersionInfo();
 
         s_version.initialized = true;
 
+#if defined(__WXWINCE__)
+        s_version.os = wxOS_WINDOWS_CE;
+#elif defined(__WXMICROWIN__)
+        s_version.os = wxOS_WINDOWS_MICRO;
+#else // "normal" desktop Windows system, use run-time detection
         switch ( info.dwPlatformId )
         {
             case VER_PLATFORM_WIN32_NT:
                 s_version.os = wxOS_WINDOWS_NT;
+                break;
+
+            case VER_PLATFORM_WIN32_WINDOWS:
+                s_version.os = wxOS_WINDOWS_9X;
+                break;
         }
+#endif // Windows versions
 
         s_version.verMaj = info.dwMajorVersion;
         s_version.verMin = info.dwMinorVersion;
-        s_version.verMicro = info.dwBuildNumber;
     }
 
     if ( verMaj )
         *verMaj = s_version.verMaj;
     if ( verMin )
         *verMin = s_version.verMin;
-    if ( verMicro )
-        *verMicro = s_version.verMicro;
 
     return s_version.os;
-}
-
-bool wxCheckOsVersion(int majorVsn, int minorVsn, int microVsn)
-{
-    int majorCur, minorCur, microCur;
-    wxGetOsVersion(&majorCur, &minorCur, &microCur);
-
-    return majorCur > majorVsn
-        || (majorCur == majorVsn && minorCur > minorVsn)
-        || (majorCur == majorVsn && minorCur == minorVsn && microCur >= microVsn);
 }
 
 wxWinVersion wxGetWinVersion()
@@ -1239,12 +1444,38 @@ wxWinVersion wxGetWinVersion()
         verMin;
     switch ( wxGetOsVersion(&verMaj, &verMin) )
     {
+        case wxOS_WINDOWS_9X:
+            if ( verMaj == 4 )
+            {
+                switch ( verMin )
+                {
+                    case 0:
+                        return wxWinVersion_95;
+
+                    case 10:
+                        return wxWinVersion_98;
+
+                    case 90:
+                        return wxWinVersion_ME;
+                }
+            }
+            break;
+
         case wxOS_WINDOWS_NT:
             switch ( verMaj )
             {
+                case 3:
+                    return wxWinVersion_NT3;
+
+                case 4:
+                    return wxWinVersion_NT4;
+
                 case 5:
                     switch ( verMin )
                     {
+                        case 0:
+                            return wxWinVersion_2000;
+
                         case 1:
                             return wxWinVersion_XP;
 
@@ -1266,15 +1497,17 @@ wxWinVersion wxGetWinVersion()
                             return wxWinVersion_8;
 
                         case 3:
-                            return wxWinVersion_8_1;
-
+                            // For now, map to wxWinVersion_8. In case program
+                            // does not have a manifest indicating 8.1 or 10
+                            // support, Windows already performs this mapping
+                            // for us.
+                            return wxWinVersion_8;
                     }
                     break;
 
                 case 10:
-                    return wxWinVersion_10;
+                    return wxWinVersion_8;
             }
-            break;
         default:
             // Do nothing just to silence GCC warning
             break;
@@ -1320,6 +1553,7 @@ extern WXDLLIMPEXP_BASE long wxEncodingToCharset(wxFontEncoding encoding)
         case wxFONTENCODING_CP1252:
             return ANSI_CHARSET;
 
+#if !defined(__WXMICROWIN__)
         // The following four fonts are multi-byte charsets
         case wxFONTENCODING_CP932:
             return SHIFTJIS_CHARSET;
@@ -1327,8 +1561,10 @@ extern WXDLLIMPEXP_BASE long wxEncodingToCharset(wxFontEncoding encoding)
         case wxFONTENCODING_CP936:
             return GB2312_CHARSET;
 
+#ifndef __WXWINCE__
         case wxFONTENCODING_CP949:
             return HANGUL_CHARSET;
+#endif
 
         case wxFONTENCODING_CP950:
             return CHINESEBIG5_CHARSET;
@@ -1357,6 +1593,7 @@ extern WXDLLIMPEXP_BASE long wxEncodingToCharset(wxFontEncoding encoding)
 
         case wxFONTENCODING_CP874:
             return THAI_CHARSET;
+#endif // !__WXMICROWIN__
 
         case wxFONTENCODING_CP437:
             return OEM_CHARSET;
@@ -1419,7 +1656,6 @@ extern WXDLLIMPEXP_BASE long wxEncodingToCodepage(wxFontEncoding encoding)
         case wxFONTENCODING_CP1255:         ret = 1255; break;
         case wxFONTENCODING_CP1256:         ret = 1256; break;
         case wxFONTENCODING_CP1257:         ret = 1257; break;
-        case wxFONTENCODING_CP1258:         ret = 1258; break;
 
         case wxFONTENCODING_EUC_JP:         ret = 20932; break;
 

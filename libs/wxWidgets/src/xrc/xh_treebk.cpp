@@ -27,7 +27,7 @@
 
 #include "wx/xml/xml.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTreebookXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxTreebookXmlHandler, wxXmlResourceHandler)
 
 wxTreebookXmlHandler::wxTreebookXmlHandler()
                     : wxXmlResourceHandler(),

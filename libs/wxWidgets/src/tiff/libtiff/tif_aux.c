@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1991-1997 Sam Leffler
  * Copyright (c) 1991-1997 Silicon Graphics, Inc.
@@ -30,66 +31,31 @@
 #include "tiffiop.h"
 #include "tif_predict.h"
 #include <math.h>
-#include <float.h>
 
 uint32
 _TIFFMultiply32(TIFF* tif, uint32 first, uint32 second, const char* where)
 {
-	if (second && first > TIFF_UINT32_MAX / second) {
+	uint32 bytes = first * second;
+
+	if (second && bytes / second != first) {
 		TIFFErrorExt(tif->tif_clientdata, where, "Integer overflow in %s", where);
-		return 0;
+		bytes = 0;
 	}
 
-	return first * second;
+	return bytes;
 }
 
 uint64
 _TIFFMultiply64(TIFF* tif, uint64 first, uint64 second, const char* where)
 {
-	if (second && first > TIFF_UINT64_MAX / second) {
+	uint64 bytes = first * second;
+
+	if (second && bytes / second != first) {
 		TIFFErrorExt(tif->tif_clientdata, where, "Integer overflow in %s", where);
-		return 0;
+		bytes = 0;
 	}
 
-	return first * second;
-}
-
-tmsize_t
-_TIFFMultiplySSize(TIFF* tif, tmsize_t first, tmsize_t second, const char* where)
-{
-    if( first <= 0 || second <= 0 )
-    {
-        if( tif != NULL && where != NULL )
-        {
-            TIFFErrorExt(tif->tif_clientdata, where,
-                        "Invalid argument to _TIFFMultiplySSize() in %s", where);
-        }
-        return 0;
-    }
-
-    if( first > TIFF_TMSIZE_T_MAX / second )
-    {
-        if( tif != NULL && where != NULL )
-        {
-            TIFFErrorExt(tif->tif_clientdata, where,
-                        "Integer overflow in %s", where);
-        }
-        return 0;
-    }
-    return first * second;
-}
-
-tmsize_t _TIFFCastUInt64ToSSize(TIFF* tif, uint64 val, const char* module)
-{
-    if( val > (uint64)TIFF_TMSIZE_T_MAX )
-    {
-        if( tif != NULL && module != NULL )
-        {
-            TIFFErrorExt(tif->tif_clientdata,module,"Integer overflow");
-        }
-        return 0;
-    }
-    return (tmsize_t)val;
+	return bytes;
 }
 
 void*
@@ -97,14 +63,13 @@ _TIFFCheckRealloc(TIFF* tif, void* buffer,
 		  tmsize_t nmemb, tmsize_t elem_size, const char* what)
 {
 	void* cp = NULL;
-        tmsize_t count = _TIFFMultiplySSize(tif, nmemb, elem_size, NULL);
+	tmsize_t bytes = nmemb * elem_size;
+
 	/*
-	 * Check for integer overflow.
+	 * XXX: Check for integer overflow.
 	 */
-	if (count != 0)
-	{
-		cp = _TIFFrealloc(buffer, count);
-	}
+	if (nmemb && elem_size && bytes / elem_size == nmemb)
+		cp = _TIFFrealloc(buffer, bytes);
 
 	if (cp == NULL) {
 		TIFFErrorExt(tif->tif_clientdata, tif->tif_name,
@@ -134,8 +99,7 @@ TIFFDefaultTransferFunction(TIFFDirectory* td)
 
 	n = ((tmsize_t)1)<<td->td_bitspersample;
 	nbytes = n * sizeof (uint16);
-        tf[0] = (uint16 *)_TIFFmalloc(nbytes);
-	if (tf[0] == NULL)
+	if (!(tf[0] = (uint16 *)_TIFFmalloc(nbytes)))
 		return 0;
 	tf[0][0] = 0;
 	for (i = 1; i < n; i++) {
@@ -144,12 +108,10 @@ TIFFDefaultTransferFunction(TIFFDirectory* td)
 	}
 
 	if (td->td_samplesperpixel - td->td_extrasamples > 1) {
-                tf[1] = (uint16 *)_TIFFmalloc(nbytes);
-		if(tf[1] == NULL)
+		if (!(tf[1] = (uint16 *)_TIFFmalloc(nbytes)))
 			goto bad;
 		_TIFFmemcpy(tf[1], tf[0], nbytes);
-                tf[2] = (uint16 *)_TIFFmalloc(nbytes);
-		if (tf[2] == NULL)
+		if (!(tf[2] = (uint16 *)_TIFFmalloc(nbytes)))
 			goto bad;
 		_TIFFmemcpy(tf[2], tf[0], nbytes);
 	}
@@ -171,8 +133,7 @@ TIFFDefaultRefBlackWhite(TIFFDirectory* td)
 {
 	int i;
 
-        td->td_refblackwhite = (float *)_TIFFmalloc(6*sizeof (float));
-	if (td->td_refblackwhite == NULL)
+	if (!(td->td_refblackwhite = (float *)_TIFFmalloc(6*sizeof (float))))
 		return 0;
         if (td->td_photometric == PHOTOMETRIC_YCBCR) {
 		/*
@@ -201,7 +162,7 @@ TIFFDefaultRefBlackWhite(TIFFDirectory* td)
  * value if the tag is not present in the directory.
  *
  * NB:	We use the value in the directory, rather than
- *	explicit values so that defaults exist only one
+ *	explcit values so that defaults exist only one
  *	place in the library -- in TIFFDefaultDirectory.
  */
 int
@@ -246,18 +207,11 @@ TIFFVGetFieldDefaulted(TIFF* tif, uint32 tag, va_list ap)
 		*va_arg(ap, uint16 *) = td->td_resolutionunit;
 		return (1);
 	case TIFFTAG_PREDICTOR:
-    {
-        TIFFPredictorState* sp = (TIFFPredictorState*) tif->tif_data;
-        if( sp == NULL )
-        {
-            TIFFErrorExt(tif->tif_clientdata, tif->tif_name,
-                         "Cannot get \"Predictor\" tag as plugin is not configured");
-            *va_arg(ap, uint16*) = 0;
-            return 0;
-        }
-        *va_arg(ap, uint16*) = (uint16) sp->predictor;
-        return 1;
-    }
+                {
+			TIFFPredictorState* sp = (TIFFPredictorState*) tif->tif_data;
+			*va_arg(ap, uint16*) = (uint16) sp->predictor;
+			return 1;
+                }
 	case TIFFTAG_DOTRANGE:
 		*va_arg(ap, uint16 *) = 0;
 		*va_arg(ap, uint16 *) = (1<<td->td_bitspersample)-1;
@@ -391,22 +345,6 @@ _TIFFUInt64ToDouble(uint64 ui64)
 		df += 18446744073709551616.0; /* adding 2**64 */
 		return (double)df;
 	}
-}
-
-float _TIFFClampDoubleToFloat( double val )
-{
-    if( val > FLT_MAX )
-        return FLT_MAX;
-    if( val < -FLT_MAX )
-        return -FLT_MAX;
-    return (float)val;
-}
-
-int _TIFFSeekOK(TIFF* tif, toff_t off)
-{
-    /* Huge offsets, especially -1 / UINT64_MAX, can cause issues */
-    /* See http://bugzilla.maptools.org/show_bug.cgi?id=2726 */
-    return off <= (~(uint64)0)/2 && TIFFSeekFile(tif,off,SEEK_SET)==off;
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet: */

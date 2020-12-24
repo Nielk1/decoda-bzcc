@@ -29,7 +29,7 @@
 
 #include "wx/imagtga.h"
 #include "wx/log.h"
-#include "wx/scopedarray.h"
+#include "wx/scopeguard.h"
 
 // ----------------------------------------------------------------------------
 // constants
@@ -73,7 +73,7 @@ enum
 // implementation
 // ============================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxTGAHandler, wxImageHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxTGAHandler, wxImageHandler)
 
 #if wxUSE_STREAMS
 
@@ -105,17 +105,17 @@ static
 int DecodeRLE(unsigned char* imageData, unsigned long imageSize,
                short pixelSize, wxInputStream& stream)
 {
-    unsigned long outputLength = 0;
+    unsigned long index = 0;
+    unsigned char current;
     unsigned int length;
     unsigned char buf[4];
 
-    while (outputLength < imageSize)
+    while (index < imageSize)
     {
         int ch = stream.GetC();
         if ( ch == wxEOF )
             return wxTGA_IOERR;
 
-        unsigned char current;
         current = ch;
 
         // RLE packet.
@@ -128,9 +128,9 @@ int DecodeRLE(unsigned char* imageData, unsigned long imageSize,
 
             length = current;
 
-            outputLength += current * pixelSize;
+            index += current * pixelSize;
 
-            if (outputLength > imageSize)
+            if (index >= imageSize)
             {
                 return wxTGA_IOERR;
             }
@@ -153,9 +153,9 @@ int DecodeRLE(unsigned char* imageData, unsigned long imageSize,
 
             length = current * pixelSize;
 
-            outputLength += length;
+            index += length;
 
-            if (outputLength > imageSize)
+            if (index >= imageSize)
             {
                 return wxTGA_IOERR;
             }
@@ -233,14 +233,16 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
     const short pixelSize = bpp / 8;
 
-    const unsigned long imageSize = static_cast<unsigned long>(width) * height * pixelSize;
+    const unsigned long imageSize = width * height * pixelSize;
 
-    wxScopedArray<unsigned char> imageData(imageSize);
+    unsigned char *imageData = (unsigned char* )malloc(imageSize);
 
     if (!imageData)
     {
         return wxTGA_MEMERR;
     }
+
+    wxON_BLOCK_EXIT1(free, imageData);
 
     unsigned char *dst = image->GetData();
 
@@ -256,22 +258,19 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
     if (stream.SeekI(offset, wxFromStart) == wxInvalidOffset)
         return wxTGA_INVFORMAT;
 
-    wxScopedArray<unsigned char> palette;
+    unsigned char *palette = NULL;
     // Load a palette if we have one.
     if (colorType == wxTGA_MAPPED)
     {
-        {
-            wxScopedArray<unsigned char> paletteTmp(paletteLength*3);
-            palette.swap(paletteTmp);
-        }
-
         unsigned char buf[3];
+
+        palette = (unsigned char *) malloc(paletteLength * 3);
 
         for (unsigned int i = 0; i < paletteLength; i++)
         {
             stream.Read(buf, 3);
 
-            Palette_SetRGB(palette.get(), paletteLength, i, buf[2], buf[1], buf[0]);
+            Palette_SetRGB(palette, paletteLength, i, buf[2], buf[1], buf[0]);
         }
 
 #if wxUSE_PALETTE
@@ -281,6 +280,8 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 #endif // wxUSE_PALETTE
 
     }
+
+    wxON_BLOCK_EXIT1(free, palette);
 
     // Handle the various TGA formats we support.
 
@@ -296,14 +297,14 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
             // No compression read the data directly to imageData.
 
-            stream.Read(imageData.get(), imageSize);
+            stream.Read(imageData, imageSize);
 
             // If orientation == 0, then the image is stored upside down.
             // We need to store it right side up.
 
             if (orientation == 0)
             {
-                FlipTGA(imageData.get(), width, height, pixelSize);
+                FlipTGA(imageData, width, height, pixelSize);
             }
 
             // Handle the different pixel depths.
@@ -316,7 +317,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
                 {
                     for (unsigned long index = 0; index < imageSize; index += pixelSize)
                     {
-                        Palette_GetRGB(palette.get(), paletteLength,
+                        Palette_GetRGB(palette, paletteLength,
                             imageData[index], &r, &g, &b);
 
                         *(dst++) = r;
@@ -332,7 +333,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
                 {
                     for (unsigned long index = 0; index < imageSize; index += pixelSize)
                     {
-                        Palette_GetRGB(palette.get(), paletteLength,
+                        Palette_GetRGB(palette, paletteLength,
                             imageData[index], &r, &g, &b);
 
                         *(dst++) = r;
@@ -355,14 +356,14 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
         {
             // No compression read the data directly to imageData.
 
-            stream.Read(imageData.get(), imageSize);
+            stream.Read(imageData, imageSize);
 
             // If orientation == 0, then the image is stored upside down.
             // We need to store it right side up.
 
             if (orientation == 0)
             {
-                FlipTGA(imageData.get(), width, height, pixelSize);
+                FlipTGA(imageData, width, height, pixelSize);
             }
 
             // Handle the different pixel depths.
@@ -373,9 +374,10 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
                 case 16:
                 {
+                    unsigned char temp;
+
                     for (unsigned long index = 0; index < imageSize; index += pixelSize)
                     {
-                        unsigned char temp;
                         temp = (imageData[index + 1] & 0x7c) << 1;
                         temp |= temp >> 5;
                         *(dst++) = temp;
@@ -432,14 +434,14 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
         {
             // No compression read the data directly to imageData.
 
-            stream.Read(imageData.get(), imageSize);
+            stream.Read(imageData, imageSize);
 
             // If orientation == 0, then the image is stored upside down.
             // We need to store it right side up.
 
             if (orientation == 0)
             {
-                FlipTGA(imageData.get(), width, height, pixelSize);
+                FlipTGA(imageData, width, height, pixelSize);
             }
 
             // Handle the different pixel depths.
@@ -489,7 +491,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
             // Decode the RLE data.
 
-            int rc =  DecodeRLE(imageData.get(), imageSize, pixelSize, stream);
+            int rc =  DecodeRLE(imageData, imageSize, pixelSize, stream);
             if ( rc != wxTGA_OK )
                 return rc;
 
@@ -498,7 +500,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
             if (orientation == 0)
             {
-                FlipTGA(imageData.get(), width, height, pixelSize);
+                FlipTGA(imageData, width, height, pixelSize);
             }
 
             // Handle the different pixel depths.
@@ -511,7 +513,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
                 {
                     for (unsigned long index = 0; index < imageSize; index += pixelSize)
                     {
-                        Palette_GetRGB(palette.get(), paletteLength,
+                        Palette_GetRGB(palette, paletteLength,
                             imageData[index], &r, &g, &b);
 
                         *(dst++) = r;
@@ -527,7 +529,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
                 {
                     for (unsigned long index = 0; index < imageSize; index += pixelSize)
                     {
-                        Palette_GetRGB(palette.get(), paletteLength,
+                        Palette_GetRGB(palette, paletteLength,
                             imageData[index], &r, &g, &b);
 
                         *(dst++) = r;
@@ -550,7 +552,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
         {
             // Decode the RLE data.
 
-            int rc = DecodeRLE(imageData.get(), imageSize, pixelSize, stream);
+            int rc = DecodeRLE(imageData, imageSize, pixelSize, stream);
             if ( rc != wxTGA_OK )
                 return rc;
 
@@ -559,7 +561,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
             if (orientation == 0)
             {
-                FlipTGA(imageData.get(), width, height, pixelSize);
+                FlipTGA(imageData, width, height, pixelSize);
             }
 
             // Handle the different pixel depths.
@@ -570,9 +572,10 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
                 case 16:
                 {
+                    unsigned char temp;
+
                     for (unsigned long index = 0; index < imageSize; index += pixelSize)
                     {
-                        unsigned char temp;
                         temp = (imageData[index + 1] & 0x7c) << 1;
                         temp |= temp >> 5;
                         *(dst++) = temp;
@@ -629,7 +632,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
         {
             // Decode the RLE data.
 
-            int rc = DecodeRLE(imageData.get(), imageSize, pixelSize, stream);
+            int rc = DecodeRLE(imageData, imageSize, pixelSize, stream);
             if ( rc != wxTGA_OK )
                 return rc;
 
@@ -638,7 +641,7 @@ int ReadTGA(wxImage* image, wxInputStream& stream)
 
             if (orientation == 0)
             {
-                FlipTGA(imageData.get(), width, height, pixelSize);
+                FlipTGA(imageData, width, height, pixelSize);
             }
 
             // Handle the different pixel depths.
@@ -692,11 +695,13 @@ int SaveTGA(const wxImage& image, wxOutputStream *stream)
     unsigned bytesPerPixel = 3 + (hasAlpha ? 1 : 0);
     wxSize size = image.GetSize();
     size_t scanlineSize = size.x * bytesPerPixel;
-    wxScopedArray<unsigned char> scanlineData(scanlineSize);
+    unsigned char *scanlineData = (unsigned char *) malloc(scanlineSize);
     if (!scanlineData)
     {
         return wxTGA_MEMERR;
     }
+
+    wxON_BLOCK_EXIT1(free, scanlineData);
 
     // Compose and write the TGA header
     unsigned char hdr[HDR_SIZE];
@@ -730,7 +735,7 @@ int SaveTGA(const wxImage& image, wxOutputStream *stream)
     unsigned char *alpha = image.GetAlpha();
     for (int y = 0; y < size.y; ++y)
     {
-        unsigned char *dst = scanlineData.get();
+        unsigned char *dst = scanlineData;
         for (int x = 0; x < size.x; ++x)
         {
             dst[0] = src[2];
@@ -743,7 +748,7 @@ int SaveTGA(const wxImage& image, wxOutputStream *stream)
             src += 3;
             dst += bytesPerPixel;
         }
-        if ( !stream->Write(scanlineData.get(), scanlineSize) )
+        if ( !stream->Write(scanlineData, scanlineSize) )
         {
             return wxTGA_IOERR;
         }

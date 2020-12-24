@@ -21,8 +21,8 @@
 
 //---------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGBSizerItem, wxSizerItem);
-wxIMPLEMENT_CLASS(wxGridBagSizer, wxFlexGridSizer);
+IMPLEMENT_DYNAMIC_CLASS(wxGBSizerItem, wxSizerItem)
+IMPLEMENT_CLASS(wxGridBagSizer, wxFlexGridSizer)
 
 const wxGBSpan wxDefaultSpan;
 
@@ -182,9 +182,11 @@ wxSizerItem* wxGridBagSizer::Add( wxWindow *window,
     wxGBSizerItem* item = new wxGBSizerItem(window, pos, span, flag, border, userData);
     if ( Add(item) )
         return item;
-
-    delete item;
-    return NULL;
+    else
+    {
+        delete item;
+        return NULL;
+    }
 }
 
 wxSizerItem* wxGridBagSizer::Add( wxSizer *sizer,
@@ -194,9 +196,11 @@ wxSizerItem* wxGridBagSizer::Add( wxSizer *sizer,
     wxGBSizerItem* item = new wxGBSizerItem(sizer, pos, span, flag, border, userData);
     if ( Add(item) )
         return item;
-
-    delete item;
-    return NULL;
+    else
+    {
+        delete item;
+        return NULL;
+    }
 }
 
 wxSizerItem* wxGridBagSizer::Add( int width, int height,
@@ -206,9 +210,11 @@ wxSizerItem* wxGridBagSizer::Add( int width, int height,
     wxGBSizerItem* item = new wxGBSizerItem(width, height, pos, span, flag, border, userData);
     if ( Add(item) )
         return item;
-
-    delete item;
-    return NULL;
+    else
+    {
+        delete item;
+        return NULL;
+    }
 }
 
 wxSizerItem* wxGridBagSizer::Add( wxGBSizerItem *item )
@@ -491,12 +497,13 @@ wxSize wxGridBagSizer::CalcMin()
     for (idx=0; idx < m_rows; idx++)
         height += m_rowHeights[idx] + ( idx == m_rows-1 ? 0 : m_vgap );
 
-    return wxSize(width, height);
+    m_calculatedMinSize = wxSize(width, height);
+    return m_calculatedMinSize;
 }
 
 
 
-void wxGridBagSizer::RepositionChildren(const wxSize& minSize)
+void wxGridBagSizer::RecalcSizes()
 {
     // We can't lay out our elements if we don't have at least a single row and
     // a single column. Notice that this may happen even if we have some
@@ -512,7 +519,7 @@ void wxGridBagSizer::RepositionChildren(const wxSize& minSize)
     m_cols = m_colWidths.GetCount();
     int idx, width, height;
 
-    AdjustForGrowables(sz, minSize);
+    AdjustForGrowables(sz);
 
     // Find the start positions on the window of the rows and columns
     wxArrayInt rowpos;
@@ -540,11 +547,11 @@ void wxGridBagSizer::RepositionChildren(const wxSize& minSize)
     wxSizerItemList::compatibility_iterator node = m_children.GetFirst();
     while (node)
     {
+        int row, col, endrow, endcol;
         wxGBSizerItem* item = (wxGBSizerItem*)node->GetData();
 
         if ( item->IsShown() )
         {
-            int row, col, endrow, endcol;
             item->GetPos(row, col);
             item->GetEndPos(endrow, endcol);
 

@@ -4,18 +4,14 @@
 // Copyright 1998-2007 by Neil Hodgson <neilh@scintilla.org>
 // The License.txt file describes the conditions under which this software may be distributed.
 
-#include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <stdarg.h>
-
-#include <stdexcept>
-#include <algorithm>
 
 #include "Platform.h"
 
 #include "Scintilla.h"
-#include "Position.h"
 #include "SplitVector.h"
 #include "Partitioning.h"
 #include "RunStyles.h"
@@ -31,7 +27,7 @@ Decoration::Decoration(int indicator_) : next(0), indicator(indicator_) {
 Decoration::~Decoration() {
 }
 
-bool Decoration::Empty() const {
+bool Decoration::Empty() {
 	return (rs.Runs() == 1) && (rs.AllSameAs(0));
 }
 
@@ -161,13 +157,11 @@ void DecorationList::DeleteAnyEmpty() {
 	}
 }
 
-int DecorationList::AllOnFor(int position) const {
+int DecorationList::AllOnFor(int position) {
 	int mask = 0;
 	for (Decoration *deco=root; deco; deco = deco->next) {
 		if (deco->rs.ValueAt(position)) {
-			if (deco->indicator < INDIC_IME) {
-				mask |= 1 << deco->indicator;
-			}
+			mask |= 1 << deco->indicator;
 		}
 	}
 	return mask;

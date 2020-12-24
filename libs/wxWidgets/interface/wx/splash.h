@@ -35,7 +35,7 @@
       wxYield();
     @endcode
 
-    @library{wxcore}
+    @library{wxadv}
     @category{managedwnd}
 */
 class wxSplashScreen : public wxFrame

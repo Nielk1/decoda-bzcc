@@ -118,7 +118,7 @@ wxDragResult CodeEditDropTarget::OnDragOver (wxCoord x, wxCoord y, wxDragResult 
     return m_codeEdit->DoDragOver (x, y, def);
 }
 
-wxDragResult CodeEditDropTarget::OnEnter (wxCoord x, wxCoord y, wxDragResult def)
+/*wxDragResult CodeEditDropTarget::OnEnter (wxCoord x, wxCoord y, wxDragResult def)
 {
     return m_codeEdit->DoDragEnter (x, y, def);
 }
@@ -126,4 +126,4 @@ wxDragResult CodeEditDropTarget::OnEnter (wxCoord x, wxCoord y, wxDragResult def
 void CodeEditDropTarget::OnLeave()
 {
     m_codeEdit->DoDragLeave();
-}
+}*/

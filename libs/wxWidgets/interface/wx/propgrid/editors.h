@@ -14,18 +14,14 @@
 class wxPGWindowList
 {
 public:
-    wxPGWindowList(wxWindow* primary, wxWindow* secondary = NULL);
+    wxPGWindowList();
+    void SetSecondary( wxWindow* secondary );
 
-    void SetSecondary(wxWindow* secondary);
+    wxWindow*   m_primary;
+    wxWindow*   m_secondary;
 
-    /** Gets window of primary editor.
-        @since 3.1.4
-    */
-    wxWindow* GetPrimary() const;
-    /** Gets window of secondary editor.
-        @since 3.1.4
-    */
-    wxWindow* GetSecondary() const;
+    wxPGWindowList( wxWindow* a );
+    wxPGWindowList( wxWindow* a, wxWindow* b );
 };
 
 
@@ -42,7 +38,7 @@ public:
       calling wxPropertyGrid::RegisterAdditionalEditors() prior use.
 
     - Pointer to built-in editor is available as wxPGEditor_EditorName
-      (e.g. wxPGEditor_TextCtrl).
+      (eg. wxPGEditor_TextCtrl).
 
     - Before you start using new editor you just created, you need to register
       it using static function
@@ -69,7 +65,7 @@ public:
 
     /**
         Returns pointer to the name of the editor. For example,
-        wxPGEditor_TextCtrl has name "TextCtrl". If you don't need to access
+        wxPGEditor_TextCtrl has name "TextCtrl". If you dont' need to access
         your custom editor by string name, then you do not need to implement
         this function.
     */
@@ -91,6 +87,8 @@ public:
             Initial size for control(s).
 
         @remarks
+        - Primary control shall use id wxPG_SUBID1, and secondary (button) control
+          shall use wxPG_SUBID2.
         - Unlike in previous version of wxPropertyGrid, it is no longer
           necessary to call wxEvtHandler::Connect() for interesting editor
           events. Instead, all events from control are now automatically
@@ -117,14 +115,14 @@ public:
         @remarks wxPropertyGrid will automatically unfocus the editor when
                  @c wxEVT_TEXT_ENTER is received and when it results in
                  property value being modified. This happens regardless of
-                 editor type (i.e. behaviour is same for any wxTextCtrl and
+                 editor type (ie. behaviour is same for any wxTextCtrl and
                  wxComboBox based editor).
     */
     virtual bool OnEvent( wxPropertyGrid* propgrid, wxPGProperty* property,
         wxWindow* wnd_primary, wxEvent& event ) const = 0;
 
     /**
-        Returns value from control, via parameter @a variant.
+        Returns value from control, via parameter 'variant'.
         Usually ends up calling property's StringToValue() or IntToValue().
         Returns @true if value was different.
     */
@@ -140,26 +138,14 @@ public:
         Default implementation  sets foreground colour, background colour,
         font, plus text for wxTextCtrl and wxComboCtrl.
 
-        @param pg
-            Property grid to which the edited property belongs.
+        The parameter @a appearance represents the new appearance to be applied.
 
-        @param property
-            Edited property to which the editor control belongs.
+        The parameter @a oldAppearance is the previously applied appearance. 
+        Used to detect which control attributes need to be changed (e.g. so we only
+        change background colour if really needed).
 
-        @param ctrl
-            Editor control.
-
-        @param appearance
-            New appearance to be applied.
-
-        @param oldAppearance
-            Previously applied appearance. Used to detect which control
-            attributes need to be changed (e.g. so we only change background
-            colour if really needed).
-
-        @param unspecified
-            If @true tells this function that the new appearance represents
-            an unspecified property value.
+        Finally, the parameter @a unspecified if @true tells this function that
+        the new appearance represents an unspecified property value.
     */
     virtual void SetControlAppearance( wxPropertyGrid* pg,
                                        wxPGProperty* property,
@@ -440,7 +426,7 @@ public:
     class wxSampleMultiButtonEditor : public wxPGTextCtrlEditor
     {
         wxDECLARE_DYNAMIC_CLASS(wxSampleMultiButtonEditor);
-
+        
     public:
         wxSampleMultiButtonEditor() {}
         virtual ~wxSampleMultiButtonEditor() {}
@@ -591,9 +577,11 @@ public:
     wxSize GetPrimarySize() const;
 };
 
+
 extern wxPGEditor* wxPGEditor_TextCtrl;
 extern wxPGEditor* wxPGEditor_Choice;
 extern wxPGEditor* wxPGEditor_ComboBox;
 extern wxPGEditor* wxPGEditor_TextCtrlAndButton;
 extern wxPGEditor* wxPGEditor_CheckBox;
 extern wxPGEditor* wxPGEditor_ChoiceAndButton;
+

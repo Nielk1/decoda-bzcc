@@ -68,14 +68,14 @@ public:
         m_className = className;
     }
 
-    bool operator==(const wxTypeIdentifier& other) const
+    bool operator==(const wxTypeIdentifier& other)
     {
         return strcmp(m_className, other.m_className) == 0;
     }
 
-    bool operator!=(const wxTypeIdentifier& other) const
+    bool operator!=(const wxTypeIdentifier& other)
     {
-        return !(*this == other);
+        return strcmp(m_className, other.m_className) != 0;
     }
 private:
     const char* m_className;
@@ -106,7 +106,7 @@ typedef void (*wxTypeIdentifier)();
 // WX_DECLARE_TYPEINFO() or WX_DECLARE_TYPEINFO_INLINE() however.
 #define _WX_DECLARE_TYPEINFO_CUSTOM(CLS, IDENTFUNC) \
 public: \
-    virtual wxTypeIdentifier GetWxTypeId() const wxOVERRIDE \
+    virtual wxTypeIdentifier GetWxTypeId() const \
     { \
         return reinterpret_cast<wxTypeIdentifier> \
             (&IDENTFUNC); \

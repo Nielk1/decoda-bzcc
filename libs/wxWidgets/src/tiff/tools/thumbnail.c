@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1994-1997 Sam Leffler
  * Copyright (c) 1994-1997 Silicon Graphics, Inc.
@@ -40,7 +41,7 @@
 #include "tiffio.h"
 
 #ifndef HAVE_GETOPT
-extern int getopt(int argc, char * const argv[], const char *optstring);
+extern int getopt(int, char**, char*);
 #endif
 
 #define	streq(a,b)	(strcmp(a,b) == 0)
@@ -69,10 +70,8 @@ static	int generateThumbnail(TIFF*, TIFF*);
 static	void initScale();
 static	void usage(void);
 
-#if !HAVE_DECL_OPTARG
 extern	char* optarg;
 extern	int optind;
-#endif
 
 int
 main(int argc, char* argv[])
@@ -257,7 +256,7 @@ static struct cpTag {
     { TIFFTAG_CLEANFAXDATA,		1, TIFF_SHORT },
     { TIFFTAG_CONSECUTIVEBADFAXLINES,	1, TIFF_LONG },
     { TIFFTAG_INKSET,			1, TIFF_SHORT },
-    /*{ TIFFTAG_INKNAMES,			1, TIFF_ASCII },*/ /* Needs much more complicated logic. See tiffcp */
+    { TIFFTAG_INKNAMES,			1, TIFF_ASCII },
     { TIFFTAG_DOTRANGE,			2, TIFF_SHORT },
     { TIFFTAG_TARGETPRINTER,		1, TIFF_ASCII },
     { TIFFTAG_SAMPLEFORMAT,		1, TIFF_SHORT },
@@ -274,26 +273,7 @@ cpTags(TIFF* in, TIFF* out)
 {
     struct cpTag *p;
     for (p = tags; p < &tags[NTAGS]; p++)
-	{
-		/* Horrible: but TIFFGetField() expects 2 arguments to be passed */
-		/* if we request a tag that is defined in a codec, but that codec */
-		/* isn't used */
-		if( p->tag == TIFFTAG_GROUP3OPTIONS )
-		{
-			uint16 compression;
-			if( !TIFFGetField(in, TIFFTAG_COMPRESSION, &compression) ||
-				compression != COMPRESSION_CCITTFAX3 )
-				continue;
-		}
-		if( p->tag == TIFFTAG_GROUP4OPTIONS )
-		{
-			uint16 compression;
-			if( !TIFFGetField(in, TIFFTAG_COMPRESSION, &compression) ||
-				compression != COMPRESSION_CCITTFAX4 )
-				continue;
-		}
-		cpTag(in, out, p->tag, p->count, p->type);
-	}
+	cpTag(in, out, p->tag, p->count, p->type);
 }
 #undef NTAGS
 
@@ -525,15 +505,15 @@ setrow(uint8* row, uint32 nrows, const uint8* rows[])
 	    default:
 		for (i = fw; i > 8; i--)
 		    acc += bits[*src++];
-		/* fall through... */
-	    case 8: acc += bits[*src++]; /* fall through */
-	    case 7: acc += bits[*src++]; /* fall through */
-	    case 6: acc += bits[*src++]; /* fall through */
-	    case 5: acc += bits[*src++]; /* fall through */
-	    case 4: acc += bits[*src++]; /* fall through */
-	    case 3: acc += bits[*src++]; /* fall through */
-	    case 2: acc += bits[*src++]; /* fall through */
-	    case 1: acc += bits[*src++]; /* fall through */
+		/* fall thru... */
+	    case 8: acc += bits[*src++];
+	    case 7: acc += bits[*src++];
+	    case 6: acc += bits[*src++];
+	    case 5: acc += bits[*src++];
+	    case 4: acc += bits[*src++];
+	    case 3: acc += bits[*src++];
+	    case 2: acc += bits[*src++];
+	    case 1: acc += bits[*src++];
 	    case 0: break;
 	    }
 	    acc += bits[*src & mask1];
@@ -568,13 +548,7 @@ setImage1(const uint8* br, uint32 rw, uint32 rh)
 	    err -= limit;
 	    sy++;
 	    if (err >= limit)
-		{
-			/* We should perhaps error loudly, but I can't make sense of that */
-			/* code... */
-			if( nrows == 256 )
-				break;
-			rows[nrows++] = br + bpr*sy;
-		}
+		rows[nrows++] = br + bpr*sy;
 	}
 	setrow(row, nrows, rows);
 	row += tnw;
@@ -610,17 +584,12 @@ generateThumbnail(TIFF* in, TIFF* out)
     rowsize = TIFFScanlineSize(in);
     rastersize = sh * rowsize;
     fprintf(stderr, "rastersize=%u\n", (unsigned int)rastersize);
-	/* +3 : add a few guard bytes since setrow() can read a bit */
-	/* outside buffer */
-    raster = (unsigned char*)_TIFFmalloc(rastersize+3);
+    raster = (unsigned char*)_TIFFmalloc(rastersize);
     if (!raster) {
 	    TIFFError(TIFFFileName(in),
 		      "Can't allocate space for raster buffer.");
 	    return 0;
     }
-    raster[rastersize] = 0;
-    raster[rastersize+1] = 0;
-    raster[rastersize+2] = 0;
     rp = raster;
     for (s = 0; s < ns; s++) {
 	(void) TIFFReadEncodedStrip(in, s, rp, -1);

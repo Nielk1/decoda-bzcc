@@ -1,3 +1,5 @@
+#ifndef lint
+#endif
 /*-
  * tif2ras.c - Converts from a Tagged Image File Format image to a Sun Raster.
  *

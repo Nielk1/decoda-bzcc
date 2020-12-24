@@ -21,7 +21,7 @@
 #include "wx/x11/private.h"
 #include "wx/x11/dcmemory.h"
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxMemoryDCImpl, wxWindowDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxMemoryDCImpl,wxWindowDCImpl)
 
 wxMemoryDCImpl::wxMemoryDCImpl( wxDC *owner )
   : wxWindowDCImpl( owner )

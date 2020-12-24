@@ -99,9 +99,9 @@ public:
     wxHtmlTableCell(wxHtmlContainerCell *parent, const wxHtmlTag& tag, double pixel_scale = 1.0);
     virtual ~wxHtmlTableCell();
 
-    virtual void RemoveExtraSpacing(bool top, bool bottom) wxOVERRIDE;
+    virtual void RemoveExtraSpacing(bool top, bool bottom);
 
-    virtual void Layout(int w) wxOVERRIDE;
+    virtual void Layout(int w);
 
     void AddRow(const wxHtmlTag& tag);
     void AddCell(wxHtmlContainerCell *cell, const wxHtmlTag& tag);
@@ -714,8 +714,7 @@ TAG_HANDLER_BEGIN(TABLE, "TABLE,TR,TD,TH")
     {
         m_Table = NULL;
         m_enclosingContainer = NULL;
-        m_tAlign.clear();
-        m_rAlign.clear();
+        m_tAlign = m_rAlign = wxEmptyString;
     }
 
 

@@ -3,7 +3,7 @@
 // Purpose:     native wxAboutBox() implementation for wxMac
 // Author:      Vadim Zeitlin
 // Created:     2006-10-08
-// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 

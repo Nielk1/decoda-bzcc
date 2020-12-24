@@ -49,7 +49,7 @@ public:
     virtual ~wxRibbonPageScrollButton();
 
 protected:
-    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
+    virtual wxBorder GetDefaultBorder() const { return wxBORDER_NONE; }
 
     void OnEraseBackground(wxEraseEvent& evt);
     void OnPaint(wxPaintEvent& evt);
@@ -61,20 +61,20 @@ protected:
     wxRibbonPage* m_sibling;
     long m_flags;
 
-    wxDECLARE_CLASS(wxRibbonPageScrollButton);
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_CLASS(wxRibbonPageScrollButton)
+    DECLARE_EVENT_TABLE()
 };
 
-wxIMPLEMENT_CLASS(wxRibbonPageScrollButton, wxRibbonControl);
+IMPLEMENT_CLASS(wxRibbonPageScrollButton, wxRibbonControl)
 
-wxBEGIN_EVENT_TABLE(wxRibbonPageScrollButton, wxRibbonControl)
+BEGIN_EVENT_TABLE(wxRibbonPageScrollButton, wxRibbonControl)
     EVT_ENTER_WINDOW(wxRibbonPageScrollButton::OnMouseEnter)
     EVT_ERASE_BACKGROUND(wxRibbonPageScrollButton::OnEraseBackground)
     EVT_LEAVE_WINDOW(wxRibbonPageScrollButton::OnMouseLeave)
     EVT_LEFT_DOWN(wxRibbonPageScrollButton::OnMouseDown)
     EVT_LEFT_UP(wxRibbonPageScrollButton::OnMouseUp)
     EVT_PAINT(wxRibbonPageScrollButton::OnPaint)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxRibbonPageScrollButton::wxRibbonPageScrollButton(wxRibbonPage* sibling,
                  wxWindowID id,
@@ -82,7 +82,7 @@ wxRibbonPageScrollButton::wxRibbonPageScrollButton(wxRibbonPage* sibling,
                  const wxSize& size,
                  long style) : wxRibbonControl(sibling->GetParent(), id, pos, size, wxBORDER_NONE)
 {
-    SetBackgroundStyle(wxBG_STYLE_PAINT);
+    SetBackgroundStyle(wxBG_STYLE_CUSTOM);
     m_sibling = sibling;
     m_flags = (style & wxRIBBON_SCROLL_BTN_DIRECTION_MASK) | wxRIBBON_SCROLL_BTN_FOR_PAGE;
 }
@@ -146,13 +146,13 @@ void wxRibbonPageScrollButton::OnMouseUp(wxMouseEvent& WXUNUSED(evt))
     }
 }
 
-wxIMPLEMENT_CLASS(wxRibbonPage, wxRibbonControl);
+IMPLEMENT_CLASS(wxRibbonPage, wxRibbonControl)
 
-wxBEGIN_EVENT_TABLE(wxRibbonPage, wxRibbonControl)
+BEGIN_EVENT_TABLE(wxRibbonPage, wxRibbonControl)
     EVT_ERASE_BACKGROUND(wxRibbonPage::OnEraseBackground)
     EVT_PAINT(wxRibbonPage::OnPaint)
     EVT_SIZE(wxRibbonPage::OnSize)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxRibbonPage::wxRibbonPage()
 {
@@ -198,6 +198,7 @@ void wxRibbonPage::CommonInit(const wxString& label, const wxBitmap& icon)
     SetName(label);
 
     SetLabel(label);
+    m_old_size = wxSize(0, 0);
     m_icon = icon;
     m_scroll_left_btn = NULL;
     m_scroll_right_btn = NULL;
@@ -206,7 +207,7 @@ void wxRibbonPage::CommonInit(const wxString& label, const wxBitmap& icon)
     m_scroll_amount = 0;
     m_scroll_buttons_visible = false;
 
-    SetBackgroundStyle(wxBG_STYLE_PAINT);
+    SetBackgroundStyle(wxBG_STYLE_CUSTOM);
 
     wxDynamicCast(GetParent(), wxRibbonBar)->AddPage(this);
 }
@@ -339,7 +340,7 @@ bool wxRibbonPage::ScrollPixels(int pixels)
         child->SetPosition(wxPoint(x, y));
     }
 
-    if (ShowScrollButtons())
+    if (ShowScrollButtons1())
         DoActualLayout();
     Refresh();
     return true;
@@ -790,7 +791,12 @@ void wxRibbonPage::HideScrollButtons()
     ShowScrollButtons();
 }
 
-bool wxRibbonPage::ShowScrollButtons()
+void wxRibbonPage::ShowScrollButtons()
+{
+    ShowScrollButtons1();
+}
+
+bool wxRibbonPage::ShowScrollButtons1()
 {
     bool show_left = true;
     bool show_right = true;
@@ -1008,6 +1014,7 @@ bool wxRibbonPage::CollapsePanels(wxOrientation direction, int minimum_amount)
 {
     while(minimum_amount > 0)
     {
+        int largest_size = 0;
         wxRibbonPanel* largest_panel = NULL;
         wxSize* largest_panel_size = NULL;
         wxSize* panel_size = m_size_calc_array;
@@ -1031,7 +1038,6 @@ bool wxRibbonPage::CollapsePanels(wxOrientation direction, int minimum_amount)
         }
         else
         {
-            int largest_size = 0;
             for(wxWindowList::compatibility_iterator node = GetChildren().GetFirst();
                       node;
                       node = node->GetNext(), ++panel_size )

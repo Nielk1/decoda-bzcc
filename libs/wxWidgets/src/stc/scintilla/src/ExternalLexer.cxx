@@ -6,12 +6,11 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
-#include <assert.h>
+#include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
-#include <stdexcept>
 #include <string>
 
 #include "Platform.h"
@@ -67,12 +66,14 @@ LexerLibrary::LexerLibrary(const char *ModuleName) {
 			GetLexerNameFn GetLexerName = (GetLexerNameFn)(sptr_t)lib->FindFunction("GetLexerName");
 			GetLexerFactoryFunction fnFactory = (GetLexerFactoryFunction)(sptr_t)lib->FindFunction("GetLexerFactory");
 
+			// Assign a buffer for the lexer name.
+			char lexname[100];
+			strcpy(lexname, "");
+
 			int nl = GetLexerCount();
 
 			for (int i = 0; i < nl; i++) {
-				// Assign a buffer for the lexer name.
-				char lexname[100] = "";
-				GetLexerName(i, lexname, sizeof(lexname));
+				GetLexerName(i, lexname, 100);
 				lex = new ExternalLexerModule(SCLEX_AUTOMATIC, NULL, lexname, NULL);
 				Catalogue::AddLexerModule(lex);
 

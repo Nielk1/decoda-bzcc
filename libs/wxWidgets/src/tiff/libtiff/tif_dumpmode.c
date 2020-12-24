@@ -1,3 +1,5 @@
+/* $Header: /cvs/maptools/cvsroot/libtiff/libtiff/tif_dumpmode.c,v 1.14 2011-04-02 20:54:09 bfriesen Exp $ */
+
 /*
  * Copyright (c) 1988-1997 Sam Leffler
  * Copyright (c) 1991-1997 Silicon Graphics, Inc.
@@ -64,7 +66,7 @@ DumpModeEncode(TIFF* tif, uint8* pp, tmsize_t cc, uint16 s)
 		cc -= n;
 		if (tif->tif_rawcc >= tif->tif_rawdatasize &&
 		    !TIFFFlushData1(tif))
-			return (0);
+			return (-1);
 	}
 	return (1);
 }

@@ -3,7 +3,7 @@
 // Purpose:     wxGtkObject class declaration
 // Author:      Vadim Zeitlin
 // Created:     2008-08-27
-// Copyright:   (c) 2008 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2008 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -19,7 +19,7 @@ class wxGtkObject
 {
 public:
     explicit wxGtkObject(T *p) : m_ptr(p) { }
-    ~wxGtkObject() { if ( m_ptr ) g_object_unref(m_ptr); }
+    ~wxGtkObject() { g_object_unref(m_ptr); }
 
     operator T *() const { return m_ptr; }
 

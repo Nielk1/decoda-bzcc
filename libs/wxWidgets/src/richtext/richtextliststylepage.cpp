@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Name:        src/richtext/richtextliststylepage.cpp
-// Purpose:     Implements the rich text formatting dialog list style page.
+// Purpose:
 // Author:      Julian Smart
 // Modified by:
 // Created:     10/18/2006 11:36:37 AM
@@ -17,13 +17,13 @@
  * wxRichTextListStylePage type definition
  */
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxRichTextListStylePage, wxRichTextDialogPage);
+IMPLEMENT_DYNAMIC_CLASS( wxRichTextListStylePage, wxRichTextDialogPage )
 
 /*!
  * wxRichTextListStylePage event table definition
  */
 
-wxBEGIN_EVENT_TABLE(wxRichTextListStylePage, wxRichTextDialogPage)
+BEGIN_EVENT_TABLE( wxRichTextListStylePage, wxRichTextDialogPage )
 
 ////@begin wxRichTextListStylePage event table entries
     EVT_SPINCTRL( ID_RICHTEXTLISTSTYLEPAGE_LEVEL, wxRichTextListStylePage::OnLevelUpdated )
@@ -90,7 +90,7 @@ wxBEGIN_EVENT_TABLE(wxRichTextListStylePage, wxRichTextDialogPage)
 
 ////@end wxRichTextListStylePage event table entries
 
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 IMPLEMENT_HELP_PROVISION(wxRichTextListStylePage)
 
@@ -693,10 +693,7 @@ bool wxRichTextListStylePage::TransferDataFromWindow()
 
     // if (m_hasBulletSymbol)
     {
-        if (!m_symbolCtrl->GetValue().IsEmpty())
-            attr->SetBulletText(m_symbolCtrl->GetValue());
-        else
-            attr->SetFlags(attr->GetFlags() & ~wxTEXT_ATTR_BULLET_TEXT);
+        attr->SetBulletText(m_symbolCtrl->GetValue());
         attr->SetBulletFont(m_symbolFontCtrl->GetValue());
     }
 

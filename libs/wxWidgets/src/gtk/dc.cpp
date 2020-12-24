@@ -15,41 +15,56 @@
 #include "wx/dcclient.h"
 #include "wx/dcmemory.h"
 #include "wx/dcscreen.h"
-#include "wx/display.h"
-#include "wx/gdicmn.h"
 #include "wx/icon.h"
 #include "wx/gtk/dc.h"
 
-#include "wx/gtk/private/wrapgtk.h"
+#include <gtk/gtk.h>
 
 wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner)
-    : wxGCDCImpl(owner)
+    : base_type(owner)
 {
+    m_width = 0;
+    m_height = 0;
 }
 
-wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner, double scaleFactor)
-    : wxGCDCImpl(owner, 0)
+wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner, int)
+    : base_type(owner, 0)
 {
-    m_contentScaleFactor = scaleFactor;
+    m_width = 0;
+    m_height = 0;
 }
 
 wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner, wxWindow* window)
-    : wxGCDCImpl(owner, 0)
+    : base_type(owner, 0)
 {
-    if ( window )
-    {
-        m_window = window;
-        m_font = window->GetFont();
-        m_textForegroundColour = window->GetForegroundColour();
-        m_textBackgroundColour = window->GetBackgroundColour();
-        m_contentScaleFactor = window->GetContentScaleFactor();
-    }
+    m_window = window;
+    m_font = window->GetFont();
+    m_textForegroundColour = window->GetForegroundColour();
+    m_textBackgroundColour = window->GetBackgroundColour();
+    m_width = 0;
+    m_height = 0;
 }
 
-void wxGTKCairoDCImpl::InitSize(GdkWindow* window)
+void wxGTKCairoDCImpl::Clear()
 {
-    m_size.x = gdk_window_get_width(window);
-    m_size.y = gdk_window_get_height(window);
+    wxCHECK_RET(IsOk(), "invalid DC");
+
+    cairo_t* cr = NULL;
+    if (m_graphicContext)
+        cr = static_cast<cairo_t*>(m_graphicContext->GetNativeContext());
+    if (cr)
+    {
+        double x1, y1, x2, y2;
+        cairo_clip_extents(cr, &x1, &y1, &x2, &y2);
+        m_graphicContext->SetBrush(m_backgroundBrush);
+        m_graphicContext->SetPen(wxPen());
+        const wxCompositionMode mode = m_graphicContext->GetCompositionMode();
+        m_graphicContext->SetCompositionMode(wxCOMPOSITION_SOURCE);
+        m_graphicContext->DrawRectangle(x1, y1, x2 - x1, y2 - y1);
+        m_graphicContext->SetCompositionMode(mode);
+        m_graphicContext->SetPen(m_pen);
+        m_graphicContext->SetBrush(m_brush);
+    }
 }
 
 void wxGTKCairoDCImpl::DoDrawBitmap(const wxBitmap& bitmap, int x, int y, bool useMask)
@@ -116,9 +131,9 @@ bool wxGTKCairoDCImpl::DoGetPixel(int x, int y, wxColour* col) const
 void wxGTKCairoDCImpl::DoGetSize(int* width, int* height) const
 {
     if (width)
-        *width = m_size.x;
+        *width = m_width;
     if (height)
-        *height = m_size.y;
+        *height = m_height;
 }
 
 bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dstHeight, wxDC* source, int xsrc, int ysrc, int srcWidth, int srcHeight, wxRasterOperationMode rop, bool useMask, int xsrcMask, int ysrcMask)
@@ -140,55 +155,15 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
     const int xsrc_dev = source->LogicalToDeviceX(xsrc);
     const int ysrc_dev = source->LogicalToDeviceY(ysrc);
 
-    cairo_surface_t* surfaceSrc = cairo_get_target(cr_src);
-    cairo_surface_flush(surfaceSrc);
-
-    cairo_surface_t* surfaceTmp = NULL;
-    // If destination (this) and source wxDC refer to the same Cairo context
-    // it means that we operate on one surface and results of drawing
-    // can be invalid if destination and source regions overlap.
-    // In such situation we have to copy source surface to the temporary
-    // surface and use this copy in the drawing operations.
-    if ( cr == cr_src )
-    {
-        // Check if destination and source regions overlap.
-        // If necessary, copy source surface to the temporary one.
-        if (wxRect(xdest, ydest, dstWidth, dstHeight)
-            .Intersects(wxRect(xsrc, ysrc, srcWidth, srcHeight)))
-        {
-            const int w = cairo_image_surface_get_width(surfaceSrc);
-            const int h = cairo_image_surface_get_height(surfaceSrc);
-#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 12, 0)
-            if ( cairo_version() >= CAIRO_VERSION_ENCODE(1, 12, 0) )
-            {
-                surfaceTmp = cairo_surface_create_similar_image(surfaceSrc,
-                     cairo_image_surface_get_format(surfaceSrc),
-                     w, h);
-            }
-            else
-#endif // Cairo 1.12
-            {
-                surfaceTmp = cairo_surface_create_similar(surfaceSrc,
-                     CAIRO_CONTENT_COLOR_ALPHA,
-                     w, h);
-            }
-            cairo_t* crTmp = cairo_create(surfaceTmp);
-            cairo_set_source_surface(crTmp, surfaceSrc, 0, 0);
-            cairo_rectangle(crTmp, 0.0, 0.0, w, h);
-            cairo_set_operator(crTmp, CAIRO_OPERATOR_SOURCE);
-            cairo_fill(crTmp);
-            cairo_destroy(crTmp);
-            cairo_surface_flush(surfaceTmp);
-            surfaceSrc = surfaceTmp;
-        }
-    }
+    cairo_surface_t* surface = cairo_get_target(cr_src);
+    cairo_surface_flush(surface);
     cairo_save(cr);
     cairo_translate(cr, xdest, ydest);
     cairo_rectangle(cr, 0, 0, dstWidth, dstHeight);
     double sx, sy;
     source->GetUserScale(&sx, &sy);
     cairo_scale(cr, dstWidth / (sx * srcWidth), dstHeight / (sy * srcHeight));
-    cairo_set_source_surface(cr, surfaceSrc, -xsrc_dev, -ysrc_dev);
+    cairo_set_source_surface(cr, surface, -xsrc_dev, -ysrc_dev);
     const wxRasterOperationMode rop_save = m_logicalFunction;
     SetLogicalFunction(rop);
     cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
@@ -219,10 +194,6 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
         cairo_fill(cr);
     }
     cairo_restore(cr);
-    if ( surfaceTmp )
-    {
-        cairo_surface_destroy(surfaceTmp);
-    }
     m_logicalFunction = rop_save;
     return true;
 }
@@ -234,23 +205,10 @@ void* wxGTKCairoDCImpl::GetCairoContext() const
         cr = static_cast<cairo_t*>(m_graphicContext->GetNativeContext());
     return cr;
 }
-
-wxSize wxGTKCairoDCImpl::GetPPI() const
-{
-    if ( m_window )
-    {
-        return wxDisplay(m_window).GetPPI();
-    }
-
-    // For a non-window-based DC the concept of PPI doesn't make much sense
-    // anyhow, so just return the hardcoded value used by the base class.
-    return wxGCDCImpl::GetPPI();
-}
-
 //-----------------------------------------------------------------------------
 
 wxWindowDCImpl::wxWindowDCImpl(wxWindowDC* owner, wxWindow* window)
-    : wxGTKCairoDCImpl(owner, window)
+    : base_type(owner, window)
 {
     GtkWidget* widget = window->m_wxwindow;
     if (widget == NULL)
@@ -265,23 +223,22 @@ wxWindowDCImpl::wxWindowDCImpl(wxWindowDC* owner, wxWindow* window)
     {
         cairo_t* cr = gdk_cairo_create(gdkWindow);
         wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
-        cairo_destroy(cr);
-        gc->EnableOffset(m_contentScaleFactor <= 1);
+        gc->EnableOffset(true);
         SetGraphicsContext(gc);
         GtkAllocation a;
         gtk_widget_get_allocation(widget, &a);
         int x, y;
         if (gtk_widget_get_has_window(widget))
         {
-            m_size.x = gdk_window_get_width(gdkWindow);
-            m_size.y = gdk_window_get_height(gdkWindow);
-            x = m_size.x - a.width;
-            y = m_size.y - a.height;
+            m_width = gdk_window_get_width(gdkWindow);
+            m_height = gdk_window_get_height(gdkWindow);
+            x = m_width - a.width;
+            y = m_height - a.height;
         }
         else
         {
-            m_size.x = a.width;
-            m_size.y = a.height;
+            m_width = a.width;
+            m_height = a.height;
             x = a.x;
             y = a.y;
             cairo_rectangle(cr, a.x, a.y, a.width, a.height);
@@ -296,7 +253,7 @@ wxWindowDCImpl::wxWindowDCImpl(wxWindowDC* owner, wxWindow* window)
 //-----------------------------------------------------------------------------
 
 wxClientDCImpl::wxClientDCImpl(wxClientDC* owner, wxWindow* window)
-    : wxGTKCairoDCImpl(owner, window)
+    : base_type(owner, window)
 {
     GtkWidget* widget = window->m_wxwindow;
     if (widget == NULL)
@@ -311,20 +268,19 @@ wxClientDCImpl::wxClientDCImpl(wxClientDC* owner, wxWindow* window)
     {
         cairo_t* cr = gdk_cairo_create(gdkWindow);
         wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
-        cairo_destroy(cr);
-        gc->EnableOffset(m_contentScaleFactor <= 1);
+        gc->EnableOffset(true);
         SetGraphicsContext(gc);
         if (gtk_widget_get_has_window(widget))
         {
-            m_size.x = gdk_window_get_width(gdkWindow);
-            m_size.y = gdk_window_get_height(gdkWindow);
+            m_width = gdk_window_get_width(gdkWindow);
+            m_height = gdk_window_get_height(gdkWindow);
         }
         else
         {
             GtkAllocation a;
             gtk_widget_get_allocation(widget, &a);
-            m_size.x = a.width;
-            m_size.y = a.height;
+            m_width = a.width;
+            m_height = a.height;
             cairo_rectangle(cr, a.x, a.y, a.width, a.height);
             cairo_clip(cr);
             SetDeviceLocalOrigin(a.x, a.y);
@@ -336,20 +292,23 @@ wxClientDCImpl::wxClientDCImpl(wxClientDC* owner, wxWindow* window)
 //-----------------------------------------------------------------------------
 
 wxPaintDCImpl::wxPaintDCImpl(wxPaintDC* owner, wxWindow* window)
-    : wxGTKCairoDCImpl(owner, window)
+    : base_type(owner, window)
     , m_clip(window->m_nativeUpdateRegion)
 {
     cairo_t* cr = window->GTKPaintContext();
     wxCHECK_RET(cr, "using wxPaintDC without being in a native paint event");
-    InitSize(gtk_widget_get_window(window->m_wxwindow));
+    GdkWindow* gdkWindow = gtk_widget_get_window(window->m_wxwindow);
+    m_width = gdk_window_get_width(gdkWindow);
+    m_height = gdk_window_get_height(gdkWindow);
+    cairo_reference(cr);
     wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
-    gc->EnableOffset(m_contentScaleFactor <= 1);
+    gc->EnableOffset(true);
     SetGraphicsContext(gc);
 }
 
 void wxPaintDCImpl::DestroyClippingRegion()
 {
-    BaseType::DestroyClippingRegion();
+    base_type::DestroyClippingRegion();
 
     // re-establish clip for paint update area
     int x, y, w, h;
@@ -363,40 +322,33 @@ void wxPaintDCImpl::DestroyClippingRegion()
 //-----------------------------------------------------------------------------
 
 wxScreenDCImpl::wxScreenDCImpl(wxScreenDC* owner)
-    : wxGTKCairoDCImpl(owner, static_cast<wxWindow*>(NULL))
+    : base_type(owner, 0)
 {
     GdkWindow* window = gdk_get_default_root_window();
-    InitSize(window);
-
+    m_width = gdk_window_get_width(window);
+    m_height = gdk_window_get_height(window);
     cairo_t* cr = gdk_cairo_create(window);
     wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
-    cairo_destroy(cr);
-    gc->EnableOffset(m_contentScaleFactor <= 1);
+    gc->EnableOffset(true);
     SetGraphicsContext(gc);
 }
-
-wxSize wxScreenDCImpl::GetPPI() const
-{
-    return wxGetDisplayPPI();
-}
-
 //-----------------------------------------------------------------------------
 
 wxMemoryDCImpl::wxMemoryDCImpl(wxMemoryDC* owner)
-    : wxGTKCairoDCImpl(owner)
+    : base_type(owner)
 {
     m_ok = false;
 }
 
 wxMemoryDCImpl::wxMemoryDCImpl(wxMemoryDC* owner, wxBitmap& bitmap)
-    : wxGTKCairoDCImpl(owner, static_cast<wxWindow*>(NULL))
+    : base_type(owner, 0)
     , m_bitmap(bitmap)
 {
     Setup();
 }
 
 wxMemoryDCImpl::wxMemoryDCImpl(wxMemoryDC* owner, wxDC*)
-    : wxGTKCairoDCImpl(owner)
+    : base_type(owner)
 {
     m_ok = false;
 }
@@ -428,22 +380,22 @@ void wxMemoryDCImpl::Setup()
     m_ok = m_bitmap.IsOk();
     if (m_ok)
     {
-        m_size = m_bitmap.GetScaledSize();
-        m_contentScaleFactor = m_bitmap.GetScaleFactor();
+        m_width = m_bitmap.GetWidth();
+        m_height = m_bitmap.GetHeight();
         cairo_t* cr = m_bitmap.CairoCreate();
         gc = wxGraphicsContext::CreateFromNative(cr);
-        cairo_destroy(cr);
-        gc->EnableOffset(m_contentScaleFactor <= 1);
+        gc->EnableOffset(true);
     }
     SetGraphicsContext(gc);
 }
 //-----------------------------------------------------------------------------
 
-wxGTKCairoDC::wxGTKCairoDC(cairo_t* cr, wxWindow* window)
-    : wxDC(new wxGTKCairoDCImpl(this, window->GetContentScaleFactor()))
+wxGTKCairoDC::wxGTKCairoDC(cairo_t* cr)
+    : base_type(new wxGTKCairoDCImpl(this, 0))
 {
+    cairo_reference(cr);
     wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
-    gc->EnableOffset(window->GetContentScaleFactor() <= 1);
+    gc->EnableOffset(true);
     SetGraphicsContext(gc);
 }
 
@@ -455,7 +407,7 @@ wxGTKCairoDC::wxGTKCairoDC(cairo_t* cr, wxWindow* window)
 // wxGTKDCImpl
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxGTKDCImpl, wxDCImpl);
+IMPLEMENT_ABSTRACT_CLASS(wxGTKDCImpl, wxDCImpl)
 
 wxGTKDCImpl::wxGTKDCImpl( wxDC *owner )
    : wxDCImpl( owner )
@@ -473,43 +425,11 @@ wxGTKDCImpl::~wxGTKDCImpl()
 
 void wxGTKDCImpl::DoSetClippingRegion( wxCoord x, wxCoord y, wxCoord width, wxCoord height )
 {
-    wxASSERT_MSG( width >= 0 && height >= 0,
-                  "Clipping box size values cannot be negative" );
-
-    wxRect newRegion(x, y, width, height);
-
-    wxRect clipRegion;
-    if ( m_clipping )
-    {
-        // New clipping box is an intersection
-        // of required clipping box and the current one.
-        wxRect curRegion(m_clipX1, m_clipY1, m_clipX2 - m_clipX1, m_clipY2 - m_clipY1);
-        clipRegion = curRegion.Intersect(newRegion);
-    }
-    else
-    {
-        // Effective clipping box is an intersection
-        // of required clipping box and DC surface.
-        int dcWidth, dcHeight;
-        DoGetSize(&dcWidth, &dcHeight);
-        wxRect dcRect(DeviceToLogicalX(0), DeviceToLogicalY(0),
-                      DeviceToLogicalXRel(dcWidth), DeviceToLogicalYRel(dcHeight));
-        clipRegion = dcRect.Intersect(newRegion);
-
-        m_clipping = true;
-    }
-
-    if ( clipRegion.IsEmpty() )
-    {
-        m_clipX1 = m_clipY1 = m_clipX2 = m_clipY2 = 0;
-    }
-    else
-    {
-        m_clipX1 = clipRegion.GetLeftTop().x;
-        m_clipY1 = clipRegion.GetLeftTop().y;
-        m_clipX2 = clipRegion.GetBottomRight().x + 1;
-        m_clipY2 = clipRegion.GetBottomRight().y + 1;
-    }
+    m_clipping = TRUE;
+    m_clipX1 = x;
+    m_clipY1 = y;
+    m_clipX2 = x + width;
+    m_clipY2 = y + height;
 }
 
 // ---------------------------------------------------------------------------
@@ -521,8 +441,8 @@ void wxGTKDCImpl::DoGetSizeMM( int* width, int* height ) const
     int w = 0;
     int h = 0;
     GetOwner()->GetSize( &w, &h );
-    if (width) *width = int( double(w) / (m_userScaleX*GetMMToPXx()) );
-    if (height) *height = int( double(h) / (m_userScaleY*GetMMToPXy()) );
+    if (width) *width = int( double(w) / (m_userScaleX*m_mm_to_pix_x) );
+    if (height) *height = int( double(h) / (m_userScaleY*m_mm_to_pix_y) );
 }
 
 // Resolution in pixels per logical inch

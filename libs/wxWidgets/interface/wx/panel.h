@@ -10,8 +10,9 @@
 
     A panel is a window on which controls are placed. It is usually placed within
     a frame. Its main feature over its parent class wxWindow is code for handling
-    child windows and TAB traversal, which is implemented natively if possible
-    (e.g. in wxGTK) or by wxWidgets itself otherwise.
+    child windows and TAB traversal. Since wxWidgets 2.9, there is support both
+    for TAB traversal implemented by wxWidgets itself as well as native TAB
+    traversal (such as for GTK 2.0).
 
     @note Tab traversal is implemented through an otherwise undocumented
           intermediate wxControlContainer class from which any class can derive

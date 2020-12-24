@@ -21,7 +21,7 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize,
         long style = wxDEFAULT_FRAME_STYLE,
-        const wxString& name = wxASCII_STR(wxFrameNameStr))
+        const wxString& name = wxFrameNameStr)
     {
         Init();
 
@@ -34,7 +34,7 @@ public:
         const wxPoint& pos = wxDefaultPosition,
         const wxSize& size = wxDefaultSize,
         long style = wxDEFAULT_FRAME_STYLE,
-        const wxString& name = wxASCII_STR(wxFrameNameStr));
+        const wxString& name = wxFrameNameStr);
 
     virtual ~wxFrame();
 
@@ -57,7 +57,7 @@ public:
 #if wxUSE_TOOLBAR
     virtual wxToolBar* CreateToolBar(long style = -1,
                                      wxWindowID id = wxID_ANY,
-                                     const wxString& name = wxASCII_STR(wxToolBarNameStr));
+                                     const wxString& name = wxToolBarNameStr);
     virtual void SetToolBar(wxToolBar *toolbar);
     virtual void PositionToolBar();
 #endif // wxUSE_TOOLBAR
@@ -120,8 +120,8 @@ private:
 
 
 
-    wxDECLARE_EVENT_TABLE();
-    wxDECLARE_DYNAMIC_CLASS(wxFrame);
+    DECLARE_EVENT_TABLE()
+    DECLARE_DYNAMIC_CLASS(wxFrame)
 };
 
 #endif // _WX_MOTIF_FRAME_H_

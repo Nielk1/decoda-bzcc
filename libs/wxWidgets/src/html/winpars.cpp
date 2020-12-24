@@ -33,7 +33,7 @@
 // wxHtmlWinParser
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlWinParser, wxHtmlParser);
+IMPLEMENT_ABSTRACT_CLASS(wxHtmlWinParser, wxHtmlParser)
 
 wxList wxHtmlWinParser::m_Modules;
 
@@ -65,6 +65,7 @@ wxHtmlWinParser::wxHtmlWinParser(wxHtmlWindowInterface *wndIface)
                         for (m = 0; m < 7; m++)
                         {
                             m_FontsTable[i][j][k][l][m] = NULL;
+                            m_FontsFacesTable[i][j][k][l][m] = wxEmptyString;
 #if !wxUSE_UNICODE
                             m_FontsEncTable[i][j][k][l][m] = wxFONTENCODING_DEFAULT;
 #endif
@@ -217,7 +218,7 @@ void wxHtmlWinParser::InitParser(const wxString& source)
     m_ActualBackgroundColor = m_windowInterface
                             ? m_windowInterface->GetHTMLBackgroundColour()
                             : windowColour;
-    m_ActualBackgroundMode = wxBRUSHSTYLE_TRANSPARENT;
+    m_ActualBackgroundMode = wxTRANSPARENT;
     m_Align = wxHTML_ALIGN_LEFT;
     m_ScriptMode = wxHTML_SCRIPT_NORMAL;
     m_ScriptBaseline = 0;
@@ -248,7 +249,7 @@ void wxHtmlWinParser::InitParser(const wxString& source)
                    new wxHtmlColourCell
                        (
                          m_ActualBackgroundColor,
-                         m_ActualBackgroundMode == wxBRUSHSTYLE_TRANSPARENT ? wxHTML_CLR_TRANSPARENT_BACKGROUND : wxHTML_CLR_BACKGROUND
+                         m_ActualBackgroundMode == wxTRANSPARENT ? wxHTML_CLR_TRANSPARENT_BACKGROUND : wxHTML_CLR_BACKGROUND
                        )
                   );
 
@@ -263,6 +264,15 @@ void wxHtmlWinParser::DoneParser()
 #endif
     wxHtmlParser::DoneParser();
 }
+
+#if WXWIN_COMPATIBILITY_2_6
+wxHtmlWindow *wxHtmlWinParser::GetWindow()
+{
+    if (!m_windowInterface)
+        return NULL;
+    return wxDynamicCast(m_windowInterface->GetHTMLWindow(), wxHtmlWindow);
+}
+#endif
 
 wxObject* wxHtmlWinParser::GetProduct()
 {
@@ -295,7 +305,7 @@ wxFSFile *wxHtmlWinParser::OpenURL(wxHtmlURLType type,
         myfullurl = current.BuildUnescapedURI();
 
         // if not absolute then ...
-        if( current.IsRelative() )
+        if( current.IsReference() )
         {
             wxString basepath = GetFS()->GetPath();
             wxURI base(basepath);
@@ -611,9 +621,9 @@ wxFont* wxHtmlWinParser::CreateCurrentFont()
         *faceptr = face;
         *fontptr = new wxFont(
                        (int) (m_FontsSizes[fs] * m_FontScale),
-                       ff ? wxFONTFAMILY_MODERN : wxFONTFAMILY_SWISS,
-                       fi ? wxFONTSTYLE_ITALIC : wxFONTSTYLE_NORMAL,
-                       fb ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL,
+                       ff ? wxMODERN : wxSWISS,
+                       fi ? wxITALIC : wxNORMAL,
+                       fb ? wxBOLD : wxNORMAL,
                        fu ? true : false, face
 #if wxUSE_UNICODE
                        );
@@ -631,7 +641,7 @@ wxFont* wxHtmlWinParser::CreateCurrentFont()
 void wxHtmlWinParser::SetLink(const wxHtmlLinkInfo& link)
 {
     m_Link = link;
-    m_UseLink = !link.GetHref().empty();
+    m_UseLink = (link.GetHref() != wxEmptyString);
 }
 
 void wxHtmlWinParser::SetFontFace(const wxString& face)
@@ -742,7 +752,7 @@ void wxHtmlWinParser::SetInputEncoding(wxFontEncoding enc)
 // wxHtmlWinTagHandler
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlWinTagHandler, wxHtmlTagHandler);
+IMPLEMENT_ABSTRACT_CLASS(wxHtmlWinTagHandler, wxHtmlTagHandler)
 
 void wxHtmlWinTagHandler::ApplyStyle(const wxHtmlStyleParams &styleParams)
 {
@@ -766,7 +776,7 @@ void wxHtmlWinTagHandler::ApplyStyle(const wxHtmlStyleParams &styleParams)
         if ( wxHtmlTag::ParseAsColour(str, &clr) )
         {
             m_WParser->SetActualBackgroundColor(clr);
-            m_WParser->SetActualBackgroundMode(wxBRUSHSTYLE_SOLID);
+            m_WParser->SetActualBackgroundMode(wxSOLID);
             m_WParser->GetContainer()->InsertCell(new wxHtmlColourCell(clr, wxHTML_CLR_BACKGROUND));
         }
     }
@@ -861,7 +871,7 @@ void wxHtmlWinTagHandler::ApplyStyle(const wxHtmlStyleParams &styleParams)
 //     Do not add any winpars.cpp shutdown or initialization code to it,
 //     create a new module instead!
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxHtmlTagsModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxHtmlTagsModule, wxModule)
 
 bool wxHtmlTagsModule::OnInit()
 {

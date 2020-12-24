@@ -34,6 +34,11 @@
 
 #include "wx/msw/private.h"
 
+// for some compilers, the entire ole2.h must be included, not only oleauto.h
+#if wxUSE_NORLANDER_HEADERS || defined(__WATCOMC__) || defined(__WXWINCE__)
+    #include <ole2.h>
+#endif
+
 #include <oleauto.h>
 
 #include "wx/msw/ole/oleutils.h"
@@ -49,8 +54,8 @@ public:
   virtual ~wxIDropSource() { }
 
   // IDropSource
-  STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState) wxOVERRIDE;
-  STDMETHODIMP GiveFeedback(DWORD dwEffect) wxOVERRIDE;
+  STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState);
+  STDMETHODIMP GiveFeedback(DWORD dwEffect);
 
     DECLARE_IUNKNOWN_METHODS;
 
@@ -174,7 +179,7 @@ wxDropSource::~wxDropSource()
 // Name    : DoDragDrop
 // Purpose : start drag and drop operation
 // Returns : wxDragResult - the code of performed operation
-// Params  : [in] int flags: specifies if moving is allowed (or only copying)
+// Params  : [in] int flags: specifies if moving is allowe (or only copying)
 // Notes   : you must call SetData() before if you had used def ctor
 wxDragResult wxDropSource::DoDragDrop(int flags)
 {

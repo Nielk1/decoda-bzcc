@@ -36,7 +36,7 @@ const char *LISTCOL_CLASS_NAME = "listcol";
 } // anonymous namespace
 
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxListCtrlXmlHandler, wxXmlResourceHandler);
+IMPLEMENT_DYNAMIC_CLASS(wxListCtrlXmlHandler, wxXmlResourceHandler)
 
 wxListCtrlXmlHandler::wxListCtrlXmlHandler()
     : wxXmlResourceHandler()

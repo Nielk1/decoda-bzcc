@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        propgridpagestate.h
+// Name:        property.h
 // Purpose:     interface of wxPGProperty
 // Author:      wxWidgets team
 // Licence:     wxWindows licence
@@ -14,10 +14,8 @@
 */
 class wxPropertyGridHitTestResult
 {
-    friend class wxPropertyGridPageState;
 public:
     wxPropertyGridHitTestResult();
-
     ~wxPropertyGridHitTestResult();
 
     /**
@@ -41,11 +39,12 @@ public:
         returns offset to the exact splitter position.
     */
     int GetSplitterHitOffset() const;
+
 };
 
 // -----------------------------------------------------------------------
 
-#define wxPG_IT_CHILDREN(A)         ((A)<<16)
+#define wxPG_IT_CHILDREN(A)         (A<<16)
 
 /** @section propgrid_iterator_flags wxPropertyGridIterator Flags
     @{
@@ -56,111 +55,59 @@ public:
 
 enum wxPG_ITERATOR_FLAGS
 {
-/**
-    Iterate through 'normal' property items (does not include children of
-    aggregate or hidden items by default).
-    @hideinitializer
-*/
-wxPG_ITERATE_PROPERTIES = wxPG_PROP_PROPERTY |
-                          wxPG_PROP_MISC_PARENT |
-                          wxPG_PROP_AGGREGATE |
-                          wxPG_PROP_COLLAPSED |
-                          wxPG_IT_CHILDREN(wxPG_PROP_MISC_PARENT) |
-                          wxPG_IT_CHILDREN(wxPG_PROP_CATEGORY),
 
-/**
-    Iterate children of collapsed parents, and individual items that are hidden.
-    @hideinitializer
+/** Iterate through 'normal' property items (does not include children of aggregate or hidden items by default).
 */
-wxPG_ITERATE_HIDDEN = wxPG_PROP_HIDDEN |
-                      wxPG_IT_CHILDREN(wxPG_PROP_COLLAPSED),
+wxPG_ITERATE_PROPERTIES             = (wxPG_PROP_PROPERTY|wxPG_PROP_MISC_PARENT|wxPG_PROP_AGGREGATE| \
+                                       wxPG_PROP_COLLAPSED|((wxPG_PROP_MISC_PARENT|wxPG_PROP_CATEGORY)<<16)),
 
-/**
-    Iterate children of parent that is an aggregate property (ie has fixed
-    children).
-    @hideinitializer
+/** Iterate children of collapsed parents, and individual items that are hidden.
 */
-wxPG_ITERATE_FIXED_CHILDREN = wxPG_IT_CHILDREN(wxPG_PROP_AGGREGATE) |
-                              wxPG_ITERATE_PROPERTIES,
+wxPG_ITERATE_HIDDEN                 = (wxPG_PROP_HIDDEN|wxPG_IT_CHILDREN(wxPG_PROP_COLLAPSED)),
 
-/** Iterate categories.
-    Note that even without this flag, children of categories are still iterated
-    through.
-    @hideinitializer
+/** Iterate children of parent that is an aggregate property (ie. has fixed children).
 */
-wxPG_ITERATE_CATEGORIES = wxPG_PROP_CATEGORY |
-                          wxPG_IT_CHILDREN(wxPG_PROP_CATEGORY) |
-                          wxPG_PROP_COLLAPSED,
+wxPG_ITERATE_FIXED_CHILDREN         = (wxPG_IT_CHILDREN(wxPG_PROP_AGGREGATE)|wxPG_ITERATE_PROPERTIES),
 
-/**
-    @hideinitializer
+/** Iterate categories. Note that even without this flag, children of categories
+    are still iterated through.
 */
-wxPG_ITERATE_ALL_PARENTS = wxPG_PROP_MISC_PARENT |
-                           wxPG_PROP_AGGREGATE |
-                           wxPG_PROP_CATEGORY,
+wxPG_ITERATE_CATEGORIES             = (wxPG_PROP_CATEGORY|wxPG_IT_CHILDREN(wxPG_PROP_CATEGORY)|wxPG_PROP_COLLAPSED),
 
-/**
-    @hideinitializer
+wxPG_ITERATE_ALL_PARENTS            = (wxPG_PROP_MISC_PARENT|wxPG_PROP_AGGREGATE|wxPG_PROP_CATEGORY),
+
+wxPG_ITERATE_ALL_PARENTS_RECURSIVELY        = (wxPG_ITERATE_ALL_PARENTS|wxPG_IT_CHILDREN(wxPG_ITERATE_ALL_PARENTS)),
+
+wxPG_ITERATOR_FLAGS_ALL             = (wxPG_PROP_PROPERTY|wxPG_PROP_MISC_PARENT|wxPG_PROP_AGGREGATE| \
+                                      wxPG_PROP_HIDDEN|wxPG_PROP_CATEGORY|wxPG_PROP_COLLAPSED),
+
+wxPG_ITERATOR_MASK_OP_ITEM          = wxPG_ITERATOR_FLAGS_ALL,
+
+wxPG_ITERATOR_MASK_OP_PARENT        = wxPG_ITERATOR_FLAGS_ALL,  // (wxPG_PROP_MISC_PARENT|wxPG_PROP_AGGREGATE|wxPG_PROP_CATEGORY)
+
+/** Combines all flags needed to iterate through visible properties
+    (ie. hidden properties and children of collapsed parents are skipped).
 */
-wxPG_ITERATE_ALL_PARENTS_RECURSIVELY = wxPG_ITERATE_ALL_PARENTS |
-                                       wxPG_IT_CHILDREN(
-                                                wxPG_ITERATE_ALL_PARENTS),
+wxPG_ITERATE_VISIBLE                = (wxPG_ITERATE_PROPERTIES|wxPG_PROP_CATEGORY|wxPG_IT_CHILDREN(wxPG_PROP_AGGREGATE)),
 
-/**
-    @hideinitializer
+/** Iterate all items.
 */
-wxPG_ITERATOR_FLAGS_ALL = wxPG_PROP_PROPERTY |
-                          wxPG_PROP_MISC_PARENT |
-                          wxPG_PROP_AGGREGATE |
-                          wxPG_PROP_HIDDEN |
-                          wxPG_PROP_CATEGORY |
-                          wxPG_PROP_COLLAPSED,
+wxPG_ITERATE_ALL                    = (wxPG_ITERATE_VISIBLE|wxPG_ITERATE_HIDDEN),
 
-/**
-    @hideinitializer
-*/
-wxPG_ITERATOR_MASK_OP_ITEM = wxPG_ITERATOR_FLAGS_ALL,
-
-// (wxPG_PROP_MISC_PARENT|wxPG_PROP_AGGREGATE|wxPG_PROP_CATEGORY)
-/**
-    @hideinitializer
-*/
-wxPG_ITERATOR_MASK_OP_PARENT = wxPG_ITERATOR_FLAGS_ALL,
-
-/**
-    Combines all flags needed to iterate through visible properties
-    (i.e. hidden properties and children of collapsed parents are skipped).
-    @hideinitializer
-*/
-wxPG_ITERATE_VISIBLE = wxPG_ITERATE_PROPERTIES |
-                       wxPG_PROP_CATEGORY |
-                       wxPG_IT_CHILDREN(wxPG_PROP_AGGREGATE),
-
-/**
-    Iterate all items.
-    @hideinitializer
-*/
-wxPG_ITERATE_ALL = wxPG_ITERATE_VISIBLE |
-                   wxPG_ITERATE_HIDDEN,
-
-/**
-    Iterate through individual properties (ie categories and children of
+/** Iterate through individual properties (ie. categories and children of
     aggregate properties are skipped).
-    @hideinitializer
 */
-wxPG_ITERATE_NORMAL = wxPG_ITERATE_PROPERTIES |
-                      wxPG_ITERATE_HIDDEN,
+wxPG_ITERATE_NORMAL                 = (wxPG_ITERATE_PROPERTIES|wxPG_ITERATE_HIDDEN),
 
-/**
-    Default iterator flags.
-    @hideinitializer
+/** Default iterator flags.
 */
-wxPG_ITERATE_DEFAULT = wxPG_ITERATE_NORMAL
+wxPG_ITERATE_DEFAULT                = wxPG_ITERATE_NORMAL
 
 };
 
 /** @}
 */
+
 
 
 /**
@@ -173,15 +120,11 @@ wxPG_ITERATE_DEFAULT = wxPG_ITERATE_NORMAL
 
     @library{wxpropgrid}
     @category{propgrid}
-
-    @{
-*/
-/**
-    Base for wxPropertyGridIterator classes.
 */
 class wxPropertyGridIteratorBase
 {
 public:
+
     wxPropertyGridIteratorBase();
 
     void Assign( const wxPropertyGridIteratorBase& it );
@@ -214,54 +157,43 @@ public:
     void Prev();
 
     /**
-        Set base parent, i.e. a property when, in which iteration returns,
-        it ends.
+        Set base parent, ie a property when, in which iteration returns, it
+        ends.
 
         Default base parent is the root of the used wxPropertyGridPageState.
     */
     void SetBaseParent( wxPGProperty* baseParent );
 };
 
+
 class wxPropertyGridIterator : public wxPropertyGridIteratorBase
 {
 public:
+
     wxPropertyGridIterator();
     wxPropertyGridIterator( wxPropertyGridPageState* state,
-                            int flags = wxPG_ITERATE_DEFAULT,
+                            int flags = wxPG_ITERATE_DEFAULT, 
                             wxPGProperty* property = NULL, int dir = 1 );
     wxPropertyGridIterator( wxPropertyGridPageState* state,
                             int flags, int startPos, int dir = 0 );
     wxPropertyGridIterator( const wxPropertyGridIterator& it );
-    ~wxPropertyGridIterator();};
+    ~wxPropertyGridIterator();
+};
 
-/**
-    Const version of wxPropertyGridIterator.
-*/
+
 class wxPropertyGridConstIterator : public wxPropertyGridIteratorBase
 {
 public:
-    /**
-        Additional copy constructor.
-    */
-    wxPropertyGridConstIterator( const wxPropertyGridIterator& other );
-
-    /**
-        Additional assignment operator.
-    */
-    const wxPropertyGridConstIterator& operator=( const wxPropertyGridIterator& it );
 
     wxPropertyGridConstIterator();
     wxPropertyGridConstIterator( const wxPropertyGridPageState* state,
-                                 int flags = wxPG_ITERATE_DEFAULT,
+                                 int flags = wxPG_ITERATE_DEFAULT, 
                                  const wxPGProperty* property = NULL, int dir = 1 );
     wxPropertyGridConstIterator( wxPropertyGridPageState* state,
                                  int flags, int startPos, int dir = 0 );
     wxPropertyGridConstIterator( const wxPropertyGridConstIterator& it );
     ~wxPropertyGridConstIterator();
 };
-
-/** @}
-*/
 
 // -----------------------------------------------------------------------
 
@@ -287,42 +219,36 @@ public:
     wxPGProperty* GetProperty() const;
 };
 
-// -----------------------------------------------------------------------
 
-/** @class wxPropertyGridPageState
+
+/**
+    @class wxPropertyGridPageState
 
     Contains low-level property page information (properties, column widths,
-    etc.) of a single wxPropertyGrid or single wxPropertyGridPage. Generally you
+    etc) of a single wxPropertyGrid or single wxPropertyGridPage. Generally you
     should not use this class directly, but instead member functions in
     wxPropertyGridInterface, wxPropertyGrid, wxPropertyGridPage, and
     wxPropertyGridManager.
 
     @remarks
-    Currently this class is not implemented in wxPython.
+    - In separate wxPropertyGrid component this class was known as
+    wxPropertyGridState.
+    - Currently this class is not implemented in wxPython.
 
     @library{wxpropgrid}
     @category{propgrid}
 */
 class wxPropertyGridPageState
 {
-    friend class wxPropertyGrid;
-    friend class wxPropertyGridInterface;
-    friend class wxPropertyGridPage;
-    friend class wxPropertyGridManager;
 public:
 
-    /**
-        Default constructor.
-    */
+    /** Default constructor. */
     wxPropertyGridPageState();
 
-    /**
-        Destructor.
-    */
+    /** Destructor. */
     virtual ~wxPropertyGridPageState();
 
-    /**
-        Makes sure all columns have minimum width.
+    /** Makes sure all columns have minimum width.
     */
     void CheckColumnWidths( int widthChange = 0 );
 
@@ -354,29 +280,25 @@ public:
 
     bool EnableCategories( bool enable );
 
-    /**
-        Make sure virtual height is up-to-date.
+    /** Make sure virtual height is up-to-date.
     */
     void EnsureVirtualHeight();
 
-    /**
-        Returns (precalculated) height of contained visible properties.
+    /** Returns (precalculated) height of contained visible properties.
     */
     unsigned int GetVirtualHeight() const;
 
-    /**
-        Returns (precalculated) height of contained visible properties.
+    /** Returns (precalculated) height of contained visible properties.
     */
     unsigned int GetVirtualHeight();
 
-    /**
-        Returns actual height of contained visible properties.
+    /** Returns actual height of contained visible properties.
         @remarks
         Mostly used for internal diagnostic purposes.
     */
     inline unsigned int GetActualVirtualHeight() const;
 
-    unsigned int GetColumnCount() const'
+    unsigned int GetColumnCount() const;
 
     int GetColumnMinWidth( int column ) const;
 
@@ -384,10 +306,9 @@ public:
 
     wxPropertyGrid* GetGrid() const;
 
-    /**
-        Returns last item which could be iterated using given flags.
+    /** Returns last item which could be iterated using given flags.
         @param flags
-            @ref propgrid_iterator_flags
+        @link iteratorflags List of iterator flags@endlink
     */
     wxPGProperty* GetLastItem( int flags = wxPG_ITERATE_DEFAULT );
 
@@ -412,6 +333,9 @@ public:
 
     wxPropertyCategory* GetPropertyCategory( const wxPGProperty* p ) const;
 
+    wxPGProperty* GetPropertyByLabel( const wxString& name,
+                                      wxPGProperty* parent = NULL ) const;
+
     wxVariant DoGetPropertyValues( const wxString& listname,
                                    wxPGProperty* baseparent,
                                    long flags ) const;
@@ -420,9 +344,7 @@ public:
 
     void DoSetPropertyName( wxPGProperty* p, const wxString& newName );
 
-    /**
-        Returns combined width of margin and all the columns.
-    */
+    // Returns combined width of margin and all the columns
     int GetVirtualWidth() const;
 
     /**
@@ -448,8 +370,7 @@ public:
     */
     wxPropertyGridHitTestResult HitTest( const wxPoint& pt ) const;
 
-    /**
-        Returns true if page is visibly displayed.
+    /** Returns true if page is visibly displayed.
     */
     inline bool IsDisplayed() const;
 
@@ -459,15 +380,13 @@ public:
 
     bool DoSelectProperty( wxPGProperty* p, unsigned int flags = 0 );
 
-    /**
-        widthChange is non-client.
+    /** widthChange is non-client.
     */
     void OnClientWidthChange( int newWidth,
                               int widthChange,
                               bool fromOnResize = false );
 
-    /**
-        Recalculates m_virtualHeight.
+    /** Recalculates m_virtualHeight.
     */
     void RecalculateVirtualHeight();
 
@@ -487,9 +406,7 @@ public:
 
     void SetSplitterLeft( bool subProps = false );
 
-    /**
-        Set virtual width for this particular page.
-    */
+    /** Set virtual width for this particular page. */
     void SetVirtualWidth( int width );
 
     void DoSortChildren( wxPGProperty* p, int flags = 0 );
@@ -497,24 +414,17 @@ public:
 
     bool PrepareAfterItemsAdded();
 
-    /**
-        Called after virtual height needs to be recalculated.
+    /** Called after virtual height needs to be recalculated.
     */
     void VirtualHeightChanged();
-
-    /**
-        Base append.
-    */
+    
+    /** Base append. */
     wxPGProperty* DoAppend( wxPGProperty* property );
 
-    /**
-        Returns property by its name.
-    */
+    /** Returns property by its name. */
     wxPGProperty* BaseGetPropertyByName( const wxString& name ) const;
 
-    /**
-        Called in, for example, wxPropertyGrid::Clear.
-    */
+    /** Called in, for example, wxPropertyGrid::Clear. */
     void DoClear();
 
     bool DoIsPropertySelected( wxPGProperty* prop ) const;
@@ -524,4 +434,6 @@ public:
     bool DoExpand( wxPGProperty* p );
 
     void CalculateFontAndBitmapStuff( int vspacing );
-}:
+
+};
+

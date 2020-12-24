@@ -7,8 +7,6 @@
 
 #include <string.h>
 
-#include <stdexcept>
-
 #include "Platform.h"
 
 #include "Scintilla.h"
@@ -21,13 +19,9 @@ using namespace Scintilla;
 FontAlias::FontAlias() {
 }
 
-FontAlias::FontAlias(const FontAlias &other) : Font() {
-	SetID(other.fid);
-}
-
 FontAlias::~FontAlias() {
 	SetID(0);
-	// ~Font will not release the actual font resource since it is now 0
+	// ~Font will not release the actual font resource sine it is now 0
 }
 
 void FontAlias::MakeAlias(Font &fontOrigin) {
@@ -38,29 +32,12 @@ void FontAlias::ClearFont() {
 	SetID(0);
 }
 
-bool FontSpecification::operator==(const FontSpecification &other) const {
-	return fontName == other.fontName &&
-	       weight == other.weight &&
+bool FontSpecification::EqualTo(const FontSpecification &other) const {
+	return weight == other.weight &&
 	       italic == other.italic &&
 	       size == other.size &&
 	       characterSet == other.characterSet &&
-	       extraFontFlag == other.extraFontFlag;
-}
-
-bool FontSpecification::operator<(const FontSpecification &other) const {
-	if (fontName != other.fontName)
-		return fontName < other.fontName;
-	if (weight != other.weight)
-		return weight < other.weight;
-	if (italic != other.italic)
-		return italic == false;
-	if (size != other.size)
-		return size < other.size;
-	if (characterSet != other.characterSet)
-		return characterSet < other.characterSet;
-	if (extraFontFlag != other.extraFontFlag)
-		return extraFontFlag < other.extraFontFlag;
-	return false;
+	       fontName == other.fontName;
 }
 
 FontMeasurements::FontMeasurements() {
@@ -91,7 +68,6 @@ Style::Style(const Style &source) : FontSpecification(), FontMeasurements() {
 	weight = source.weight;
 	italic = source.italic;
 	size = source.size;
-	fontName = source.fontName;
 	eolFilled = source.eolFilled;
 	underline = source.underline;
 	caseForce = source.caseForce;
@@ -115,7 +91,6 @@ Style &Style::operator=(const Style &source) {
 	weight = source.weight;
 	italic = source.italic;
 	size = source.size;
-	fontName = source.fontName;
 	eolFilled = source.eolFilled;
 	underline = source.underline;
 	caseForce = source.caseForce;
@@ -165,5 +140,8 @@ void Style::ClearTo(const Style &source) {
 
 void Style::Copy(Font &font_, const FontMeasurements &fm_) {
 	font.MakeAlias(font_);
+#if PLAT_WX
+	font.SetAscent(fm_.ascent);
+#endif
 	(FontMeasurements &)(*this) = fm_;
 }

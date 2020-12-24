@@ -43,7 +43,7 @@
 
 #include "wx/motif/private.h"
 
-wxIMPLEMENT_CLASS(wxFileDialog, wxFileDialogBase);
+IMPLEMENT_CLASS(wxFileDialog, wxFileDialogBase)
 
 #define DEFAULT_FILE_SELECTOR_SIZE 0
 // Let Motif defines the size of File

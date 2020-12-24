@@ -62,12 +62,9 @@ public:
     // Called to transfer data from the window
     virtual bool TransferFromWindow() { return false; }
 
-    // Called when the validator is associated with a window, may be useful to
-    // override if it needs to somehow initialize the window.
-    virtual void SetWindow(wxWindow *win) { m_validatorWindow = win; }
-
     // accessors
-    wxWindow *GetWindow() const { return m_validatorWindow; }
+    wxWindow *GetWindow() const { return (wxWindow *)m_validatorWindow; }
+    void SetWindow(wxWindowBase *win) { m_validatorWindow = win; }
 
     // validators beep by default if invalid key is pressed, this function
     // allows to change this
@@ -88,26 +85,27 @@ public:
 #endif
 
 protected:
-    wxWindow *m_validatorWindow;
+    wxWindowBase *m_validatorWindow;
 
 private:
     static bool ms_isSilent;
 
-    wxDECLARE_DYNAMIC_CLASS(wxValidator);
+    DECLARE_DYNAMIC_CLASS(wxValidator)
     wxDECLARE_NO_ASSIGN_CLASS(wxValidator);
 };
 
-#define wxVALIDATOR_PARAM(val) val
-
 extern WXDLLIMPEXP_DATA_CORE(const wxValidator) wxDefaultValidator;
+
+#define wxVALIDATOR_PARAM(val) val
 
 #else // !wxUSE_VALIDATORS
     // wxWidgets is compiled without support for wxValidator, but we still
     // want to be able to pass wxDefaultValidator to the functions which take
     // a wxValidator parameter to avoid using "#if wxUSE_VALIDATORS"
     // everywhere
-    class wxValidator { };
-    #define wxDefaultValidator wxValidator()
+    class WXDLLIMPEXP_FWD_CORE wxValidator;
+    static const wxValidator* const wxDefaultValidatorPtr = NULL;
+    #define wxDefaultValidator (*wxDefaultValidatorPtr)
 
     // this macro allows to avoid warnings about unused parameters when
     // wxUSE_VALIDATORS == 0
@@ -115,3 +113,4 @@ extern WXDLLIMPEXP_DATA_CORE(const wxValidator) wxDefaultValidator;
 #endif // wxUSE_VALIDATORS/!wxUSE_VALIDATORS
 
 #endif // _WX_VALIDATE_H_
+

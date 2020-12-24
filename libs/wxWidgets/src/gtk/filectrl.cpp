@@ -241,7 +241,7 @@ extern "C"
     static void
     gtkfilechooserwidget_file_activated_callback( GtkWidget *WXUNUSED( widget ), wxGtkFileCtrl *fileCtrl )
     {
-        wxGenerateFileActivatedEvent( fileCtrl, fileCtrl );
+        GenerateFileActivatedEvent( fileCtrl, fileCtrl );
     }
 }
 
@@ -262,7 +262,7 @@ extern "C"
         }
 
         if ( !fileCtrl->m_checkNextSelEvent )
-            wxGenerateSelectionChangedEvent( fileCtrl, fileCtrl );
+            GenerateSelectionChangedEvent( fileCtrl, fileCtrl );
     }
 }
 
@@ -277,7 +277,7 @@ extern "C"
         }
         else
         {
-            wxGenerateFolderChangedEvent( fileCtrl, fileCtrl );
+            GenerateFolderChangedEvent( fileCtrl, fileCtrl );
         }
 
         fileCtrl->m_checkNextSelEvent = true;
@@ -294,14 +294,14 @@ extern "C"
              fileCtrl->HasFilterChoice() &&
              !fileCtrl->GTKShouldIgnoreNextFilterEvent() )
         {
-            wxGenerateFilterChangedEvent( fileCtrl, fileCtrl );
+            GenerateFilterChangedEvent( fileCtrl, fileCtrl );
         }
     }
 }
 
 // wxGtkFileCtrl implementation
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxGtkFileCtrl, wxControl);
+IMPLEMENT_DYNAMIC_CLASS( wxGtkFileCtrl, wxControl )
 
 wxGtkFileCtrl::~wxGtkFileCtrl()
 {
@@ -339,9 +339,11 @@ bool wxGtkFileCtrl::Create( wxWindow *parent,
     if ( style & wxFC_SAVE )
         gtkAction = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-    m_fcWidget = GTK_FILE_CHOOSER( gtk_file_chooser_widget_new(gtkAction) );
-    m_widget = GTK_WIDGET(m_fcWidget);
+    m_widget =  gtk_alignment_new ( 0, 0, 1, 1 );
     g_object_ref(m_widget);
+    m_fcWidget = GTK_FILE_CHOOSER( gtk_file_chooser_widget_new(gtkAction) );
+    gtk_widget_show ( GTK_WIDGET( m_fcWidget ) );
+    gtk_container_add ( GTK_CONTAINER ( m_widget ), GTK_WIDGET( m_fcWidget ) );
 
     m_focusWidget = GTK_WIDGET( m_fcWidget );
 

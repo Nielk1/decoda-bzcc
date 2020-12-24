@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     13.07.03
-// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -26,7 +26,6 @@
 #if wxUSE_CRASHREPORT
 
 #ifndef WX_PRECOMP
-    #include "wx/wxcrtvararg.h"
 #endif  //WX_PRECOMP
 
 #include "wx/msw/debughlp.h"
@@ -201,7 +200,9 @@ bool wxCrashReportImpl::Generate(int flags, EXCEPTION_POINTERS *ep)
             // if we use the flags below, but the minidump is much more useful
             // as it contains the values of many (but not all) local variables
             dumpFlags = (MINIDUMP_TYPE)(MiniDumpScanMemory
+#if _MSC_VER > 1300
                                         |MiniDumpWithIndirectlyReferencedMemory
+#endif
                                         );
         }
 

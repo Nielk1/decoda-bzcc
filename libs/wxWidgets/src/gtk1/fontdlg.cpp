@@ -108,7 +108,7 @@ void gtk_fontdialog_cancel_callback( GtkWidget *WXUNUSED(w), wxFontDialog *dialo
 // wxFontDialog
 //-----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxFontDialog, wxDialog);
+IMPLEMENT_DYNAMIC_CLASS(wxFontDialog, wxDialog)
 
 bool wxFontDialog::DoCreate(wxWindow *parent)
 {

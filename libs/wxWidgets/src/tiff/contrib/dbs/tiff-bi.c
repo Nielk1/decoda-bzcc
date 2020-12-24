@@ -1,3 +1,4 @@
+
 /*
  * tiff-bi.c -- create a Class B (bilevel) TIFF file
  *

@@ -44,7 +44,9 @@
 #include "wx/textwrapper.h"
 #include "wx/modalhook.h"
 
+#if wxUSE_DISPLAY
 #include "wx/display.h"
+#endif
 
 extern WXDLLEXPORT_DATA(const char) wxDialogNameStr[] = "dialog";
 
@@ -76,16 +78,23 @@ wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
 wxFLAGS_MEMBER(wxCLIP_CHILDREN)
 
 // dialog styles
+wxFLAGS_MEMBER(wxWS_EX_VALIDATE_RECURSIVELY)
 wxFLAGS_MEMBER(wxSTAY_ON_TOP)
 wxFLAGS_MEMBER(wxCAPTION)
+#if WXWIN_COMPATIBILITY_2_6
+wxFLAGS_MEMBER(wxTHICK_FRAME)
+#endif // WXWIN_COMPATIBILITY_2_6
 wxFLAGS_MEMBER(wxSYSTEM_MENU)
 wxFLAGS_MEMBER(wxRESIZE_BORDER)
+#if WXWIN_COMPATIBILITY_2_6
+wxFLAGS_MEMBER(wxRESIZE_BOX)
+#endif // WXWIN_COMPATIBILITY_2_6
 wxFLAGS_MEMBER(wxCLOSE_BOX)
 wxFLAGS_MEMBER(wxMAXIMIZE_BOX)
 wxFLAGS_MEMBER(wxMINIMIZE_BOX)
 wxEND_FLAGS( wxDialogStyle )
 
-wxIMPLEMENT_DYNAMIC_CLASS_XTI(wxDialog, wxTopLevelWindow, "wx/dialog.h");
+wxIMPLEMENT_DYNAMIC_CLASS_XTI(wxDialog, wxTopLevelWindow, "wx/dialog.h")
 
 wxBEGIN_PROPERTIES_TABLE(wxDialog)
 wxPROPERTY( Title, wxString, SetTitle, GetTitle, wxString(), \
@@ -105,13 +114,13 @@ wxCONSTRUCTOR_6( wxDialog, wxWindow*, Parent, wxWindowID, Id, \
 // wxDialogBase
 // ----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxDialogBase, wxTopLevelWindow)
+BEGIN_EVENT_TABLE(wxDialogBase, wxTopLevelWindow)
     EVT_BUTTON(wxID_ANY, wxDialogBase::OnButton)
 
     EVT_CLOSE(wxDialogBase::OnCloseWindow)
 
     EVT_CHAR_HOOK(wxDialogBase::OnCharHook)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxDialogLayoutAdapter* wxDialogBase::sm_layoutAdapter = NULL;
 bool wxDialogBase::sm_layoutAdaptation = false;
@@ -157,7 +166,9 @@ wxWindow *wxDialogBase::CheckIfCanBeUsedAsParent(wxWindow *parent) const
         return NULL;
     }
 
-    if ( parent == this )
+    // FIXME-VC6: this compiler requires an explicit const cast or it fails
+    //            with error C2446
+    if ( const_cast<const wxWindow *>(parent) == this )
     {
         // not sure if this can really happen but it doesn't hurt to guard
         // against this clearly invalid situation
@@ -186,7 +197,7 @@ wxDialogBase::GetParentForModalDialog(wxWindow *parent, long style) const
                     wxGetTopLevelParent(wxGetActiveWindow()));
 
     // and finally the application main window
-    if ( !parent && wxTheApp )
+    if ( !parent )
         parent = CheckIfCanBeUsedAsParent(wxTheApp->GetTopWindow());
 
     return parent;
@@ -194,23 +205,23 @@ wxDialogBase::GetParentForModalDialog(wxWindow *parent, long style) const
 
 #if wxUSE_STATTEXT
 
-wxSizer *wxDialogBase::CreateTextSizer(const wxString& message, int widthMax)
+wxSizer *wxDialogBase::CreateTextSizer(const wxString& message)
 {
     wxTextSizerWrapper wrapper(this);
 
-    return CreateTextSizer(message, wrapper, widthMax);
+    return CreateTextSizer(message, wrapper);
 }
 
 wxSizer *wxDialogBase::CreateTextSizer(const wxString& message,
-                                       wxTextSizerWrapper& wrapper,
-                                       int widthMax)
+                                       wxTextSizerWrapper& wrapper)
 {
     // I admit that this is complete bogus, but it makes
     // message boxes work for pda screens temporarily..
+    int widthMax = -1;
     const bool is_pda = wxSystemSettings::GetScreenType() <= wxSYS_SCREEN_PDA;
     if (is_pda)
     {
-        widthMax = wxSystemSettings::GetMetric( wxSYS_SCREEN_X, this ) - 25;
+        widthMax = wxSystemSettings::GetMetric( wxSYS_SCREEN_X ) - 25;
     }
 
     return wrapper.CreateSizer(message, widthMax);
@@ -220,15 +231,47 @@ wxSizer *wxDialogBase::CreateTextSizer(const wxString& message,
 
 wxSizer *wxDialogBase::CreateButtonSizer(long flags)
 {
+#ifdef __SMARTPHONE__
+    wxDialog* dialog = (wxDialog*) this;
+    if ( flags & wxOK )
+        dialog->SetLeftMenu(wxID_OK);
+
+    if ( flags & wxCANCEL )
+        dialog->SetRightMenu(wxID_CANCEL);
+
+    if ( flags & wxYES )
+        dialog->SetLeftMenu(wxID_YES);
+
+    if ( flags & wxNO )
+        dialog->SetRightMenu(wxID_NO);
+
+    return NULL;
+#else // !__SMARTPHONE__
+
 #if wxUSE_BUTTON
 
-    return CreateStdDialogButtonSizer(flags);
+#ifdef __POCKETPC__
+    // PocketPC guidelines recommend for Ok/Cancel dialogs to use OK button
+    // located inside caption bar and implement Cancel functionality through
+    // Undo outside dialog. As native behaviour this will be default here but
+    // can be replaced with real wxButtons by setting the option below to 1
+    if ( (flags & ~(wxCANCEL|wxNO_DEFAULT)) != wxOK ||
+            wxSystemOptions::GetOptionInt(wxT("wince.dialog.real-ok-cancel")) )
+#endif // __POCKETPC__
+    {
+        return CreateStdDialogButtonSizer(flags);
+    }
+#ifdef __POCKETPC__
+    return NULL;
+#endif // __POCKETPC__
 
 #else // !wxUSE_BUTTON
     wxUnusedVar(flags);
 
     return NULL;
 #endif // wxUSE_BUTTON/!wxUSE_BUTTON
+
+#endif // __SMARTPHONE__/!__SMARTPHONE__
 }
 
 wxSizer *wxDialogBase::CreateSeparatedSizer(wxSizer *sizer)
@@ -407,7 +450,7 @@ bool wxDialogBase::SendCloseButtonClickEvent()
             if ( EmulateButtonClickIfPresent(wxID_CANCEL) )
                 return true;
             idCancel = GetAffirmativeId();
-            wxFALLTHROUGH;
+            // fall through
 
         default:
             // translate Esc to button press for the button with given id
@@ -472,7 +515,7 @@ void wxDialogBase::OnButton(wxCommandEvent& event)
 
 wxDEFINE_EVENT( wxEVT_WINDOW_MODAL_DIALOG_CLOSED , wxWindowModalDialogEvent  );
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxWindowModalDialogEvent, wxCommandEvent);
+IMPLEMENT_DYNAMIC_CLASS(wxWindowModalDialogEvent, wxCommandEvent)
 
 void wxDialogBase::ShowWindowModal ()
 {
@@ -526,13 +569,7 @@ void wxDialogBase::OnCloseWindow(wxCloseEvent& WXUNUSED(event))
 
     closing.Append(this);
 
-    // When a previously hidden (necessarily modeless) dialog is being closed,
-    // we must not perform the usual validation and data transfer steps as they
-    // had been already done when it was hidden and doing it again now would be
-    // unexpected and could result in e.g. the dialog asking for confirmation
-    // before discarding the changes being shown again, which doesn't make
-    // sense as the dialog is not being closed in response to any user action.
-    if ( !IsShown() || !SendCloseButtonClickEvent() )
+    if ( !SendCloseButtonClickEvent() )
     {
         // If the handler didn't close the dialog (e.g. because there is no
         // button with matching id) we still want to close it when the user
@@ -597,9 +634,9 @@ wxDialogLayoutAdapter* wxDialogBase::SetLayoutAdapter(wxDialogLayoutAdapter* ada
  * Standard adapter
  */
 
-wxIMPLEMENT_CLASS(wxDialogLayoutAdapter, wxObject);
+IMPLEMENT_CLASS(wxDialogLayoutAdapter, wxObject)
 
-wxIMPLEMENT_CLASS(wxStandardDialogLayoutAdapter, wxDialogLayoutAdapter);
+IMPLEMENT_CLASS(wxStandardDialogLayoutAdapter, wxDialogLayoutAdapter)
 
 // Allow for caption size on wxWidgets < 2.9
 #if defined(__WXGTK__) && !wxCHECK_VERSION(2,9,0)
@@ -638,7 +675,7 @@ bool wxStandardDialogLayoutAdapter::DoLayoutAdaptation(wxDialog* dialog)
                 wxScrolledWindow* scrolledWindow = wxDynamicCast(page, wxScrolledWindow);
                 if (scrolledWindow)
                     windows.Append(scrolledWindow);
-                else if (page->GetSizer())
+                else if (!scrolledWindow && page->GetSizer())
                 {
                     // Create a scrolled window and reparent
                     scrolledWindow = CreateScrolledWindow(page);
@@ -866,7 +903,11 @@ int wxStandardDialogLayoutAdapter::DoMustScroll(wxDialog* dialog, wxSize& window
     wxSize minWindowSize = dialog->GetSizer()->GetMinSize();
     windowSize = dialog->GetSize();
     windowSize = wxSize(wxMax(windowSize.x, minWindowSize.x), wxMax(windowSize.y, minWindowSize.y));
-    displaySize = wxDisplay(dialog).GetClientArea().GetSize();
+#if wxUSE_DISPLAY
+    displaySize = wxDisplay(wxDisplay::GetFromWindow(dialog)).GetClientArea().GetSize();
+#else
+    displaySize = wxGetClientDisplayRect().GetSize();
+#endif
 
     int flags = 0;
 
@@ -911,6 +952,7 @@ bool wxStandardDialogLayoutAdapter::DoFitWithScrolling(wxDialog* dialog, wxWindo
 
     wxSize windowSize, displaySize;
     int scrollFlags = DoMustScroll(dialog, windowSize, displaySize);
+    int scrollBarSize = 20;
 
     if (scrollFlags)
     {
@@ -921,7 +963,6 @@ bool wxStandardDialogLayoutAdapter::DoFitWithScrolling(wxDialog* dialog, wxWindo
         if (windows.GetCount() != 0)
         {
             // Allow extra for a scrollbar, assuming we resizing in one direction only.
-            int scrollBarSize = 20;
             if ((resizeVertically && !resizeHorizontally) && (windowSize.x < (displaySize.x - scrollBarSize)))
                 scrollBarExtraX = scrollBarSize;
             if ((resizeHorizontally && !resizeVertically) && (windowSize.y < (displaySize.y - scrollBarSize)))
@@ -965,11 +1006,11 @@ bool wxStandardDialogLayoutAdapter::DoFitWithScrolling(wxDialog* dialog, wxWindo
 
 class wxDialogLayoutAdapterModule: public wxModule
 {
-    wxDECLARE_DYNAMIC_CLASS(wxDialogLayoutAdapterModule);
+    DECLARE_DYNAMIC_CLASS(wxDialogLayoutAdapterModule)
 public:
     wxDialogLayoutAdapterModule() {}
-    virtual void OnExit() wxOVERRIDE { delete wxDialogBase::SetLayoutAdapter(NULL); }
-    virtual bool OnInit() wxOVERRIDE { wxDialogBase::SetLayoutAdapter(new wxStandardDialogLayoutAdapter); return true; }
+    virtual void OnExit() { delete wxDialogBase::SetLayoutAdapter(NULL); }
+    virtual bool OnInit() { wxDialogBase::SetLayoutAdapter(new wxStandardDialogLayoutAdapter); return true; }
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxDialogLayoutAdapterModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxDialogLayoutAdapterModule, wxModule)

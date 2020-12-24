@@ -71,18 +71,15 @@ bool wxStaticText::Create(wxWindow *parent, wxWindowID id,
 
 void wxStaticText::SetLabel(const wxString& label)
 {
-    if ( label == m_labelOrig )
-        return;
-
     m_labelOrig = label;       // save original label
 
     // Motif does not support ellipsized labels natively
-    WXSetVisibleLabel(GetEllipsizedLabel());
+    DoSetLabel(GetEllipsizedLabel());
 }
 
 // for wxST_ELLIPSIZE_* support:
 
-wxString wxStaticText::WXGetVisibleLabel() const
+wxString wxStaticText::DoGetLabel() const
 {
     XmString label = NULL;
     XtVaGetValues((Widget)m_labelWidget, XmNlabelString, &label, NULL);
@@ -90,7 +87,7 @@ wxString wxStaticText::WXGetVisibleLabel() const
     return wxXmStringToString(label);
 }
 
-void wxStaticText::WXSetVisibleLabel(const wxString& str)
+void wxStaticText::DoSetLabel(const wxString& str)
 {
     // build our own cleaned label
     wxXmString label_str(RemoveMnemonics(str));

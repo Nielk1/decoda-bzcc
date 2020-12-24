@@ -36,14 +36,14 @@
 // global functions
 // ---------------------------------------------------------------------------
 
-extern INT_PTR APIENTRY
-wxDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+extern LONG APIENTRY _EXPORT wxDlgProc(HWND hWnd, UINT message,
+                                       WPARAM wParam, LPARAM lParam);
 
 // ===========================================================================
 // implementation
 // ===========================================================================
 
-bool wxWindow::LoadNativeDialog(wxWindow* parent, wxWindowID id)
+bool wxWindow::LoadNativeDialog(wxWindow* parent, wxWindowID& id)
 {
     m_windowId = id;
 
@@ -190,6 +190,7 @@ wxWindow* wxWindow::CreateWindowFromHWND(wxWindow* parent, WXHWND hWnd)
         else
 #endif
 #if wxUSE_BMPBUTTON
+#if defined(__WIN32__) && defined(BS_BITMAP)
         if (style & BS_BITMAP)
         {
             // TODO: how to find the bitmap?
@@ -197,6 +198,7 @@ wxWindow* wxWindow::CreateWindowFromHWND(wxWindow* parent, WXHWND hWnd)
             wxLogError(wxT("Have not yet implemented bitmap button as BS_BITMAP button."));
         }
         else
+#endif
         if (style1 == BS_OWNERDRAW)
         {
             // TODO: how to find the bitmap?
@@ -277,10 +279,13 @@ wxWindow* wxWindow::CreateWindowFromHWND(wxWindow* parent, WXHWND hWnd)
         int style1 = (style & 0xFF);
 
         if ((style1 == SS_LEFT) || (style1 == SS_RIGHT)
+#ifndef __WXWINCE__
             || (style1 == SS_SIMPLE)
+#endif
             )
             win = new wxStaticText;
 #if wxUSE_STATBMP
+#if defined(__WIN32__) && defined(BS_BITMAP)
         else if (style1 == SS_BITMAP)
         {
             win = new wxStaticBitmap;
@@ -288,6 +293,7 @@ wxWindow* wxWindow::CreateWindowFromHWND(wxWindow* parent, WXHWND hWnd)
             // Help! this doesn't correspond with the wxWin implementation.
             wxLogError(wxT("Please make SS_BITMAP statics into owner-draw buttons."));
         }
+#endif
 #endif /* wxUSE_STATBMP */
     }
 #endif

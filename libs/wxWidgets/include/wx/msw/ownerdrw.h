@@ -20,7 +20,7 @@ public:
     virtual ~wxOwnerDrawn() {}
 
     virtual bool OnDrawItem(wxDC& dc, const wxRect& rc,
-                            wxODAction act, wxODStatus stat) wxOVERRIDE;
+                            wxODAction act, wxODStatus stat);
 };
 
 #endif // wxUSE_OWNER_DRAWN

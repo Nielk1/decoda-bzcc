@@ -17,7 +17,6 @@
 // forward declarations
 // ----------------------------------------------------------------------------
 
-struct IAccessible;
 class wxIAccessible;
 class WXDLLIMPEXP_FWD_CORE wxWindow;
 
@@ -43,7 +42,7 @@ public:
     wxIAccessible* GetIAccessible() { return m_pIAccessible; }
 
     // Returns the IAccessible standard interface pointer
-    IAccessible* GetIAccessibleStd();
+    void* GetIAccessibleStd() ;
 
 // Operations
 
@@ -56,7 +55,7 @@ protected:
 
 private:
     wxIAccessible * m_pIAccessible;  // the pointer to COM interface
-    IAccessible*    m_pIAccessibleStd;  // the pointer to the standard COM interface,
+    void*           m_pIAccessibleStd;  // the pointer to the standard COM interface,
                                         // for default processing
 
     wxDECLARE_NO_COPY_CLASS(wxAccessible);

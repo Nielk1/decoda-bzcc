@@ -7,15 +7,12 @@
 
 #include <stdlib.h>
 
-#include <stdexcept>
 #include <vector>
-#include <algorithm>
 
 #include "Platform.h"
 
 #include "Scintilla.h"
 
-#include "Position.h"
 #include "Selection.h"
 
 #ifdef SCI_NAMESPACE
@@ -23,18 +20,14 @@ using namespace Scintilla;
 #endif
 
 void SelectionPosition::MoveForInsertDelete(bool insertion, int startChange, int length) {
+	if (position == startChange) {
+		virtualSpace = 0;
+	}
 	if (insertion) {
-		if (position == startChange) {
-			int virtualLengthRemove = std::min(length, virtualSpace);
-			virtualSpace -= virtualLengthRemove;
-			position += virtualLengthRemove;
-		} else if (position > startChange) {
+		if (position > startChange) {
 			position += length;
 		}
 	} else {
-		if (position == startChange) {
-			virtualSpace = 0;
-		}
 		if (position > startChange) {
 			int endDeletion = startChange + length;
 			if (position > endDeletion) {
@@ -83,11 +76,6 @@ int SelectionRange::Length() const {
 	}
 }
 
-void SelectionRange::MoveForInsertDelete(bool insertion, int startChange, int length) {
-	caret.MoveForInsertDelete(insertion, startChange, length);
-	anchor.MoveForInsertDelete(insertion, startChange, length);
-}
-
 bool SelectionRange::Contains(int pos) const {
 	if (anchor > caret)
 		return (pos >= caret.Position()) && (pos <= anchor.Position());
@@ -124,10 +112,6 @@ SelectionSegment SelectionRange::Intersect(SelectionSegment check) const {
 	} else {
 		return SelectionSegment();
 	}
-}
-
-void SelectionRange::Swap() {
-	std::swap(caret, anchor);
 }
 
 bool SelectionRange::Trim(SelectionRange range) {
@@ -177,7 +161,7 @@ void SelectionRange::MinimizeVirtualSpace() {
 }
 
 Selection::Selection() : mainRange(0), moveExtends(false), tentativeMain(false), selType(selStream) {
-	AddSelection(SelectionRange(SelectionPosition(0)));
+	AddSelection(SelectionPosition(0));
 }
 
 Selection::~Selection() {
@@ -237,24 +221,8 @@ SelectionRange &Selection::Range(size_t r) {
 	return ranges[r];
 }
 
-const SelectionRange &Selection::Range(size_t r) const {
-	return ranges[r];
-}
-
 SelectionRange &Selection::RangeMain() {
 	return ranges[mainRange];
-}
-
-const SelectionRange &Selection::RangeMain() const {
-	return ranges[mainRange];
-}
-
-SelectionPosition Selection::Start() const {
-	if (IsRectangular()) {
-		return rangeRectangular.Start();
-	} else {
-		return ranges[mainRange].Start();
-	}
 }
 
 bool Selection::MoveExtends() const {
@@ -294,11 +262,9 @@ int Selection::Length() const {
 
 void Selection::MovePositions(bool insertion, int startChange, int length) {
 	for (size_t i=0; i<ranges.size(); i++) {
-		ranges[i].MoveForInsertDelete(insertion, startChange, length);
+		ranges[i].caret.MoveForInsertDelete(insertion, startChange, length);
+		ranges[i].anchor.MoveForInsertDelete(insertion, startChange, length);
 	}
-	if (selType == selRectangle) {
-		rangeRectangular.MoveForInsertDelete(insertion, startChange, length);
-	} 
 }
 
 void Selection::TrimSelection(SelectionRange range) {
@@ -313,14 +279,6 @@ void Selection::TrimSelection(SelectionRange range) {
 			ranges.pop_back();
 		} else {
 			i++;
-		}
-	}
-}
-
-void Selection::TrimOtherSelections(size_t r, SelectionRange range) {
-	for (size_t i = 0; i<ranges.size(); ++i) {
-		if (i != r) {
-			ranges[i].Trim(range);
 		}
 	}
 }
@@ -340,25 +298,6 @@ void Selection::AddSelection(SelectionRange range) {
 void Selection::AddSelectionWithoutTrim(SelectionRange range) {
 	ranges.push_back(range);
 	mainRange = ranges.size() - 1;
-}
-
-void Selection::DropSelection(size_t r) {
-	if ((ranges.size() > 1) && (r < ranges.size())) {
-		size_t mainNew = mainRange;
-		if (mainNew >= r) {
-			if (mainNew == 0) {
-				mainNew = ranges.size() - 2;
-			} else {
-				mainNew--;
-			}
-		}
-		ranges.erase(ranges.begin() + r);
-		mainRange = mainNew;
-	}
-}
-
-void Selection::DropAdditionalRanges() {
-	SetSelection(RangeMain());
 }
 
 void Selection::TentativeSelection(SelectionRange range) {

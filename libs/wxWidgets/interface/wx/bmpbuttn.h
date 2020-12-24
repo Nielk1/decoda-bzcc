@@ -62,8 +62,8 @@ public:
             Button position.
             If ::wxDefaultPosition is specified then a default position is chosen.
         @param size
-            Button size.
-            If ::wxDefaultSize is specified then the button is sized appropriately
+            Button size. 
+            If ::wxDefaultSize is specified then the button is sized appropriately 
             for the bitmap.
         @param style
             Window style. See wxBitmapButton.
@@ -83,7 +83,7 @@ public:
                    const wxBitmap& bitmap,
                    const wxPoint& pos = wxDefaultPosition,
                    const wxSize& size = wxDefaultSize,
-                   long style = 0,
+                   long style = wxBU_AUTODRAW,
                    const wxValidator& validator = wxDefaultValidator,
                    const wxString& name = wxButtonNameStr);
 
@@ -95,7 +95,7 @@ public:
                 const wxBitmap& bitmap,
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
-                long style = 0,
+                long style = wxBU_AUTODRAW,
                 const wxValidator& validator = wxDefaultValidator,
                 const wxString& name = wxButtonNameStr);
 

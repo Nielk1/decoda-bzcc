@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     03.03.03 (replaces the old file with the same name)
-// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
+// Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -48,6 +48,10 @@
 
 #include "wx/msw/dib.h"
 
+#ifdef __WXWINCE__
+    #include <shellapi.h>       // for SHLoadDIBitmap()
+#endif
+
 // ----------------------------------------------------------------------------
 // private functions
 // ----------------------------------------------------------------------------
@@ -64,9 +68,10 @@ static inline WORD GetNumberOfColours(WORD bitsPerPixel)
 // wrapper around ::GetObject() for DIB sections
 static inline bool GetDIBSection(HBITMAP hbmp, DIBSECTION *ds)
 {
-    // note that GetObject() may return sizeof(DIBSECTION) for a bitmap
-    // which is *not* a DIB section and the way to check for it is
-    // by looking at the bits pointer
+    // note that at least under Win9x (this doesn't seem to happen under Win2K
+    // but this doesn't mean anything, of course), GetObject() may return
+    // sizeof(DIBSECTION) for a bitmap which is *not* a DIB section and the way
+    // to check for it is by looking at the bits pointer
     return ::GetObject(hbmp, sizeof(DIBSECTION), ds) == sizeof(DIBSECTION) &&
                 ds->dsBm.bmBits;
 }
@@ -172,6 +177,52 @@ bool wxDIB::Create(HBITMAP hbmp)
     return true;
 }
 
+// Windows CE doesn't have GetDIBits() so use an alternative implementation
+// for it
+//
+// in fact I'm not sure if GetDIBits() is really much better than using
+// BitBlt() like this -- it should be faster but I didn't do any tests, if
+// anybody has time to do them and by chance finds that GetDIBits() is not
+// much faster than BitBlt(), we could always use the Win CE version here
+#ifdef __WXWINCE__
+
+bool wxDIB::CopyFromDDB(HBITMAP hbmp)
+{
+    MemoryHDC hdcSrc;
+    if ( !hdcSrc )
+        return false;
+
+    SelectInHDC selectSrc(hdcSrc, hbmp);
+    if ( !selectSrc )
+        return false;
+
+    MemoryHDC hdcDst;
+    if ( !hdcDst )
+        return false;
+
+    SelectInHDC selectDst(hdcDst, m_handle);
+    if ( !selectDst )
+        return false;
+
+
+    if ( !::BitBlt(
+                    hdcDst,
+                    0, 0, m_width, m_height,
+                    hdcSrc,
+                    0, 0,
+                    SRCCOPY
+                  ) )
+    {
+        wxLogLastError(wxT("BitBlt(DDB -> DIB)"));
+
+        return false;
+    }
+
+    return true;
+}
+
+#else // !__WXWINCE__
+
 bool wxDIB::CopyFromDDB(HBITMAP hbmp)
 {
     DIBSECTION ds;
@@ -202,12 +253,17 @@ bool wxDIB::CopyFromDDB(HBITMAP hbmp)
     return true;
 }
 
+#endif // __WXWINCE__/!__WXWINCE__
+
 // ----------------------------------------------------------------------------
 // Loading/saving the DIBs
 // ----------------------------------------------------------------------------
 
 bool wxDIB::Load(const wxString& filename)
 {
+#ifdef __WXWINCE__
+    m_handle = SHLoadDIBitmap(filename);
+#else // !__WXWINCE__
     m_handle = (HBITMAP)::LoadImage
                          (
                             wxGetInstance(),
@@ -216,6 +272,7 @@ bool wxDIB::Load(const wxString& filename)
                             0, 0, // don't specify the size
                             LR_CREATEDIBSECTION | LR_LOADFROMFILE
                          );
+#endif // __WXWINCE__
 
     if ( !m_handle )
     {
@@ -308,6 +365,8 @@ void wxDIB::DoGetObject() const
 // DDB <-> DIB conversions
 // ----------------------------------------------------------------------------
 
+#ifndef __WXWINCE__
+
 HBITMAP wxDIB::CreateDDB(HDC hdc) const
 {
     wxCHECK_MSG( m_handle, 0, wxT("wxDIB::CreateDDB(): invalid object") );
@@ -348,7 +407,7 @@ HBITMAP wxDIB::CreateDDB(HDC hdc) const
 }
 
 /* static */
-HBITMAP wxDIB::ConvertToBitmap(const BITMAPINFO *pbmi, HDC hdc, const void *bits)
+HBITMAP wxDIB::ConvertToBitmap(const BITMAPINFO *pbmi, HDC hdc, void *bits)
 {
     wxCHECK_MSG( pbmi, 0, wxT("invalid DIB in ConvertToBitmap") );
 
@@ -389,7 +448,7 @@ HBITMAP wxDIB::ConvertToBitmap(const BITMAPINFO *pbmi, HDC hdc, const void *bits
                 numColors = 0;
         }
 
-        bits = reinterpret_cast<const char*>(pbmih + 1) + numColors * sizeof(RGBQUAD);
+        bits = (char *)pbmih + sizeof(*pbmih) + numColors*sizeof(RGBQUAD);
     }
 
     HBITMAP hbmp = ::CreateDIBitmap
@@ -484,8 +543,8 @@ HGLOBAL wxDIB::ConvertFromBitmap(HBITMAP hbmp)
     HGLOBAL hDIB = ::GlobalAlloc(GMEM_MOVEABLE, size);
     if ( !hDIB )
     {
-        // this is an error which the user may understand so let him
-        // know about it
+        // this is an error which does risk to happen especially under Win9x
+        // and which the user may understand so let him know about it
         wxLogError(_("Failed to allocate %luKb of memory for bitmap data."),
                    (unsigned long)(size / 1024));
 
@@ -504,14 +563,20 @@ HGLOBAL wxDIB::ConvertFromBitmap(HBITMAP hbmp)
     return hDIB;
 }
 
+#endif // __WXWINCE__
+
 // ----------------------------------------------------------------------------
 // palette support
 // ----------------------------------------------------------------------------
 
-#if defined(__WXMSW__) && wxUSE_PALETTE
+#if wxUSE_PALETTE
 
 wxPalette *wxDIB::CreatePalette() const
 {
+    // GetDIBColorTable not available in eVC3
+#if !defined(__WXMSW__) || defined(_WIN32_WCE) && _WIN32_WCE < 400
+    return NULL;
+#else
     wxCHECK_MSG( m_handle, NULL, wxT("wxDIB::CreatePalette(): invalid object") );
 
     DIBSECTION ds;
@@ -579,9 +644,10 @@ wxPalette *wxDIB::CreatePalette() const
     palette->SetHPALETTE((WXHPALETTE)hPalette);
 
     return palette;
+#endif
 }
 
-#endif // defined(__WXMSW__) && wxUSE_PALETTE
+#endif // wxUSE_PALETTE
 
 // ----------------------------------------------------------------------------
 // wxImage support
@@ -675,7 +741,7 @@ bool wxDIB::Create(const wxImage& image, PixelFormat pf)
     return true;
 }
 
-wxImage wxDIB::ConvertToImage(ConversionFlags flags) const
+wxImage wxDIB::ConvertToImage() const
 {
     wxCHECK_MSG( IsOk(), wxNullImage,
                     wxT("can't convert invalid DIB to wxImage") );
@@ -775,7 +841,7 @@ wxImage wxDIB::ConvertToImage(ConversionFlags flags) const
     if ( hasOpaque && hasTransparent )
         hasAlpha = true;
 
-    if ( !hasAlpha && image.HasAlpha() && flags == Convert_AlphaAuto )
+    if ( !hasAlpha && image.HasAlpha() )
         image.ClearAlpha();
 
     return image;

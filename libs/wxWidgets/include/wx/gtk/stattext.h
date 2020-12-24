@@ -23,7 +23,7 @@ public:
                  const wxPoint &pos = wxDefaultPosition,
                  const wxSize &size = wxDefaultSize,
                  long style = 0,
-                 const wxString &name = wxASCII_STR(wxStaticTextNameStr) );
+                 const wxString &name = wxStaticTextNameStr );
 
     bool Create(wxWindow *parent,
                 wxWindowID id,
@@ -31,11 +31,11 @@ public:
                 const wxPoint &pos = wxDefaultPosition,
                 const wxSize &size = wxDefaultSize,
                 long style = 0,
-                const wxString &name = wxASCII_STR(wxStaticTextNameStr) );
+                const wxString &name = wxStaticTextNameStr );
 
-    void SetLabel( const wxString &label ) wxOVERRIDE;
+    void SetLabel( const wxString &label );
 
-    bool SetFont( const wxFont &font ) wxOVERRIDE;
+    bool SetFont( const wxFont &font );
 
     static wxVisualAttributes
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
@@ -44,15 +44,15 @@ public:
     // --------------
 
 protected:
-    virtual bool GTKWidgetNeedsMnemonic() const wxOVERRIDE;
-    virtual void GTKWidgetDoSetMnemonic(GtkWidget* w) wxOVERRIDE;
+    virtual bool GTKWidgetNeedsMnemonic() const;
+    virtual void GTKWidgetDoSetMnemonic(GtkWidget* w);
 
-    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+    virtual wxSize DoGetBestSize() const;
 
-    virtual wxString WXGetVisibleLabel() const wxOVERRIDE;
-    virtual void WXSetVisibleLabel(const wxString& str) wxOVERRIDE;
+    virtual wxString DoGetLabel() const;
+    virtual void DoSetLabel(const wxString& str);
 #if wxUSE_MARKUP
-    virtual bool DoSetLabelMarkup(const wxString& markup) wxOVERRIDE;
+    virtual bool DoSetLabelMarkup(const wxString& markup);
 #endif // wxUSE_MARKUP
 
 private:
@@ -62,7 +62,7 @@ private:
     void GTKDoSetLabel(GTKLabelSetter setter, const wxString& label);
 
 
-    wxDECLARE_DYNAMIC_CLASS(wxStaticText);
+    DECLARE_DYNAMIC_CLASS(wxStaticText)
 };
 
 #endif

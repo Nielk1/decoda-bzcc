@@ -24,14 +24,14 @@
 #include "wx/osx/private.h"
 #include "wx/osx/uma.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxMDIParentFrame, wxFrame);
-wxIMPLEMENT_DYNAMIC_CLASS(wxMDIChildFrame, wxFrame);
-wxIMPLEMENT_DYNAMIC_CLASS(wxMDIClientWindow, wxWindow);
+IMPLEMENT_DYNAMIC_CLASS(wxMDIParentFrame, wxFrame)
+IMPLEMENT_DYNAMIC_CLASS(wxMDIChildFrame, wxFrame)
+IMPLEMENT_DYNAMIC_CLASS(wxMDIClientWindow, wxWindow)
 
-wxBEGIN_EVENT_TABLE(wxMDIParentFrame, wxFrame)
+BEGIN_EVENT_TABLE(wxMDIParentFrame, wxFrame)
     EVT_ACTIVATE(wxMDIParentFrame::OnActivate)
     EVT_SYS_COLOUR_CHANGED(wxMDIParentFrame::OnSysColourChanged)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 #define TRACE_MDI "mdi"
 
@@ -45,7 +45,31 @@ static const int IDM_WINDOWTILEVERT = 4005;
 
 void UMAHighlightAndActivateWindow( WindowRef inWindowRef , bool inActivate )
 {
-#if defined(wxOSX_USE_COCOA)
+#if wxOSX_USE_CARBON // TODO REMOVE
+    if ( inWindowRef )
+    {
+//        bool isHighlighted = IsWindowHighlited( inWindowRef ) ;
+//        if ( inActivate != isHighlighted )
+#ifndef __LP64__
+        GrafPtr port ;
+        GetPort( &port ) ;
+        SetPortWindowPort( inWindowRef ) ;
+#endif
+        HiliteWindow( inWindowRef , inActivate ) ;
+        ControlRef control = NULL ;
+        ::GetRootControl( inWindowRef , &control ) ;
+        if ( control )
+        {
+            if ( inActivate )
+                ::ActivateControl( control ) ;
+            else
+                ::DeactivateControl( control ) ;
+        }
+#ifndef __LP64__
+        SetPort( port ) ;
+#endif
+    }
+#elif defined(wxOSX_USE_COCOA)
     wxUnusedVar(inActivate);
     wxUnusedVar(inWindowRef);
 // TODO: implement me!

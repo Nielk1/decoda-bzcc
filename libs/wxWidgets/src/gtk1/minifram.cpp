@@ -319,7 +319,7 @@ static const char *cross_xpm[] = {
 " ### ",
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxMiniFrame, wxFrame);
+IMPLEMENT_DYNAMIC_CLASS(wxMiniFrame,wxFrame)
 
 bool wxMiniFrame::Create( wxWindow *parent, wxWindowID id, const wxString &title,
       const wxPoint &pos, const wxSize &size,

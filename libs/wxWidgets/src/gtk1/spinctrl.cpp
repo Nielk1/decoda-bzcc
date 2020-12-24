@@ -21,8 +21,6 @@
     #include "wx/crt.h"
 #endif
 
-#include "wx/private/spinctrl.h"
-
 #include "wx/gtk1/private.h"
 
 //-----------------------------------------------------------------------------
@@ -71,7 +69,7 @@ wx_gtk_spin_output(GtkSpinButton* spin, wxSpinCtrl* win)
     gtk_entry_set_text
     (
         GTK_ENTRY(spin),
-        wxSpinCtrlImpl::FormatAsHex(val, win->GetMax()).utf8_str()
+        wxPrivate::wxSpinCtrlFormatAsHex(val, win->GetMax()).utf8_str()
     );
 
     return TRUE;
@@ -124,9 +122,9 @@ gtk_spinctrl_text_changed_callback( GtkWidget *WXUNUSED(widget), wxSpinCtrl *win
 // wxSpinCtrl
 //-----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxSpinCtrl, wxControl)
+BEGIN_EVENT_TABLE(wxSpinCtrl, wxControl)
     EVT_CHAR(wxSpinCtrl::OnChar)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 bool wxSpinCtrl::Create(wxWindow *parent, wxWindowID id,
                         const wxString& value,
@@ -332,7 +330,10 @@ bool wxSpinCtrl::IsOwnGtkWindow( GdkWindow *window )
 
 wxSize wxSpinCtrl::DoGetBestSize() const
 {
-    return wxSize(95, wxControl::DoGetBestSize().y);
+    wxSize ret( wxControl::DoGetBestSize() );
+    wxSize best(95, ret.y);
+    CacheBestSize(best);
+    return best;
 }
 
 bool wxSpinCtrl::SetBase(int base)

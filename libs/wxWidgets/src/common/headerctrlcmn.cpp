@@ -40,7 +40,6 @@ namespace
 // ----------------------------------------------------------------------------
 
 const unsigned int wxNO_COLUMN = static_cast<unsigned>(-1);
-const unsigned int wxID_COLUMNS_BASE = 1;
 
 // ----------------------------------------------------------------------------
 // wxHeaderColumnsRearrangeDialog: dialog for customizing our columns
@@ -76,12 +75,12 @@ public:
 
 extern WXDLLIMPEXP_DATA_CORE(const char) wxHeaderCtrlNameStr[] = "wxHeaderCtrl";
 
-wxBEGIN_EVENT_TABLE(wxHeaderCtrlBase, wxControl)
+BEGIN_EVENT_TABLE(wxHeaderCtrlBase, wxControl)
     EVT_HEADER_SEPARATOR_DCLICK(wxID_ANY, wxHeaderCtrlBase::OnSeparatorDClick)
 #if wxUSE_MENUS
     EVT_HEADER_RIGHT_CLICK(wxID_ANY, wxHeaderCtrlBase::OnRClick)
 #endif // wxUSE_MENUS
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 void wxHeaderCtrlBase::ScrollWindow(int dx,
                                     int WXUNUSED_UNLESS_DEBUG(dy),
@@ -219,10 +218,15 @@ unsigned int wxHeaderCtrlBase::GetColumnPos(unsigned int idx) const
     wxCHECK_MSG( idx < count, wxNO_COLUMN, "invalid index" );
 
     const wxArrayInt order = GetColumnsOrder();
-    int pos = order.Index(idx);
-    wxCHECK_MSG( pos != wxNOT_FOUND, wxNO_COLUMN, "column unexpectedly not displayed at all" );
+    for ( unsigned n = 0; n < count; n++ )
+    {
+        if ( (unsigned)order[n] == idx )
+            return n;
+    }
 
-    return (unsigned int)pos;
+    wxFAIL_MSG( "column unexpectedly not displayed at all" );
+
+    return wxNO_COLUMN;
 }
 
 /* static */
@@ -230,14 +234,31 @@ void wxHeaderCtrlBase::MoveColumnInOrderArray(wxArrayInt& order,
                                               unsigned int idx,
                                               unsigned int pos)
 {
-    int posOld = order.Index(idx);
-    wxASSERT_MSG( posOld != wxNOT_FOUND, "invalid index" );
+    const unsigned count = order.size();
 
-    if ( pos != (unsigned int)posOld )
+    wxArrayInt orderNew;
+    orderNew.reserve(count);
+    for ( unsigned n = 0; ; n++ )
     {
-        order.RemoveAt(posOld);
-        order.Insert(idx, pos);
+        // NB: order of checks is important for this to work when the new
+        //     column position is the same as the old one
+
+        // insert the column at its new position
+        if ( orderNew.size() == pos )
+            orderNew.push_back(idx);
+
+        if ( n == count )
+            break;
+
+        // delete the column from its old position
+        const unsigned idxOld = order[n];
+        if ( idxOld == idx )
+            continue;
+
+        orderNew.push_back(idxOld);
     }
+
+    order.swap(orderNew);
 }
 
 void
@@ -285,7 +306,7 @@ void wxHeaderCtrlBase::AddColumnsItems(wxMenu& menu, int idColumnsBase)
         const wxHeaderColumn& col = GetColumn(n);
         menu.AppendCheckItem(idColumnsBase + n, col.GetTitle());
         if ( col.IsShown() )
-            menu.Check(idColumnsBase + n, true);
+            menu.Check(n, true);
     }
 }
 
@@ -296,15 +317,15 @@ bool wxHeaderCtrlBase::ShowColumnsMenu(const wxPoint& pt, const wxString& title)
     if ( !title.empty() )
         menu.SetTitle(title);
 
-    AddColumnsItems(menu, wxID_COLUMNS_BASE);
+    AddColumnsItems(menu);
 
     // ... and an extra one to show the customization dialog if the user is
     // allowed to reorder the columns too
-    const unsigned idCustomize = GetColumnCount() + wxID_COLUMNS_BASE;
+    const unsigned count = GetColumnCount();
     if ( HasFlag(wxHD_ALLOW_REORDER) )
     {
         menu.AppendSeparator();
-        menu.Append(idCustomize, _("&Customize..."));
+        menu.Append(count, _("&Customize..."));
     }
 
     // do show the menu and get the user selection
@@ -312,14 +333,13 @@ bool wxHeaderCtrlBase::ShowColumnsMenu(const wxPoint& pt, const wxString& title)
     if ( rc == wxID_NONE )
         return false;
 
-    if ( static_cast<unsigned>(rc) == idCustomize )
+    if ( static_cast<unsigned>(rc) == count )
     {
         return ShowCustomizeDialog();
     }
     else // a column selected from the menu
     {
-        const int columnIndex = rc - wxID_COLUMNS_BASE;
-        UpdateColumnVisibility(columnIndex, !GetColumn(columnIndex).IsShown());
+        UpdateColumnVisibility(rc, !GetColumn(rc).IsShown());
     }
 
     return true;
@@ -387,10 +407,6 @@ bool wxHeaderCtrlBase::ShowCustomizeDialog()
 // ============================================================================
 // wxHeaderCtrlSimple implementation
 // ============================================================================
-
-wxBEGIN_EVENT_TABLE(wxHeaderCtrlSimple, wxHeaderCtrl)
-    EVT_HEADER_RESIZING(wxID_ANY, wxHeaderCtrlSimple::OnHeaderResizing)
-wxEND_EVENT_TABLE()
 
 void wxHeaderCtrlSimple::Init()
 {
@@ -472,17 +488,11 @@ wxHeaderCtrlSimple::UpdateColumnWidthToFit(unsigned int idx, int widthTitle)
     return true;
 }
 
-void wxHeaderCtrlSimple::OnHeaderResizing(wxHeaderCtrlEvent& evt)
-{
-    m_cols[evt.GetColumn()].SetWidth(evt.GetWidth());
-    Refresh();
-}
-
 // ============================================================================
 // wxHeaderCtrlEvent implementation
 // ============================================================================
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxHeaderCtrlEvent, wxNotifyEvent);
+IMPLEMENT_DYNAMIC_CLASS(wxHeaderCtrlEvent, wxNotifyEvent)
 
 wxDEFINE_EVENT( wxEVT_HEADER_CLICK, wxHeaderCtrlEvent);
 wxDEFINE_EVENT( wxEVT_HEADER_RIGHT_CLICK, wxHeaderCtrlEvent);

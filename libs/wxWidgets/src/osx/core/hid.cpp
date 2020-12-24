@@ -641,15 +641,15 @@ void wxHIDKeyboard::DoBuildCookies(CFArrayRef Array)
 
 class wxHIDModule : public wxModule
 {
-    wxDECLARE_DYNAMIC_CLASS(wxHIDModule);
+    DECLARE_DYNAMIC_CLASS(wxHIDModule)
 
-public:
+    public:
         static wxArrayPtrVoid sm_keyboards;
-        virtual bool OnInit() wxOVERRIDE
+        virtual bool OnInit()
         {
             return true;
         }
-        virtual void OnExit() wxOVERRIDE
+        virtual void OnExit()
         {
             for(size_t i = 0; i < sm_keyboards.GetCount(); ++i)
                 delete (wxHIDKeyboard*) sm_keyboards[i];
@@ -657,7 +657,7 @@ public:
         }
 };
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxHIDModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxHIDModule, wxModule)
 
 wxArrayPtrVoid wxHIDModule::sm_keyboards;
 

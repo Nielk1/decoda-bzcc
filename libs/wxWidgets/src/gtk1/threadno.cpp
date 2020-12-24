@@ -164,7 +164,7 @@ void wxThread::OnExit()
     Join();
 }
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxThreadModule, wxModule);
+IMPLEMENT_DYNAMIC_CLASS(wxThreadModule, wxModule)
 
 bool wxThreadModule::OnInit()
 {

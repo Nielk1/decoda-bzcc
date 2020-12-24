@@ -9,10 +9,6 @@
 #ifndef SPLITVECTOR_H
 #define SPLITVECTOR_H
 
-#ifdef SCI_NAMESPACE
-namespace Scintilla {
-#endif
-
 template <typename T>
 class SplitVector {
 protected:
@@ -29,17 +25,15 @@ protected:
 	void GapTo(int position) {
 		if (position != part1Length) {
 			if (position < part1Length) {
-				// Moving the gap towards start so moving elements towards end
-				std::copy_backward(
+				memmove(
+					body + position + gapLength,
 					body + position,
-					body + part1Length,
-					body + gapLength + part1Length);
+					sizeof(T) * (part1Length - position));
 			} else {	// position > part1Length
-				// Moving the gap towards end so moving elements towards start
-				std::copy(
+				memmove(
+					body + part1Length,
 					body + part1Length + gapLength,
-					body + gapLength + position,
-					body + part1Length);
+					sizeof(T) * (position - part1Length));
 			}
 			part1Length = position;
 		}
@@ -87,15 +81,12 @@ public:
 	/// copy exisiting contents to the new buffer.
 	/// Must not be used to decrease the size of the buffer.
 	void ReAllocate(int newSize) {
-		if (newSize < 0)
-			throw std::runtime_error("SplitVector::ReAllocate: negative size.");
-
 		if (newSize > size) {
 			// Move the gap to the end
 			GapTo(lengthBody);
 			T *newBody = new T[newSize];
 			if ((size != 0) && (body != 0)) {
-				std::copy(body, body + lengthBody, newBody);
+				memmove(newBody, body, sizeof(T) * lengthBody);
 				delete []body;
 			}
 			body = newBody;
@@ -183,7 +174,8 @@ public:
 			}
 			RoomFor(insertLength);
 			GapTo(position);
-			std::fill(&body[part1Length], &body[part1Length + insertLength], v);
+			for (int i = 0; i < insertLength; i++)
+				body[part1Length + i] = v;
 			lengthBody += insertLength;
 			part1Length += insertLength;
 			gapLength -= insertLength;
@@ -207,7 +199,7 @@ public:
 			}
 			RoomFor(insertLength);
 			GapTo(positionToInsert);
-			std::copy(s + positionFrom, s + positionFrom + insertLength, body + part1Length);
+			memmove(body + part1Length, s + positionFrom, sizeof(T) * insertLength);
 			lengthBody += insertLength;
 			part1Length += insertLength;
 			gapLength -= insertLength;
@@ -256,11 +248,11 @@ public:
 			if (range1Length > part1AfterPosition)
 				range1Length = part1AfterPosition;
 		}
-		std::copy(body + position, body + position + range1Length, buffer);
+		memcpy(buffer, body + position, range1Length * sizeof(T));
 		buffer += range1Length;
 		position = position + range1Length + gapLength;
 		int range2Length = retrieveLength - range1Length;
-		std::copy(body + position, body + position + range2Length, buffer);
+		memcpy(buffer, body + position, range2Length * sizeof(T));
 	}
 
 	T *BufferPointer() {
@@ -277,7 +269,7 @@ public:
 				GapTo(position);
 				return body + position + gapLength;
 			} else {
-				return body + position;
+				return body + position ;
 			}
 		} else {
 			return body + position + gapLength;
@@ -285,12 +277,8 @@ public:
 	}
 
 	int GapPosition() const {
-		return part1Length;
+		return part1Length; 
 	}
 };
-
-#ifdef SCI_NAMESPACE
-}
-#endif
 
 #endif

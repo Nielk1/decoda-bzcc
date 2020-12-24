@@ -205,10 +205,7 @@ void WXGLDestroyPixelFormat( WXGLPixelFormat pixelFormat )
 }
 
 
-WXGLPixelFormat WXGLChoosePixelFormat(const int *GLAttrs,
-                                      int n1,
-                                      const int *ctxAttrs,
-                                      int n2)
+WXGLPixelFormat WXGLChoosePixelFormat(const int *attribList)
 {
 #if 0
     NSOpenGLPixelFormatAttribute data[512];
@@ -352,7 +349,7 @@ WXGLPixelFormat WXGLChoosePixelFormat(const int *GLAttrs,
 
     return [[NSOpenGLPixelFormat alloc] initWithAttributes:(NSOpenGLPixelFormatAttribute*) attribs];
 #endif
-    return @"dummy";
+    return NULL;
 }
 
 bool wxGLContext::SetCurrent(const wxGLCanvas& win) const
@@ -367,12 +364,14 @@ bool wxGLContext::SetCurrent(const wxGLCanvas& win) const
 
 #define USE_SEPARATE_VIEW 1
 
-bool wxGLCanvas::DoCreate(wxWindow *parent,
+bool wxGLCanvas::Create(wxWindow *parent,
                         wxWindowID id,
                         const wxPoint& pos,
                         const wxSize& size,
                         long style,
-                        const wxString& name)
+                        const wxString& name,
+                        const int *attribList,
+                        const wxPalette& WXUNUSED(palette))
 {
 /*
     m_glFormat = WXGLChoosePixelFormat(attribList);

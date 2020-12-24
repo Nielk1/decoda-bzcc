@@ -39,7 +39,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxTAB_TRAVERSAL | wxNO_BORDER,
-                const wxString& name = wxASCII_STR(wxPanelNameStr));
+                const wxString& name = wxPanelNameStr);
     */
 
     // Pseudo ctor
@@ -48,13 +48,13 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxTAB_TRAVERSAL | wxNO_BORDER,
-                const wxString& name = wxASCII_STR(wxPanelNameStr));
+                const wxString& name = wxPanelNameStr);
 
 
     // implementation from now on
     // --------------------------
 
-    virtual void InitDialog() wxOVERRIDE;
+    virtual void InitDialog();
 
 private:
     wxDECLARE_NO_COPY_CLASS(wxPanelBase);

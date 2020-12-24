@@ -50,6 +50,20 @@
 
 static const int wxID_NEXT_TIP = 32000;  // whatever
 
+// ---------------------------------------------------------------------------
+// macros
+// ---------------------------------------------------------------------------
+
+/* Macro for avoiding #ifdefs when value have to be different depending on size of
+   device we display on - take it from something like wxDesktopPolicy in the future
+ */
+
+#if defined(__SMARTPHONE__)
+    #define wxLARGESMALL(large,small) small
+#else
+    #define wxLARGESMALL(large,small) large
+#endif
+
 // ----------------------------------------------------------------------------
 // private classes
 // ----------------------------------------------------------------------------
@@ -62,7 +76,7 @@ class WXDLLIMPEXP_ADV wxFileTipProvider : public wxTipProvider
 public:
     wxFileTipProvider(const wxString& filename, size_t currentTip);
 
-    virtual wxString GetTip() wxOVERRIDE;
+    virtual wxString GetTip();
 
 private:
     wxTextFile m_textfile;
@@ -78,7 +92,7 @@ class WXDLLIMPEXP_ADV wxRegTipProvider : public wxTipProvider
 public:
     wxRegTipProvider(const wxString& keyname);
 
-    virtual wxString GetTip() wxOVERRIDE;
+    virtual wxString GetTip();
 };
 
 // Empty implementation for now to keep the linker happy
@@ -113,7 +127,7 @@ private:
     wxTextCtrl *m_text;
     wxCheckBox *m_checkbox;
 
-    wxDECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
     wxDECLARE_NO_COPY_CLASS(wxTipDialog);
 };
 
@@ -145,8 +159,9 @@ wxString wxFileTipProvider::GetTip()
     // Comments start with a # symbol.
     // Loop reading lines until get the first one that isn't a comment.
     // The max number of loop executions is the number of lines in the
-    // textfile so that can't go into an infinite loop in the [oddball]
-    // case of a comment-only tips file.
+    // textfile so that can't go into an eternal loop in the [oddball]
+    // case of a comment-only tips file, or the developer has vetoed
+    // them all via PreprecessTip().
     for ( size_t i=0; i < count; i++ )
     {
         // The current tip may be at the last line of the textfile, (or
@@ -162,9 +177,13 @@ wxString wxFileTipProvider::GetTip()
         // Read the tip, and increment the current tip counter.
         tip = m_textfile.GetLine(m_currentTip++);
 
+        // Allow a derived class's overrided virtual to modify the tip
+        // now if so desired.
+        tip = PreprocessTip(tip);
+
         // Break if tip isn't a comment, and isn't an empty string
         // (or only stray space characters).
-        if ( !tip.StartsWith(wxT("#")) && !tip.Trim().empty() )
+        if ( !tip.StartsWith(wxT("#")) && (tip.Trim() != wxEmptyString) )
         {
             break;
         }
@@ -191,9 +210,9 @@ wxString wxFileTipProvider::GetTip()
 // wxTipDialog
 // ----------------------------------------------------------------------------
 
-wxBEGIN_EVENT_TABLE(wxTipDialog, wxDialog)
+BEGIN_EVENT_TABLE(wxTipDialog, wxDialog)
     EVT_BUTTON(wxID_NEXT_TIP, wxTipDialog::OnNextTip)
-wxEND_EVENT_TABLE()
+END_EVENT_TABLE()
 
 wxTipDialog::wxTipDialog(wxWindow *parent,
                          wxTipProvider *tipProvider,
@@ -213,7 +232,7 @@ wxTipDialog::wxTipDialog(wxWindow *parent,
     if (!isPda)
     {
         wxFont font = text->GetFont();
-        font.SetFractionalPointSize(1.6 * font.GetFractionalPointSize());
+        font.SetPointSize(int(1.6 * font.GetPointSize()));
         font.SetWeight(wxFONTWEIGHT_BOLD);
         text->SetFont(font);
     }
@@ -227,20 +246,41 @@ wxTipDialog::wxTipDialog(wxWindow *parent,
                             wxDEFAULT_CONTROL_BORDER
                             );
 #if defined(__WXMSW__)
-    m_text->SetFont(wxFont(12, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+    m_text->SetFont(wxFont(12, wxSWISS, wxNORMAL, wxNORMAL));
 #endif
+
+//#if defined(__WXPM__)
+    //
+    // The only way to get icons into an OS/2 static bitmap control
+    //
+//    wxBitmap                        vBitmap;
+
+//    vBitmap.SetId(wxICON_TIP); // OS/2 specific bitmap method--OS/2 wxBitmaps all have an ID.
+//                               // and for StatBmp's under OS/2 it MUST be a valid resource ID.
+//
+//    wxStaticBitmap*                 bmp = new wxStaticBitmap(this, wxID_ANY, vBitmap);
+//
+//#else
 
     wxIcon icon = wxArtProvider::GetIcon(wxART_TIP, wxART_CMN_DIALOG);
     wxStaticBitmap *bmp = new wxStaticBitmap(this, wxID_ANY, icon);
+
+//#endif
 
     m_checkbox = new wxCheckBox(this, wxID_ANY, _("&Show tips at startup"));
     m_checkbox->SetValue(showAtStartup);
     m_checkbox->SetFocus();
 
+    // smart phones does not support or do not waste space for wxButtons
+#ifndef __SMARTPHONE__
     wxButton *btnNext = new wxButton(this, wxID_NEXT_TIP, _("&Next Tip"));
+#endif
 
+    // smart phones does not support or do not waste space for wxButtons
+#ifndef __SMARTPHONE__
     wxButton *btnClose = new wxButton(this, wxID_CLOSE);
     SetAffirmativeId(wxID_CLOSE);
+#endif
 
 
     // 2) put them in boxes
@@ -249,10 +289,10 @@ wxTipDialog::wxTipDialog(wxWindow *parent,
 
     wxBoxSizer *icon_text = new wxBoxSizer( wxHORIZONTAL );
     icon_text->Add( bmp, 0, wxCENTER );
-    icon_text->Add( text, 1, wxCENTER | wxLEFT, 20 );
-    topsizer->Add( icon_text, 0, wxEXPAND | wxALL, 10 );
+    icon_text->Add( text, 1, wxCENTER | wxLEFT, wxLARGESMALL(20,0) );
+    topsizer->Add( icon_text, 0, wxEXPAND | wxALL, wxLARGESMALL(10,0) );
 
-    topsizer->Add( m_text, 1, wxEXPAND | wxLEFT|wxRIGHT, 10 );
+    topsizer->Add( m_text, 1, wxEXPAND | wxLEFT|wxRIGHT, wxLARGESMALL(10,0) );
 
     wxBoxSizer *bottom = new wxBoxSizer( wxHORIZONTAL );
     if (isPda)
@@ -260,15 +300,21 @@ wxTipDialog::wxTipDialog(wxWindow *parent,
     else
         bottom->Add( m_checkbox, 0, wxCENTER );
 
+    // smart phones does not support or do not waste space for wxButtons
+#ifdef __SMARTPHONE__
+    SetRightMenu(wxID_NEXT_TIP, _("Next"));
+    SetLeftMenu(wxID_CLOSE);
+#else
     if (!isPda)
         bottom->Add( 10,10,1 );
-    bottom->Add( btnNext, 0, wxCENTER | wxLEFT, 10 );
-    bottom->Add( btnClose, 0, wxCENTER | wxLEFT, 10 );
+    bottom->Add( btnNext, 0, wxCENTER | wxLEFT, wxLARGESMALL(10,0) );
+    bottom->Add( btnClose, 0, wxCENTER | wxLEFT, wxLARGESMALL(10,0) );
+#endif
 
     if (isPda)
         topsizer->Add( bottom, 0, wxCENTER | wxALL, 5 );
     else
-        topsizer->Add( bottom, 0, wxEXPAND | wxALL, 10 );
+        topsizer->Add( bottom, 0, wxEXPAND | wxALL, wxLARGESMALL(10,0) );
 
     SetTipText();
 

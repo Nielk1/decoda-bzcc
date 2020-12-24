@@ -23,7 +23,7 @@
 #include "wx/geometry.h"
 #include "wx/sysopt.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxToolBar, wxControl);
+IMPLEMENT_DYNAMIC_CLASS(wxToolBar, wxControl)
 
 bool wxToolBar::Destroy()
 {

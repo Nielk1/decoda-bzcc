@@ -62,7 +62,7 @@ public:
     ~wxClassInfo();
 
     wxObject *CreateObject() const
-        { return m_objectConstructor ? (*m_objectConstructor)() : NULL; }
+        { return m_objectConstructor ? (*m_objectConstructor)() : 0; }
     bool IsDynamic() const { return (NULL != m_objectConstructor); }
 
     const wxChar       *GetClassName() const { return m_className; }
@@ -85,22 +85,10 @@ public:
 
     bool IsKindOf(const wxClassInfo *info) const
     {
-        if ( info == this )
-            return true;
-
-        if ( m_baseInfo1 )
-        {
-            if ( m_baseInfo1->IsKindOf(info) )
-                return true;
-        }
-
-        if ( m_baseInfo2 )
-        {
-            if ( m_baseInfo2->IsKindOf(info) )
-                return true;
-        }
-
-        return false;
+        return info != 0 &&
+               ( info == this ||
+                 ( m_baseInfo1 && m_baseInfo1->IsKindOf(info) ) ||
+                 ( m_baseInfo2 && m_baseInfo2->IsKindOf(info) ) );
     }
 
     wxDECLARE_CLASS_INFO_ITERATORS();
@@ -140,9 +128,7 @@ WXDLLIMPEXP_BASE wxObject *wxCreateDynamicObject(const wxString& name);
 #define wxDECLARE_ABSTRACT_CLASS(name)                                        \
     public:                                                                   \
         static wxClassInfo ms_classInfo;                                      \
-        wxCLANG_WARNING_SUPPRESS(inconsistent-missing-override)               \
-        virtual wxClassInfo *GetClassInfo() const                             \
-        wxCLANG_WARNING_RESTORE(inconsistent-missing-override)
+        virtual wxClassInfo *GetClassInfo() const
 
 #define wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(name)                               \
     wxDECLARE_NO_ASSIGN_CLASS(name);                                          \

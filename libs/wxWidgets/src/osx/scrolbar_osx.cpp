@@ -22,8 +22,8 @@
 
 #if wxUSE_SCROLLBAR
 
-wxBEGIN_EVENT_TABLE(wxScrollBar, wxControl)
-wxEND_EVENT_TABLE()
+BEGIN_EVENT_TABLE(wxScrollBar, wxControl)
+END_EVENT_TABLE()
 
 
 bool wxScrollBar::Create( wxWindow *parent,
@@ -119,7 +119,9 @@ wxSize wxScrollBar::DoGetBestSize() const
         h = wxSystemSettings::GetMetric(wxSYS_HSCROLL_Y);
     }
 
-    return wxSize(w, h);
+    wxSize best(w, h);
+    CacheBestSize(best);
+    return best;
 }
 
 void wxScrollBar::TriggerScrollEvent( wxEventType scrollEvent )

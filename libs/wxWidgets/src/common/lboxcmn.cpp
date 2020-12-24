@@ -31,7 +31,6 @@
     #include "wx/dynarray.h"
     #include "wx/arrstr.h"
     #include "wx/log.h"
-    #include "wx/dcclient.h"
 #endif
 
 extern WXDLLEXPORT_DATA(const char) wxListBoxNameStr[] = "listBox";
@@ -87,7 +86,7 @@ wxFLAGS_MEMBER(wxLB_NEEDED_SB)
 wxFLAGS_MEMBER(wxLB_SORT)
 wxEND_FLAGS( wxListBoxStyle )
 
-wxIMPLEMENT_DYNAMIC_CLASS_XTI(wxListBox, wxControl, "wx/listbox.h");
+wxIMPLEMENT_DYNAMIC_CLASS_XTI(wxListBox, wxControl, "wx/listbox.h")
 
 wxBEGIN_PROPERTIES_TABLE(wxListBox)
 wxEVENT_PROPERTY( Select, wxEVT_LISTBOX, wxCommandEvent )
@@ -340,4 +339,5 @@ void wxListBoxBase::EnsureVisible(int WXUNUSED(n))
     // the base class version does nothing (the only alternative would be to
     // call SetFirstItem() but this is probably even more stupid)
 }
+
 #endif // wxUSE_LISTBOX

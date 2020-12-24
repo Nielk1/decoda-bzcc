@@ -9,8 +9,6 @@
 #ifndef _WX_BASE64_H_
 #define _WX_BASE64_H_
 
-#include "wx/defs.h"
-
 #if wxUSE_BASE64
 
 #include "wx/string.h"
@@ -42,7 +40,7 @@ inline wxString wxBase64Encode(const void *src, size_t srcLen)
     wxCharBuffer dst(dstLen);
     wxBase64Encode(dst.data(), dstLen, src, srcLen);
 
-    return wxASCII_STR(dst);
+    return dst;
 }
 
 inline wxString wxBase64Encode(const wxMemoryBuffer& buf)

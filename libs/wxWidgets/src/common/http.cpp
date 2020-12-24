@@ -37,7 +37,7 @@
 // wxHTTP
 // ----------------------------------------------------------------------------
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxHTTP, wxProtocol);
+IMPLEMENT_DYNAMIC_CLASS(wxHTTP, wxProtocol)
 IMPLEMENT_PROTOCOL(wxHTTP, wxT("http"), wxT("80"), true)
 
 wxHTTP::wxHTTP()
@@ -360,7 +360,7 @@ bool wxHTTP::BuildRequest(const wxString& path, const wxString& method)
 
     // If there is no User-Agent defined, define it.
     if ( GetHeader(wxT("User-Agent")).empty() )
-        SetHeader(wxT("User-Agent"), wxVERSION_STRING);
+        SetHeader(wxT("User-Agent"), wxT("wxWidgets 2.x"));
 
     // Send authentication information
     if (!m_username.empty() || !m_password.empty()) {
@@ -430,7 +430,7 @@ bool wxHTTP::BuildRequest(const wxString& path, const wxString& method)
     return ret_value;
 }
 
-bool wxHTTP::Abort()
+bool wxHTTP::Abort(void)
 {
     return wxSocketClient::Close();
 }
@@ -453,11 +453,11 @@ public:
         m_read_bytes = 0;
     }
 
-    size_t GetSize() const wxOVERRIDE { return m_httpsize; }
-    virtual ~wxHTTPStream() { m_http->Abort(); }
+    size_t GetSize() const { return m_httpsize; }
+    virtual ~wxHTTPStream(void) { m_http->Abort(); }
 
 protected:
-    size_t OnSysRead(void *buffer, size_t bufsize) wxOVERRIDE;
+    size_t OnSysRead(void *buffer, size_t bufsize);
 
     wxDECLARE_NO_COPY_CLASS(wxHTTPStream);
 };

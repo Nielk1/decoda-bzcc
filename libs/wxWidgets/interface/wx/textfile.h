@@ -144,7 +144,7 @@ public:
 
         @e typeDefault is the value defined during the compilation and corresponds
         to the native format of the platform, i.e. it will be @c wxTextFileType_Dos
-        under Windows and @c wxTextFileType_Unix under Unix (including OS
+        under Windows and @c wxTextFileType_Unix under Unix (including Mac OS
         X, the value @c wxTextFileType_Mac was only used for classic Mac OS
         versions).
     */
