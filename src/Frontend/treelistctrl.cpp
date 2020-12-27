@@ -3918,6 +3918,8 @@ wxString MakeShortString(wxDC& dc, const wxString&StringToModify, int nColumnLen
 	if(nStringLen == 0 || w + nOffset <= nColumnLen) return StringToModify;
 	
 	static wchar_t szShort[MAX_PATH];
+    if (MAX_PATH < nStringLen)
+        nStringLen = MAX_PATH;
 
 	wcscpy(szShort, StringToModify.GetData());
 
