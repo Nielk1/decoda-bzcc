@@ -158,14 +158,15 @@ void WatchWindow::OnKeyDown(wxTreeEvent& event)
             
             if (item.IsOk())
             {
-                if (IsSpace(code))
+                /*if (IsSpace(code))
                 {
                     EditLabel(item, "");
                 }
                 else
                 {
                     EditLabel(item, wxString(static_cast<char>(code)));
-                }
+                }*/
+                EditLabel(item);
 
                 event.Skip(false);
             }
