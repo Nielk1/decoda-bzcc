@@ -39,7 +39,7 @@ WatchCtrl::WatchCtrl(wxWindow *parent, wxWindowID id, const wxPoint& pos, const 
 
     AddColumn(_("Name"), 0, wxALIGN_LEFT);
     SetColumnEditable(0, true);
-    SetColumnPickType(0, wxTR_COLUMN_TEXT);
+    //SetColumnPickType(0, wxTR_COLUMN_TEXT);
     AddColumn(_("Type"), 0, wxALIGN_LEFT);
     SetColumnEditable(1, false);
     AddColumn(_("Value"), 0, wxALIGN_LEFT);
