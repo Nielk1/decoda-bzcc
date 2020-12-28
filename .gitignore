@@ -1,4 +1,5 @@
-build/*
+XX build/*
+build/obj/*
 bin/*
 install/output/
 docs/output/

@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E77B95F7-7B1E-0F41-A592-F57D1E0921EB}</ProjectGuid>
+    <RootNamespace>Frontend</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>..\bin\debug\</OutDir>
+    <IntDir>obj\Debug\Frontend\</IntDir>
+    <TargetName>Decoda</TargetName>
+    <TargetExt>.exe</TargetExt>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>Decoda</TargetName>
+    <TargetExt>.exe</TargetExt>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>..\bin\release\</OutDir>
+    <IntDir>obj\Release\Frontend\</IntDir>
+    <TargetName>Decoda</TargetName>
+    <TargetExt>.exe</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>Decoda</TargetName>
+    <TargetExt>.exe</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets\include;.\libs\wxWidgets\lib\vc_lib\mswud;..\libs\wxWidgets\include\msvc</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)Decoda_Redist.pdb</ProgramDataBaseFileName>
+      <MinimalRebuild>true</MinimalRebuild>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets-3.1.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;imagehlp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;wxbase30ud.lib;wxbase30ud_net.lib;wxbase30ud_xml.lib;wxexpatd.lib;wxjpegd.lib;wxmsw30ud_adv.lib;wxmsw30ud_aui.lib;wxmsw30ud_core.lib;wxmsw30ud_gl.lib;wxmsw30ud_html.lib;wxmsw30ud_media.lib;wxmsw30ud_propgrid.lib;wxmsw30ud_qa.lib;wxmsw30ud_ribbon.lib;wxmsw30ud_richtext.lib;wxmsw30ud_stc.lib;wxmsw30ud_webview.lib;wxmsw30ud_xrc.lib;wxpngd.lib;wxregexud.lib;wxscintillad.lib;wxtiffd.lib;wxzlibd.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)Decoda.exe</OutputFile>
+      <AdditionalLibraryDirectories>..\libs\wxWidgets\lib\vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets\include;..\libs\wxWidgets\lib\vc_lib\mswud</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)Decoda_Redist.pdb</ProgramDataBaseFileName>
+      <ExpandAttributedSource>
+      </ExpandAttributedSource>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets-3.1.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;imagehlp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;wxbase31ud.lib;wxbase31ud_net.lib;wxbase31ud_xml.lib;wxexpatd.lib;wxjpegd.lib;wxmsw31ud_adv.lib;wxmsw31ud_aui.lib;wxmsw31ud_core.lib;wxmsw31ud_gl.lib;wxmsw31ud_html.lib;wxmsw31ud_media.lib;wxmsw31ud_propgrid.lib;wxmsw31ud_qa.lib;wxmsw31ud_ribbon.lib;wxmsw31ud_richtext.lib;wxmsw31ud_stc.lib;wxmsw31ud_webview.lib;wxmsw31ud_xrc.lib;wxpngd.lib;wxregexud.lib;wxscintillad.lib;wxtiffd.lib;wxzlibd.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)Decoda.exe</OutputFile>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets\include;.\libs\wxWidgets\lib\vc_lib\mswud;..\libs\wxWidgets\include\msvc</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)Decoda_Redist.pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets\include;..\libs\wxWidgets\lib\vc_lib\mswu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;imagehlp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;wxbase30u.lib;wxbase30u_net.lib;wxbase30u_xml.lib;wxexpat.lib;wxjpeg.lib;wxmsw30u_adv.lib;wxmsw30u_aui.lib;wxmsw30u_core.lib;wxmsw30u_gl.lib;wxmsw30u_html.lib;wxmsw30u_media.lib;wxmsw30u_propgrid.lib;wxmsw30u_qa.lib;wxmsw30u_ribbon.lib;wxmsw30u_richtext.lib;wxmsw30u_stc.lib;wxmsw30u_webview.lib;wxmsw30u_xrc.lib;wxpng.lib;wxregexu.lib;wxscintilla.lib;wxtiff.lib;wxzlib.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)Decoda.exe</OutputFile>
+      <AdditionalLibraryDirectories>..\libs\wxWidgets\lib\vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets\include;..\libs\wxWidgets\lib\vc_lib\mswud</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ProgramDataBaseFileName>$(OutDir)Decoda_Redist.pdb</ProgramDataBaseFileName>
+      <ExpandAttributedSource>
+      </ExpandAttributedSource>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;wxUSE_UNICODE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\Shared;..\libs\wxWidgets\include;..\libs\wxWidgets\lib\vc_lib\mswu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>comctl32.lib;rpcrt4.lib;imagehlp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxbase31u.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxbase31u_net.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxbase31u_xml.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxexpat.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxjpeg.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_adv.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_aui.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_core.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_gl.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_html.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_media.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_propgrid.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_qa.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_ribbon.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_richtext.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_stc.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_webview.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxmsw31u_xrc.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxpng.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxregexu.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxscintilla.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxtiff.lib;..\libs\wxWidgets-3.1.4\lib\vc_lib\wxzlib.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)Decoda.exe</OutputFile>
+      <AdditionalLibraryDirectories>..\libs\wxWidgets\lib\vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\Frontend\AboutDialog.h" />
+    <ClInclude Include="..\src\Frontend\AutoCompleteManager.h" />
+    <ClInclude Include="..\src\Frontend\Bitmaps.h" />
+    <ClInclude Include="..\src\Frontend\BreakpointsWindow.h" />
+    <ClInclude Include="..\src\Frontend\ButtonBar.h" />
+    <ClInclude Include="..\src\Frontend\ChoiceDialog.h" />
+    <ClInclude Include="..\src\Frontend\CodeEdit.h" />
+    <ClInclude Include="..\src\Frontend\CodeEditDropTarget.h" />
+    <ClInclude Include="..\src\Frontend\Config.h" />
+    <ClInclude Include="..\src\Frontend\DebugEvent.h" />
+    <ClInclude Include="..\src\Frontend\DebugFrontend.h" />
+    <ClInclude Include="..\src\Frontend\EditorSettings.h" />
+    <ClInclude Include="..\src\Frontend\EditorSettingsPanel.h" />
+    <ClInclude Include="..\src\Frontend\ExceptionDialog.h" />
+    <ClInclude Include="..\src\Frontend\ExternalTool.h" />
+    <ClInclude Include="..\src\Frontend\ExternalToolsDialog.h" />
+    <ClInclude Include="..\src\Frontend\FileChangeWatcher.h" />
+    <ClInclude Include="..\src\Frontend\FileEvent.h" />
+    <ClInclude Include="..\src\Frontend\FileUtility.h" />
+    <ClInclude Include="..\src\Frontend\FindInFilesDialog.h" />
+    <ClInclude Include="..\src\Frontend\FontColorSettings.h" />
+    <ClInclude Include="..\src\Frontend\FontColorSettingsPanel.h" />
+    <ClInclude Include="..\src\Frontend\KeyBinder.h" />
+    <ClInclude Include="..\src\Frontend\KeyBinderDialog.h" />
+    <ClInclude Include="..\src\Frontend\KeyMonitorTextCtrl.h" />
+    <ClInclude Include="..\src\Frontend\LineMapper.h" />
+    <ClInclude Include="..\src\Frontend\ListView.h" />
+    <ClInclude Include="..\src\Frontend\ListWindow.h" />
+    <ClInclude Include="..\src\Frontend\MainApp.h" />
+    <ClInclude Include="..\src\Frontend\MainFrame.h" />
+    <ClInclude Include="..\src\Frontend\MainFrameDropTarget.h" />
+    <ClInclude Include="..\src\Frontend\NewFileDialog.h" />
+    <ClInclude Include="..\src\Frontend\NewProcessDialog.h" />
+    <ClInclude Include="..\src\Frontend\OutputWindow.h" />
+    <ClInclude Include="..\src\Frontend\ProcessesDialog.h" />
+    <ClInclude Include="..\src\Frontend\ProcessOutputSink.h" />
+    <ClInclude Include="..\src\Frontend\Project.h" />
+    <ClInclude Include="..\src\Frontend\ProjectExplorerWindow.h" />
+    <ClInclude Include="..\src\Frontend\ProjectFileInfoCtrl.h" />
+    <ClInclude Include="..\src\Frontend\QuickWatchDialog.h" />
+    <ClInclude Include="..\src\Frontend\ReadOnlyDialog.h" />
+    <ClInclude Include="..\src\Frontend\SearchTextCtrl.h" />
+    <ClInclude Include="..\src\Frontend\SearchWindow.h" />
+    <ClInclude Include="..\src\Frontend\SettingsDialog.h" />
+    <ClInclude Include="..\src\Frontend\ShowHelpEvent.h" />
+    <ClInclude Include="..\src\Frontend\SingleInstance.h" />
+    <ClInclude Include="..\src\Frontend\StaticTextEx.h" />
+    <ClInclude Include="..\src\Frontend\StringHistory.h" />
+    <ClInclude Include="..\src\Frontend\Symbol.h" />
+    <ClInclude Include="..\src\Frontend\SymbolParser.h" />
+    <ClInclude Include="..\src\Frontend\SymbolParserEvent.h" />
+    <ClInclude Include="..\src\Frontend\SymbolParserThread.h" />
+    <ClInclude Include="..\src\Frontend\SystemSettingsPanel.h" />
+    <ClInclude Include="..\src\Frontend\ThreadEvent.h" />
+    <ClInclude Include="..\src\Frontend\Tokenizer.h" />
+    <ClInclude Include="..\src\Frontend\ToolTipWindow.h" />
+    <ClInclude Include="..\src\Frontend\treelistctrl.h" />
+    <ClInclude Include="..\src\Frontend\WatchCtrl.h" />
+    <ClInclude Include="..\src\Frontend\WatchDropTarget.h" />
+    <ClInclude Include="..\src\Frontend\WatchWindow.h" />
+    <ClInclude Include="..\src\Frontend\XmlConfig.h" />
+    <ClInclude Include="..\src\Frontend\XmlUtility.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\Frontend\AboutDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\AutoCompleteManager.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\BreakpointsWindow.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ButtonBar.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ChoiceDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\CodeEdit.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\CodeEditDropTarget.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\Config.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\DebugEvent.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\DebugFrontend.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\EditorSettings.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\EditorSettingsPanel.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ExceptionDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ExternalTool.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ExternalToolsDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\FileChangeWatcher.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\FileEvent.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\FileUtility.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\FindInFilesDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\FontColorSettings.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\FontColorSettingsPanel.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\KeyBinder.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\KeyBinderDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\KeyMonitorTextCtrl.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\LineMapper.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ListView.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ListWindow.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\MainApp.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\MainFrame.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\MainFrameDropTarget.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\NewFileDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\NewProcessDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\OutputWindow.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ProcessesDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ProcessOutputSink.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\Project.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ProjectExplorerWindow.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ProjectFileInfoCtrl.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\QuickWatchDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ReadOnlyDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SearchTextCtrl.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SearchWindow.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SettingsDialog.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ShowHelpEvent.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SingleInstance.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\StaticTextEx.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\StringHistory.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\Symbol.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SymbolParser.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SymbolParserEvent.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SymbolParserThread.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\SystemSettingsPanel.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ThreadEvent.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\Tokenizer.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\ToolTipWindow.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\treelistctrl.cpp" />
+    <ClCompile Include="..\src\Frontend\WatchCtrl.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\WatchDropTarget.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\WatchWindow.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\XmlConfig.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\XmlUtility.cpp">
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\src\Frontend\Decoda.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Shared.vcxproj">
+      <Project>{F407C349-3EB5-E84B-AAEC-E1976D3CF6C9}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
