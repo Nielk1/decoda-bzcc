@@ -141,11 +141,11 @@ bool CodeEdit::LoadFile(const wxString& filename)
 
 bool CodeEdit::SaveFile(const wxString& filename)
 {
-    unsigned char bom[3] = { 0xEF, 0xBB, 0xBF };
+    //unsigned char bom[3] = { 0xEF, 0xBB, 0xBF };
     wxFile f;
     if (!f.Open(filename, wxFile::write ))
         return false;
-    f.Write(bom, 3);
+    //f.Write(bom, 3);
     wxString text(GetText());
     wxScopedCharBuffer buffer(text.ToUTF8());
     f.Write(buffer.data(), buffer.length());
