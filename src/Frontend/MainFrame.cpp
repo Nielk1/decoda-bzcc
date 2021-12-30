@@ -5599,6 +5599,7 @@ void MainFrame::SetMode(Mode mode)
         m_mode = mode;
         m_mgr.LoadPerspective(m_modeLayout[m_mode]);
 
+        SetCheckPoints();
     }
 
 }
