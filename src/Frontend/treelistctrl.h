@@ -465,7 +465,9 @@ public:
     // modifiers (most properties have a default at row/item level)
     // ---------
 
-    void SetItemText (const wxTreeItemId& item, const wxString& text) { }
+
+    void SetItemText (const wxTreeItemId& item, const wxString& text)
+    { SetItemText (item, GetMainColumn(), text); }
     void SetItemText (const wxTreeItemId& item, int column, const wxString& text);
 
     // the which parameter is ignored for all columns but the main one
