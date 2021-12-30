@@ -4143,7 +4143,7 @@ void MainFrame::SaveOptions()
 
     // Make sure the directory exists.
 
-    wxFileName fileName(GetAppDataDirectory(), "options_ce.xml");
+    wxFileName fileName(GetAppDataDirectory(), "options.xml");
     fileName.Mkdir(0777, wxPATH_MKDIR_FULL);
 
     document.Save(fileName.GetFullPath());
