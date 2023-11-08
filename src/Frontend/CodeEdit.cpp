@@ -666,7 +666,7 @@ bool CodeEdit::GetTokenFromPosition(int position, const wxString& joiners, wxStr
         // Search the text.
 
         int line = LineFromPosition(position);
-        int seek = GetColumn(position); //position - PositionFromLine(line);        
+        int seek = position - PositionFromLine(line);
         wxString text = GetLine(line);
 
         if (!iswalnum(text[seek]) && joiners.Find(text[seek]) == wxNOT_FOUND)
