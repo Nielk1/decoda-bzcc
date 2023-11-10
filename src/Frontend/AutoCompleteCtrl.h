@@ -75,7 +75,7 @@ public:
 
 private:
 
-    static const unsigned int s_numColumns = 6;
+    static const unsigned int s_numColumns = 7;
 
     /**
      * Updates the variable that stores the proprotion of the first column

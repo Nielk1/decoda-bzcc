@@ -357,6 +357,12 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
           // The form function (...) which doesn't have a name. If we
           // were being really clever we could check to see what is being
           // done with this value, but we're not.
+          //continue;
+          
+          // The form function Name (...).
+          function = new Symbol(symStack.top(), "__unnamed__", defLineNumber);
+          symbols.push_back(function);
+          symStack.push(function);
           continue;
         }
 
@@ -408,6 +414,46 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
         if (function)
           symStack.push(function);
 
+      }
+      else if (token == "if")
+      {
+        unsigned int defLineNumber = lineNumber;
+        Symbol *function = nullptr;
+      
+        // Lua ifs can have these forms:
+        //    if ... then
+        //    (TODO consider resetting scope if encountering an else or elseif, treating it like a combo end+if)
+       
+        function = new Symbol(symStack.top(), "__if__", defLineNumber, SymbolType::Unknown);
+        symbols.push_back(function);
+        symStack.push(function);
+        continue;
+      }
+      else if (token == "while")
+      {
+        unsigned int defLineNumber = lineNumber;
+        Symbol *function = nullptr;
+      
+        // Lua while loops can have these forms:
+        //    while ... do
+       
+        function = new Symbol(symStack.top(), "__while__", defLineNumber, SymbolType::Unknown);
+        symbols.push_back(function);
+        symStack.push(function);
+        continue;
+      }
+      else if (token == "for")
+      {
+        unsigned int defLineNumber = lineNumber;
+        Symbol *function = nullptr;
+      
+        // Lua for loops can have these forms:
+        //    for ... do
+       
+        function = new Symbol(symStack.top(), "__for__", defLineNumber, SymbolType::Unknown);
+        symbols.push_back(function);
+        symStack.push(function);
+        continue;
       }
       else if (token == "decodadef")
       {

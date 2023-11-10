@@ -100,8 +100,9 @@ void AutoCompleteWindow::UpdateItems()
             if (m_acEntries[i].symbol->type & SymbolType::Prefix    ) if (symbolType == "") symbolType = "Prefix"    ; else symbolType += "|Prefix"    ;
             if (m_acEntries[i].symbol->type & SymbolType::Assignment) if (symbolType == "") symbolType = "Assignment"; else symbolType += "|Assignment";
             SetItemText(item, 3, symbolType);
-            SetItemText(item, 4, wxString::Format(wxT("%i"), m_acEntries[i].symbol->line));
-            SetItemText(item, 5, m_acEntries[i].file->GetDisplayName());
+            SetItemText(item, 4, m_acEntries[i].symbol->rhs);
+            SetItemText(item, 5, wxString::Format(wxT("%i"), m_acEntries[i].symbol->line));
+            SetItemText(item, 6, m_acEntries[i].file->GetDisplayName());
 
             //UpdateItem(item);
         }

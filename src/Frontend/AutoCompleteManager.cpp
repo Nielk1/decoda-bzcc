@@ -265,7 +265,7 @@ void AutoCompleteManager::BuildFromFile(const Project::File* file)
     {
       if (file->symbols[symbolIndex]->type == SymbolType::Assignment)
       {
-        m_assignments.push_back(Entry(file->symbols[symbolIndex]->name, Type_Function, file, file->symbols[symbolIndex]));
+        m_assignments.push_back(Entry(file->symbols[symbolIndex]->name, Type_Variable, file, file->symbols[symbolIndex]));
         continue;
       }
 

@@ -46,17 +46,20 @@ AutoCompleteCtrl::AutoCompleteCtrl(wxWindow* parent, wxWindowID id, const wxPoin
     SetColumnEditable(2, false);
     AddColumn(_("SymbolType"), 0, wxALIGN_LEFT);
     SetColumnEditable(3, false);
-    AddColumn(_("Line"), 0, wxALIGN_LEFT);
+    AddColumn(_("RHS"), 0, wxALIGN_LEFT);
     SetColumnEditable(4, false);
-    AddColumn(_("File"), 0, wxALIGN_LEFT);
+    AddColumn(_("Line"), 0, wxALIGN_LEFT);
     SetColumnEditable(5, false);
+    AddColumn(_("File"), 0, wxALIGN_LEFT);
+    SetColumnEditable(6, false);
 
     m_columnSize[0] = 0.3f;
     m_columnSize[1] = 0.2f;
     m_columnSize[2] = 0.1f;
     m_columnSize[3] = 0.1f;
     m_columnSize[4] = 0.1f;
-    m_columnSize[5] = -100;
+    m_columnSize[5] = 0.1f;
+    m_columnSize[6] = -100;
 
     UpdateColumnSizes();
 
