@@ -176,7 +176,7 @@ struct Token
 
 wxString PeekPrevToken(std::vector<Token> const &tokens, unsigned int &iter, unsigned int &lineNumber)
 {
-  if (iter - 1 > 0)
+  if (iter > 0)
   {
     lineNumber = tokens[iter - 1].lineNumber;
     return tokens[iter - 1].token;
@@ -198,14 +198,14 @@ wxString PeekNextToken(std::vector<Token> const &tokens, unsigned int &iter, uns
 
 bool GetPrevToken(std::vector<Token> const &tokens, wxString &str, unsigned int &lineNumber, unsigned int &iter)
 {
-  iter -= 1;
   if (iter > 0)
   {
+    iter -= 1;
     str = tokens[iter].token;
     lineNumber = tokens[iter].lineNumber;
     return true;
   }
-
+  iter -= 1;
   return false;
 }
 
