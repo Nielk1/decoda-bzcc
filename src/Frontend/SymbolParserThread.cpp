@@ -317,6 +317,17 @@ Symbol* GetStackTop(wxStack<Symbol*> symStack)
         possible = possible->parent;
     return possible;
 }
+bool CheckAnonRootScope(wxStack<Symbol*> symStack)
+{
+    if (symStack.size() <= 1)
+        return false;
+    Symbol* possible = symStack.top();
+    while (possible != nullptr && possible->type == SymbolType::ScopeDummy)
+        possible = possible->parent;
+    if (possible == nullptr)
+        return true;
+    return false;
+}
 
 void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symbol*>& symbols)
 {
@@ -367,8 +378,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
           // done with this value, but we're not.
           //continue;
           
-          // The form function Name (...).
-          function = new Symbol(GetStackTop(symStack), "__unnamed__", defLineNumber, SymbolType::ScopeDummy);
+          function = new Symbol(GetStackTop(symStack), "__unnamed__", defLineNumber, CheckAnonRootScope(symStack) ? SymbolType::Function : SymbolType::ScopeDummy);
           //symbols.push_back(function);
           symStack.push(function);
           continue;
@@ -501,7 +511,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
               Symbol* pop = symStack.top();
               symStack.pop();
               if (pop->type == SymbolType::ScopeDummy)
-                  delete pop;
+                  delete pop; // avoid memory leaks by making sure we removed the scope dummies
           }
       }
       else if (token == "decodaprefix")
@@ -744,6 +754,24 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
         //Reset token
         current_token = start;
+      }
+      else if (token == "(")
+      {
+          unsigned int defLineNumber = lineNumber;
+          Symbol* function = nullptr;
+
+          function = new Symbol(GetStackTop(symStack), "__(__", defLineNumber, SymbolType::ScopeDummy);
+          symStack.push(function);
+          continue;
+      }
+      else if (token == ")")
+      {
+          Symbol* scopeCheck = symStack.top();
+          if (scopeCheck->type == SymbolType::ScopeDummy && scopeCheck->name == "__(__")
+          {
+              symStack.pop();
+              delete scopeCheck;
+          }
       }
     }
 }
