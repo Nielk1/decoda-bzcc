@@ -60,7 +60,7 @@ void AutoCompleteWindow::UpdateItems()
         //temp.Trim().Trim(false);
         
         //wxString temp = m_acEntries[i].name;
-        wxString temp = m_acEntries[i].symbol->GetTooltip();
+         wxString temp = m_acEntries[i].symbol->GetTooltip();
 
         //if (!temp.empty())
         {

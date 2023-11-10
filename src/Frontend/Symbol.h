@@ -41,6 +41,7 @@ enum class SymbolType : int
   Variable   = 0x08,
   Prefix     = 0x10,
   Assignment = 0x20,
+  ScopeDummy = 0x40, // these exist only so that the SymbolParserThread can deal with scope beginnings that match end keywords, it could be done by tracking scope via 2 stacks instead of one but this is simpler
 };
 
 using T = std::underlying_type<SymbolType>::type;

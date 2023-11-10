@@ -310,6 +310,14 @@ void DecodaPrefixRecursive(std::vector<Symbol*>& symbols, unsigned int &lineNumb
 
 OutputWindow *outputWin = nullptr;
 
+Symbol* GetStackTop(wxStack<Symbol*> symStack)
+{
+    Symbol* possible = symStack.top();
+    while (possible != nullptr && possible->type == SymbolType::ScopeDummy)
+        possible = possible->parent;
+    return possible;
+}
+
 void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symbol*>& symbols)
 {
 
@@ -360,8 +368,8 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
           //continue;
           
           // The form function Name (...).
-          function = new Symbol(symStack.top(), "__unnamed__", defLineNumber);
-          symbols.push_back(function);
+          function = new Symbol(GetStackTop(symStack), "__unnamed__", defLineNumber, SymbolType::ScopeDummy);
+          //symbols.push_back(function);
           symStack.push(function);
           continue;
         }
@@ -372,7 +380,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
         if (t2 == "(")
         {
-          function = new Symbol(symStack.top(), t1, defLineNumber);
+          function = new Symbol(GetStackTop(symStack), t1, defLineNumber);
 
           if (return_symbol)
           {
@@ -394,7 +402,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
             Symbol *module = GetSymbol(t1, symbols);
             if (module == nullptr)
             {
-              module = new Symbol(symStack.top(), t1, defLineNumber, SymbolType::Module);
+              module = new Symbol(GetStackTop(symStack), t1, defLineNumber, SymbolType::Module);
               symbols.push_back(module);
             }
 
@@ -424,8 +432,8 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
         //    if ... then
         //    (TODO consider resetting scope if encountering an else or elseif, treating it like a combo end+if)
        
-        function = new Symbol(symStack.top(), "__if__", defLineNumber, SymbolType::Unknown);
-        symbols.push_back(function);
+        function = new Symbol(GetStackTop(symStack), "__if__", defLineNumber, SymbolType::ScopeDummy);
+        //symbols.push_back(function);
         symStack.push(function);
         continue;
       }
@@ -437,8 +445,8 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
         // Lua while loops can have these forms:
         //    while ... do
        
-        function = new Symbol(symStack.top(), "__while__", defLineNumber, SymbolType::Unknown);
-        symbols.push_back(function);
+        function = new Symbol(GetStackTop(symStack), "__while__", defLineNumber, SymbolType::ScopeDummy);
+        //symbols.push_back(function);
         symStack.push(function);
         continue;
       }
@@ -450,8 +458,8 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
         // Lua for loops can have these forms:
         //    for ... do
        
-        function = new Symbol(symStack.top(), "__for__", defLineNumber, SymbolType::Unknown);
-        symbols.push_back(function);
+        function = new Symbol(GetStackTop(symStack), "__for__", defLineNumber, SymbolType::ScopeDummy);
+        //symbols.push_back(function);
         symStack.push(function);
         continue;
       }
@@ -475,7 +483,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
           Symbol *module = GetSymbol(moduleName, symbols);
           if (module == nullptr)
           {
-            module = new Symbol(symStack.top(), moduleName, lineNumber, SymbolType::Type);
+            module = new Symbol(GetStackTop(symStack), moduleName, lineNumber, SymbolType::Type);
             symbols.push_back(module);
           }
 
@@ -488,8 +496,13 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
       }
       else if (token == "end")
       {
-        if (symStack.size() > 1)
-          symStack.pop();
+          if (symStack.size() > 1)
+          {
+              Symbol* pop = symStack.top();
+              symStack.pop();
+              if (pop->type == SymbolType::ScopeDummy)
+                  delete pop;
+          }
       }
       else if (token == "decodaprefix")
       {
@@ -543,7 +556,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
         Symbol *module = GetSymbol(moduleName, symbols);
         if (module == nullptr)
         {
-          module = new Symbol(symStack.top(), moduleName, lineNumber, SymbolType::Type);
+          module = new Symbol(GetStackTop(symStack), moduleName, lineNumber, SymbolType::Type);
           symbols.push_back(module);
         }
 
@@ -724,7 +737,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
             lhs_stack.pop();
           }
 
-          Symbol *assignment = new Symbol(symStack.top(), lhs, defLineNumber, SymbolType::Assignment);
+          Symbol *assignment = new Symbol(GetStackTop(symStack), lhs, defLineNumber, SymbolType::Assignment);
           assignment->rhs = rhs;
           symbols.push_back(assignment);
         }

@@ -98,7 +98,6 @@ private:
     wxCriticalSection           m_headLock;
 
     bool                        m_exit;
-
 };
 
 #endif
