@@ -66,6 +66,7 @@ class wxDebugEvent;
 class ListWindow;
 class SymbolParser;
 class SymbolParserEvent;
+class AutoCompleteWindow;
 
 /**
  * Main application window.
@@ -397,6 +398,7 @@ public:
      * Called when the user selects Window/Breakpoints from the menu.
      */
     void OnWindowBreakpoints(wxCommandEvent& event);
+    void OnWindowAutoComplete(wxCommandEvent& event);
 
     /**
      * Called when the user selects Window/Next Document from the menu.
@@ -1330,6 +1332,9 @@ private:
         ID_EditZoomIn                       = 89,
         ID_EditZoomOut                      = 90,
         
+        ID_AutoComplete                     = 101,
+        ID_WindowAutoComplete               = 102,
+
         ID_FirstExternalTool                = 1000,
         ID_FirstRecentFile                  = 2000,
         ID_FirstRecentProjectFile           = 3000,
@@ -1362,6 +1367,7 @@ private:
     WatchWindow*                    m_watch;
     BreakpointsWindow*              m_breakpointsWindow;
     SearchWindow*                   m_searchWindow;
+    AutoCompleteWindow*             m_autoCompleteWindow;
 
     unsigned int                    m_vm;
     std::vector<unsigned int>       m_vms;

@@ -198,6 +198,9 @@
     <ClInclude Include="..\src\Frontend\treelistctrl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Frontend\AutoCompleteCtrl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Frontend\AboutDialog.cpp">
@@ -382,6 +385,15 @@
     </ClCompile>
     <ClCompile Include="..\src\Frontend\treelistctrl.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\AutoCompleteCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\AutoCompleteWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Frontend\AutoCompleteWindow.h">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

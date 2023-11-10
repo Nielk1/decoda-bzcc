@@ -200,7 +200,6 @@ void CodeEdit::SetEditorSettings(const EditorSettings& settings)
     }    
 
     m_enableAutoComplete = settings.GetEnableAutoComplete();
-
 }    
 
 void CodeEdit::SetDefaultLexer()

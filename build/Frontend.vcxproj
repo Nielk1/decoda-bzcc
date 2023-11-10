@@ -266,6 +266,8 @@
     <ClInclude Include="..\src\Frontend\WatchWindow.h" />
     <ClInclude Include="..\src\Frontend\XmlConfig.h" />
     <ClInclude Include="..\src\Frontend\XmlUtility.h" />
+    <ClInclude Include="..\src\Frontend\AutoCompleteCtrl.h" />
+    <ClInclude Include="..\src\Frontend\AutoCompleteWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Frontend\AboutDialog.cpp">
@@ -389,6 +391,8 @@
     </ClCompile>
     <ClCompile Include="..\src\Frontend\XmlUtility.cpp">
     </ClCompile>
+    <ClCompile Include="..\src\Frontend\AutoCompleteCtrl.cpp" />
+    <ClCompile Include="..\src\Frontend\AutoCompleteWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\Frontend\Decoda.rc" />

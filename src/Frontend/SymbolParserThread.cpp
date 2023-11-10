@@ -512,7 +512,7 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
 
         //First handle +=, -=, *=, /=
         wxString prev = PeekPrevToken(tokens, current_token, lineNumber);
-        if (prev == "+" || prev == "-" || prev == "*" || prev == "/")
+        if (prev == "+" || prev == "-" || prev == "*" || prev == "/" || prev == "~" || prev == "=")
           GetPrevToken(tokens, prev, lineNumber, current_token);
 
         wxStack<wxString> lhs_stack;

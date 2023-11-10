@@ -70,7 +70,7 @@ public:
     void ClearEntries(const Project::File *file);
     void ClearAllEntries();
 
-private:
+public:
     struct Entry
     {
         Entry(const wxString& name, Type type, const Project::File *file, Symbol *symbol);
@@ -85,7 +85,9 @@ private:
         const Project::File *file;
         Symbol *symbol;
     };
+    void GetAllItems(wxVector<AutoCompleteManager::Entry>& items) const;
 
+private:
     /**
      * Adds the autocompletions for the specified file.
      */

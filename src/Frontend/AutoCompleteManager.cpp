@@ -75,7 +75,7 @@ void AutoCompleteManager::ClearEntries(const Project::File *file)
   ClearFromEntries(m_prefixModules, file);
   ClearFromEntries(m_prefixNames, file);
   ClearFromEntries(m_assignments, file);
- // ClearFromEntries(m_languageEntries, file);
+  //ClearFromEntries(m_languageEntries, file);
 
   if (removedSymbols.empty())
       return;
@@ -688,12 +688,12 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
       // Check that the scope is correct.
       if (m_entries[i].symbol->type == SymbolType::Module)
         continue;
-
-      if (m_entries[i].symbol->type == SymbolType::Function && !function)
-        continue;
-
-      if (m_entries[i].symbol->type == SymbolType::Variable && function)
-        continue;
+      
+      //if (m_entries[i].symbol->type == SymbolType::Function && !function)
+      //  continue;
+      //
+      //if (m_entries[i].symbol->type == SymbolType::Variable && function)
+      //  continue;
 
       bool inScope = false;
 
@@ -808,5 +808,35 @@ void AutoCompleteManager::GetMatchingItems(const wxString& token, const wxVector
     {
       items += str;
       items += ' ';
+    }
+}
+
+void AutoCompleteManager::GetAllItems(wxVector<AutoCompleteManager::Entry>& items) const
+{
+    items.empty();
+
+    //for (unsigned int i = 0; i < m_languageEntries.size(); ++i)
+    //{
+    //    items.push_back(m_languageEntries[i]);
+    //}
+
+    for (unsigned int i = 0; i < m_entries.size(); ++i)
+    {
+        items.push_back(m_entries[i]);
+    }
+
+    for (unsigned int i = 0; i < m_prefixModules.size(); ++i)
+    {
+        items.push_back(m_prefixModules[i]);
+    }
+
+    for (unsigned int i = 0; i < m_prefixNames.size(); ++i)
+    {
+        items.push_back(m_prefixNames[i]);
+    }
+
+    for (unsigned int i = 0; i < m_assignments.size(); ++i)
+    {
+        items.push_back(m_assignments[i]);
     }
 }

@@ -32,7 +32,8 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "BreakpointsWindow.h"
 #include "SearchWindow.h"
 #include "ProjectExplorerWindow.h"
-#include "ExternalTool.h"
+#include "AutoCompleteWindow.h"
+#include "ExternalTool.h" 
 #include "ExternalToolsDialog.h"
 #include "CodeEdit.h"
 #include "FileUtility.h"
@@ -176,6 +177,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(ID_WindowWatch,                        MainFrame::OnWindowWatch)
     EVT_MENU(ID_WindowVirtualMachines,              MainFrame::OnWindowVirtualMachines)
     EVT_MENU(ID_WindowBreakpoints,                  MainFrame::OnWindowBreakpoints)
+    EVT_MENU(ID_WindowAutoComplete,                 MainFrame::OnWindowAutoComplete)
     EVT_MENU(ID_WindowNextDocument,                 MainFrame::OnWindowNextDocument)
     EVT_MENU(ID_WindowPreviousDocument,             MainFrame::OnWindowPreviousDocument)
     EVT_MENU(ID_WindowClose,                        MainFrame::OnWindowClose)
@@ -354,6 +356,8 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
 
     m_searchWindow = new SearchWindow(this, ID_Search);
 
+    m_autoCompleteWindow = new AutoCompleteWindow(this, ID_AutoComplete, &m_autoCompleteManager);
+
     // Create the notebook that holds all of the open scripts.
     m_notebook = new wxAuiNotebook(this, ID_Notebook, wxDefaultPosition, wxDefaultSize, wxAUI_NB_WINDOWLIST_BUTTON | wxAUI_NB_DEFAULT_STYLE);
         
@@ -379,6 +383,9 @@ MainFrame::MainFrame(const wxString& title, int openFilesMessage, const wxPoint&
 
     m_mgr.AddPane(m_searchWindow, wxBOTTOM, wxT("Search Results"));
     m_mgr.GetPane(m_searchWindow).Name("search").MinSize(250, 100).Layer(1);
+
+    m_mgr.AddPane(m_autoCompleteWindow, wxBOTTOM, wxT("Auto Complete"));
+    m_mgr.GetPane(m_autoCompleteWindow).Name("autocomplete").FloatingSize(250, 100).MinSize(250, 100);
 
     m_mgr.AddPane(m_notebook, wxCENTER);
     m_mgr.GetPane(m_notebook).Name("notebook");
@@ -649,6 +656,7 @@ void MainFrame::InitializeMenu()
     menuWindow->AppendCheckItem(ID_WindowBreakpoints,            _("&Breakpoints"));
     menuWindow->AppendCheckItem(ID_WindowVirtualMachines,        _("&Virtual Machines"));
     menuWindow->AppendCheckItem(ID_WindowSearch,                 _("&Search Results"));
+    menuWindow->AppendCheckItem(ID_WindowAutoComplete,           _("&Auto Complete"));
 
     // Help menu.
     wxMenu* menuHelp = new wxMenu;
@@ -673,6 +681,7 @@ void MainFrame::SetCheckPoints()
     GetMenuBar()->FindItem(ID_WindowBreakpoints)    ->Check(IsPaneShown(m_breakpointsWindow));
     GetMenuBar()->FindItem(ID_WindowVirtualMachines)->Check(IsPaneShown(m_vmList));
     GetMenuBar()->FindItem(ID_WindowSearch)         ->Check(IsPaneShown(m_searchWindow));
+    GetMenuBar()->FindItem(ID_WindowAutoComplete)   ->Check(IsPaneShown(m_autoCompleteWindow));
 }
 
 void MainFrame::OnFileNewProject(wxCommandEvent& WXUNUSED(event))
@@ -767,8 +776,8 @@ void MainFrame::SetProject(Project* project)
 
     m_autoCompleteManager.ClearAllEntries();
     m_autoCompleteManager.BuildFromProject(project);
+    m_autoCompleteWindow->UpdateItems();
     LoadAllWatchesInProject();
-
 }
 
 void MainFrame::OnFileSaveProject(wxCommandEvent& WXUNUSED(event))
@@ -1632,6 +1641,8 @@ void MainFrame::OnPaneClose(wxAuiManagerEvent& evt)
         GetMenuBar()->FindItem(ID_WindowVirtualMachines)->Check(false);
     if (evt.pane->window == m_searchWindow)
         GetMenuBar()->FindItem(ID_WindowSearch)->Check(false);
+    if (evt.pane->window == m_autoCompleteWindow)
+        GetMenuBar()->FindItem(ID_WindowAutoComplete)->Check(false);
 }
 
 void MainFrame::switchPaneShow(wxWindow* pane, bool only_show_mode)
@@ -1692,6 +1703,11 @@ void MainFrame::OnWindowVirtualMachines(wxCommandEvent& WXUNUSED(event))
 void MainFrame::OnWindowBreakpoints(wxCommandEvent& WXUNUSED(event))
 {
     switchPaneShow( m_breakpointsWindow );
+}
+
+void MainFrame::OnWindowAutoComplete(wxCommandEvent& WXUNUSED(event))
+{
+    switchPaneShow( m_autoCompleteWindow );
 }
 
 void MainFrame::ShowSearchWindow()
@@ -4748,6 +4764,8 @@ void MainFrame::UpdateEditorOptions()
         m_openFiles[i]->edit->SetEditorSettings(m_editorSettings);
     }
 
+    m_autoCompleteWindow->SetEditorSettings(m_editorSettings);
+
     // Set the font of the output window to match the code editor.
     m_mgr.GetArtProvider()->SetColor(wxAUI_DOCKART_SASH_COLOUR, m_fontColorSettings.GetColors(FontColorSettings::DisplayItem_Window).backColor);
 
@@ -4758,6 +4776,7 @@ void MainFrame::UpdateEditorOptions()
     m_watch->SetFontColorSettings(m_fontColorSettings);
     m_callStack->SetFontColorSettings(m_fontColorSettings);
     m_vmList->SetFontColorSettings(m_fontColorSettings);
+    m_autoCompleteWindow->SetFontColorSettings(m_fontColorSettings);
 
     //Have to repaint to get the sash color.
     this->Refresh();
@@ -4765,6 +4784,7 @@ void MainFrame::UpdateEditorOptions()
     // Set the font of the watch window to match the code editor so
     // that non-ASTCI text will be displayed properly.
     m_watch->SetValueFont( m_fontColorSettings.GetFont() );
+    m_autoCompleteWindow->SetValueFont( m_fontColorSettings.GetFont() );
 
 }
 
@@ -5986,6 +6006,8 @@ void MainFrame::OnSymbolsParsed(SymbolParserEvent& event)
                 file->symbolsUpdated = true;
 
             m_autoCompleteManager.BuildFromProject(m_project);
+            m_autoCompleteWindow->UpdateItems();
+
             return;
         }
     }
@@ -5997,7 +6019,7 @@ void MainFrame::OnSymbolsParsed(SymbolParserEvent& event)
     }
 
     m_autoCompleteManager.BuildFromProject(m_project);
-
+    m_autoCompleteWindow->UpdateItems();
 }
 
 void MainFrame::UpdateForNewFile(Project::File* file)
