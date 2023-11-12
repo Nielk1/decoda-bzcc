@@ -378,7 +378,8 @@ void SymbolParserThread::ParseFileSymbols(wxInputStream& input, std::vector<Symb
           // done with this value, but we're not.
           //continue;
           
-          function = new Symbol(GetStackTop(symStack), "__unnamed__", defLineNumber, CheckAnonRootScope(symStack) ? SymbolType::Function : SymbolType::ScopeDummy);
+          //function = new Symbol(GetStackTop(symStack), "__unnamed__", defLineNumber, CheckAnonRootScope(symStack) ? SymbolType::Function : SymbolType::ScopeDummy);
+          function = new Symbol(GetStackTop(symStack), "__unnamed__", defLineNumber, SymbolType::ScopeDummy);
           //symbols.push_back(function);
           symStack.push(function);
           continue;
