@@ -1,0 +1,3 @@
+[submodule "libs/cppdap"]
+	path = libs/cppdap
+	url = https://github.com/google/cppdap.git
