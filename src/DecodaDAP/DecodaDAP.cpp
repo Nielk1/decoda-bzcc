@@ -590,7 +590,7 @@ void DecodaDAP::EventThreadProc()
             dap::LoadedSourceEvent loadedEvent;
             loadedEvent.reason = "new";
             loadedEvent.source.name = script->name;
-            auto sha256 = ComputeSHA256(script->name);
+            auto sha256 = ComputeSHA256(script->source);
             if (!sha256.empty()) {
                 loadedEvent.source.checksums = std::vector<dap::Checksum>();
                 dap::Checksum check = {
@@ -599,6 +599,7 @@ void DecodaDAP::EventThreadProc()
                 };
                 loadedEvent.source.checksums.value().push_back(check);
             }
+            script->sourceInfo = loadedEvent.source;
 
             //if (IsRealFile(script->name)) {
             //    loadedEvent.source.path = script->name;
@@ -812,6 +813,46 @@ HWND DecodaDAP::GetProcessWindow(DWORD processId) const
         hWnd = GetWindow(hWnd, GW_HWNDNEXT);
     }
     return hWnd;
+    // Modify the DecodaDAP class to use a raw pointer for the session object
+    // and ensure proper memory management to avoid ownership issues.
+}
+
+//DecodaDAP::~DecodaDAP() {
+    // Ensure proper cleanup of the session object
+    //delete session;
+//}
+
+void DecodaDAP::SetBreakpoint(HANDLE p_process, unsigned int scriptIndex, bool set, dap::integer line) const
+{
+    auto script = m_scripts.at(scriptIndex);
+
+    {
+        std::vector<unsigned int>::iterator iterator;
+        iterator = std::find(script->breakpoints.begin(), script->breakpoints.end(), line);
+
+        if (set)
+        {
+            if (iterator == script->breakpoints.end())
+            {
+                script->breakpoints.push_back(line);
+                //if (!script->temporary)
+                //{
+                //    m_needsUserSave = true;
+                //}
+            }
+        }
+        else
+        {
+            if (iterator != script->breakpoints.end())
+            {
+                script->breakpoints.erase(iterator);
+                //if (!script->temporary)
+                //{
+                //    m_needsUserSave = true;
+                //}
+            }
+        }
+    }
 }
 
 void DecodaDAP::SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYTE* data) const
@@ -1126,7 +1167,7 @@ int main(int, char* []) {
     MutexEvent terminate;
 
     DecodaDAP decoda;
-    decoda.session = session;
+    decoda.session = std::unique_ptr<dap::Session>(dap::Session::create());
 
     // Sent first to initialize the debug adapter.
     session->registerHandler([](const dap::InitializeRequest&) {
@@ -1179,7 +1220,8 @@ int main(int, char* []) {
 
             it = argsObj.find("breakOnStart");
             if (it != argsObj.end()) {
-                breakOnStart = it->second.get<bool>();
+                std::string val = it->second.get<std::string>();
+                breakOnStart = (val == "true" || val == "1");
             }
             else {
                 // Fallback: check if "breakOnStart" is in args string
@@ -1206,9 +1248,16 @@ int main(int, char* []) {
 
             auto it = argsObj.find("processId");
             if (it != argsObj.end()) {
-                pid = it->second.get<unsigned int>();
+                std::string pidStr = it->second.get<std::string>();
+                try {
+                    pid = static_cast<unsigned int>(std::stoul(pidStr));
+                }
+                catch (...) {
+                    return dap::Error("Invalid 'processId' value in attach arguments");
+                }
             }
-            else {
+            else
+            {
                 return dap::Error("Missing 'processId' in attach arguments");
             }
 
@@ -1276,7 +1325,8 @@ int main(int, char* []) {
             dapFrame.id = i + 1;
             dapFrame.name = frame.function;
             dapFrame.line = frame.line;
-            dapFrame.source = decoda.GetScript(frame.scriptIndex);
+            auto script = decoda.m_virtualSources[frame.scriptIndex];
+            dapFrame.source = script->sourceInfo;
             response.stackFrames.push_back(dapFrame);
         }
         return response;

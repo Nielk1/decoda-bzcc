@@ -38,6 +38,9 @@ private:
         std::string     source;     // Source code for the script
         CodeState       state;
         //LineMapper      lineMapper; // Current mapping from lines in the local file to backend script lines.
+
+        dap::Source  sourceInfo; // DAP source info
+        std::vector<unsigned int>   breakpoints; // breakpoint lines
     };
 
     struct StackFrame
@@ -70,8 +73,8 @@ private:
     Channel                     m_commandChannel;
 
     mutable CriticalSection     m_criticalSection;
-    std::vector<Script*>        m_scripts;
 
+    std::vector<Script*>        m_scripts;
     std::vector<StackFrame>     m_stackFrames;
 
     State                       m_state;
@@ -121,6 +124,11 @@ public:
 
     void ToggleBreakpoint(unsigned int vm, unsigned int scriptIndex, unsigned int line);
     void RemoveAllBreakPoints();
+
+    // used for internal tracking
+    void SetBreakpoint(HANDLE p_process, unsigned int scriptIndex, bool set, dap::integer line) const;
+
+    // used for system breakpoints
     void SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYTE* data) const;
 
     unsigned int GetNumStackFrames() const;
