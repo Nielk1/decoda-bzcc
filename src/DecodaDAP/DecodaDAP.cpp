@@ -1161,8 +1161,6 @@ int main(int, char* []) {
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
 
-    std::unique_ptr<dap::Session> session = dap::Session::create();
-
     MutexEvent configured;
     MutexEvent terminate;
 
@@ -1170,63 +1168,30 @@ int main(int, char* []) {
     decoda.session = std::unique_ptr<dap::Session>(dap::Session::create());
 
     // Sent first to initialize the debug adapter.
-    session->registerHandler([](const dap::InitializeRequest&) {
+    decoda.session->registerHandler([](const dap::InitializeRequest&) {
         dap::InitializeResponse response;
         response.supportsConfigurationDoneRequest = true;
         return response;
     });
 
-    session->registerSentHandler([&](const dap::ResponseOrError<dap::InitializeResponse>&) {
-        session->send(dap::InitializedEvent());
+    decoda.session->registerSentHandler([&](const dap::ResponseOrError<dap::InitializeResponse>&) {
+        decoda.session->send(dap::InitializedEvent());
     });
 
 
     // Start debugging a new process.
-    session->registerHandler([&](const dap::LaunchRequest& request)
+    decoda.session->registerHandler([&](const dap::LaunchRequestEx& request)
         -> dap::ResponseOrError<dap::LaunchResponse> {
-            // Check if arguments are present
-            if (!request.arguments.has_value()) {
-                return dap::Error("Missing launch arguments");
-            }
-            const auto& argsObj = request.arguments.value();
 
-            std::string exe, args, cwd, symbols;
+            //Sleep(30000);
+
+            std::string exe = request.program.value("");
+            std::string args = request.args.value("");
+            std::string cwd = request.cwd.value("");
+            std::string symbols = request.symbols.value("");
+            bool breakOnStart = request.breakOnStart.value(false);
+
             bool debug = !request.noDebug.value(false);
-            bool breakOnStart = false;
-
-            // Use find() for key existence
-            auto it = argsObj.find("program");
-            if (it != argsObj.end()) {
-                exe = it->second.get<std::string>();
-            }
-            else {
-                return dap::Error("Missing 'program' in launch arguments");
-            }
-
-            it = argsObj.find("args");
-            if (it != argsObj.end()) {
-                args = it->second.get<std::string>();
-            }
-
-            it = argsObj.find("cwd");
-            if (it != argsObj.end()) {
-                cwd = it->second.get<std::string>();
-            }
-
-            it = argsObj.find("symbols");
-            if (it != argsObj.end()) {
-                symbols = it->second.get<std::string>();
-            }
-
-            it = argsObj.find("breakOnStart");
-            if (it != argsObj.end()) {
-                std::string val = it->second.get<std::string>();
-                breakOnStart = (val == "true" || val == "1");
-            }
-            else {
-                // Fallback: check if "breakOnStart" is in args string
-                breakOnStart = args.find("breakOnStart") != std::string::npos;
-            }
 
             if (!decoda.Start(exe.c_str(), args.c_str(), cwd.c_str(), symbols.c_str(), debug, breakOnStart)) {
                 return dap::Error("Failed to launch target application");
@@ -1235,36 +1200,11 @@ int main(int, char* []) {
         });
 
     // Attach to an existing process.
-    session->registerHandler([&](const dap::AttachRequest& request)
+    decoda.session->registerHandler([&](const dap::AttachRequestEx& request)
         -> dap::ResponseOrError<dap::AttachResponse> {
-            // Check if arguments are present
-            if (!request.arguments.has_value()) {
-                return dap::Error("Missing attach arguments");
-            }
-            const auto& argsObj = request.arguments.value();
 
-            unsigned int pid = 0;
-            std::string symbols;
-
-            auto it = argsObj.find("processId");
-            if (it != argsObj.end()) {
-                std::string pidStr = it->second.get<std::string>();
-                try {
-                    pid = static_cast<unsigned int>(std::stoul(pidStr));
-                }
-                catch (...) {
-                    return dap::Error("Invalid 'processId' value in attach arguments");
-                }
-            }
-            else
-            {
-                return dap::Error("Missing 'processId' in attach arguments");
-            }
-
-            it = argsObj.find("symbols");
-            if (it != argsObj.end()) {
-                symbols = it->second.get<std::string>();
-            }
+            unsigned int pid = pid = request.processId.value(0);
+            std::string symbols = request.symbols.value("");
 
             if (!decoda.Attach(pid, symbols.c_str())) {
                 return dap::Error("Failed to attach to process");
@@ -1273,7 +1213,7 @@ int main(int, char* []) {
         });
 
     // End the debug session.
-    session->registerHandler([&](const dap::DisconnectRequest& request) {
+    decoda.session->registerHandler([&](const dap::DisconnectRequest& request) {
         if (request.terminateDebuggee.value(false)) {
             terminate.fire();
         }
@@ -1282,7 +1222,7 @@ int main(int, char* []) {
 
 
     // Set breakpoints in a source file.
-    session->registerHandler([&](const dap::SetBreakpointsRequest& request) {
+    decoda.session->registerHandler([&](const dap::SetBreakpointsRequest& request) {
         decoda.RemoveAllBreakPoints();
         for (const auto& bp : request.breakpoints.value({})) {
             unsigned int scriptIndex = 0; // TODO: lookup by file name/path
@@ -1295,13 +1235,13 @@ int main(int, char* []) {
     // setExceptionBreakpoints
 
     // Notify that the client has finished configuration (breakpoints, etc.).
-    session->registerHandler([&](const dap::ConfigurationDoneRequest&) {
+    decoda.session->registerHandler([&](const dap::ConfigurationDoneRequest&) {
         configured.fire();
         return dap::ConfigurationDoneResponse();
     });
 
     // Request the list of threads (VMs).
-    session->registerHandler([&](const dap::ThreadsRequest&) {
+    decoda.session->registerHandler([&](const dap::ThreadsRequest&) {
         dap::ThreadsResponse response;
 
         // Loop over m_vmNames to get all VM IDs and names
@@ -1315,7 +1255,7 @@ int main(int, char* []) {
     });
 
     // Request the call stack for a thread.
-    session->registerHandler([&](const dap::StackTraceRequest& request)
+    decoda.session->registerHandler([&](const dap::StackTraceRequest& request)
         -> dap::ResponseOrError<dap::StackTraceResponse> {
         dap::StackTraceResponse response;
         unsigned int numFrames = decoda.GetNumStackFrames();
@@ -1333,7 +1273,7 @@ int main(int, char* []) {
     });
 
     // Request the list of variable scopes for a stack frame.
-    session->registerHandler([&](const dap::ScopesRequest& request)
+    decoda.session->registerHandler([&](const dap::ScopesRequest& request)
         -> dap::ResponseOrError<dap::ScopesResponse> {
         dap::ScopesResponse response;
 
@@ -1360,13 +1300,13 @@ int main(int, char* []) {
         return response;
     });
 
-    session->registerHandler([&](const dap::SetExceptionBreakpointsRequest&) {
+    decoda.session->registerHandler([&](const dap::SetExceptionBreakpointsRequest&) {
         return dap::SetExceptionBreakpointsResponse();
     });
 
     // Request the variables for a scope.
     // TODO: implement, for the moment we return an empty list and hope evaluate will get us around it
-    session->registerHandler([&](const dap::VariablesRequest& request)
+    decoda.session->registerHandler([&](const dap::VariablesRequest& request)
         -> dap::ResponseOrError<dap::VariablesResponse> {
         dap::VariablesResponse response;
         unsigned int frameIndex;
@@ -1392,39 +1332,39 @@ int main(int, char* []) {
     });
 
     // Continue execution.
-    session->registerHandler([&](const dap::ContinueRequest& request) {
+    decoda.session->registerHandler([&](const dap::ContinueRequest& request) {
         decoda.Continue(request.threadId);
         return dap::ContinueResponse();
     });
 
     // Step over.
-    session->registerHandler([&](const dap::NextRequest& request) {
+    decoda.session->registerHandler([&](const dap::NextRequest& request) {
         decoda.StepOver(request.threadId);
         return dap::NextResponse();
     });
 
     // Step into.
-    session->registerHandler([&](const dap::StepInRequest& request) {
+    decoda.session->registerHandler([&](const dap::StepInRequest& request) {
         decoda.StepInto(request.threadId);
         return dap::StepInResponse();
     });
 
     // Step out.
-    session->registerHandler([&](const dap::StepOutRequest& request) {
+    decoda.session->registerHandler([&](const dap::StepOutRequest& request) {
         // simulate step out with multiple step overs
         decoda.StepOut(request.threadId);
         return dap::StepOutResponse();
     });
 
     // Pause execution.
-    session->registerHandler([&](const dap::PauseRequest& request) {
+    decoda.session->registerHandler([&](const dap::PauseRequest& request) {
         decoda.Break(request.threadId);
         return dap::PauseResponse();
     });
 
     // Request the source code for a file or virtual source.
     // TODO handle unknown source file
-    session->registerHandler([&](const dap::SourceRequest& request) -> dap::ResponseOrError<dap::SourceResponse> {
+    decoda.session->registerHandler([&](const dap::SourceRequest& request) -> dap::ResponseOrError<dap::SourceResponse> {
         auto it = decoda.m_virtualSources.find(request.sourceReference);
         if (it != decoda.m_virtualSources.end()) {
             dap::SourceResponse response;
@@ -1435,7 +1375,7 @@ int main(int, char* []) {
     });
 
     // Evaluate an expression in the current context.
-    session->registerHandler([&](const dap::EvaluateRequest& request)
+    decoda.session->registerHandler([&](const dap::EvaluateRequest& request)
         -> dap::ResponseOrError<dap::EvaluateResponse> {
             dap::EvaluateResponse response;
             std::string result;
@@ -1494,7 +1434,7 @@ int main(int, char* []) {
 
     std::shared_ptr<dap::Reader> in = dap::file(stdin, false);
     std::shared_ptr<dap::Writer> out = dap::file(stdout, false);
-    session->bind(in, out);
+    decoda.session->bind(in, out);
 
     configured.wait();
 
@@ -1503,7 +1443,7 @@ int main(int, char* []) {
         dap::ThreadEvent threadStartedEvent;
         threadStartedEvent.reason = "started";
         threadStartedEvent.threadId = entry.first;
-        session->send(threadStartedEvent);
+        decoda.session->send(threadStartedEvent);
     }
 
     terminate.wait();

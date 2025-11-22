@@ -23,6 +23,41 @@
 #include <vector>
 #include <fstream>
 
+namespace dap {
+
+    class AttachRequestEx : public AttachRequest {
+    public:
+        optional<dap::integer> processId;
+        optional<std::string> symbols;
+    };
+
+    DAP_STRUCT_TYPEINFO_EXT(AttachRequestEx,
+        AttachRequest,
+        "attach", // This is the wire protocol name for the AttachRequest
+        DAP_FIELD(processId, "processId"),
+        DAP_FIELD(symbols, "symbols"));
+
+
+    class LaunchRequestEx : public LaunchRequest {
+    public:
+        optional<dap::string> program;
+        optional<dap::string> args;
+        optional<dap::string> cwd;
+        optional<dap::string> symbols;
+        optional<dap::boolean> breakOnStart;
+    };
+
+    DAP_STRUCT_TYPEINFO_EXT(LaunchRequestEx,
+        LaunchRequest,
+        "launch", // This is the wire protocol name for the LaunchRequest
+        DAP_FIELD(program, "program"),
+        DAP_FIELD(args, "args"),
+        DAP_FIELD(cwd, "cwd"),
+        DAP_FIELD(symbols, "symbols"),
+        DAP_FIELD(breakOnStart, "breakOnStart"));
+
+}  // namespace dap
+
 class DecodaDAP {
 private:
     struct ExeInfo
