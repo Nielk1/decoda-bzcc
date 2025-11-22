@@ -1,17 +1,27 @@
 #pragma once
 
+#include <windows.h>
+//#include <WinDef.h>
+
 #include "dap/io.h"
 #include "dap/protocol.h"
 #include "dap/session.h"
 
-//#include "../Frontend/DebugFrontend.h"
-#include "DebugFrontend.h"
-
 #include "StlUtility.h"
+#include "CriticalSection.h"
 #include "CriticalSectionLock.h"
+#include "Protocol.h"
+#include "Channel.h"
+//#include "LineMapper.h"
+
+#include "MutexEvent.h"
 
 #include <imagehlp.h>
 #include <tlhelp32.h>
+
+#include <wincrypt.h>
+#include <vector>
+#include <fstream>
 
 class DecodaDAP {
 private:
@@ -27,7 +37,7 @@ private:
         std::string     name;       // Identifying name of the script (usually a file name)
         std::string     source;     // Source code for the script
         CodeState       state;
-        LineMapper      lineMapper; // Current mapping from lines in the local file to backend script lines.
+        //LineMapper      lineMapper; // Current mapping from lines in the local file to backend script lines.
     };
 
     struct StackFrame
@@ -35,6 +45,7 @@ private:
         unsigned int    scriptIndex;
         unsigned int    line;
         std::string     function;
+        unsigned int    vm;
     };
 
     enum State
@@ -44,11 +55,15 @@ private:
         State_Broken,           // Debugging a program is is currently break point.
     };
 
+public:
     std::unique_ptr<dap::Session> session;
 
+private:
     DWORD                       m_processId = 0;
+public:
     HANDLE                      m_process = NULL;
 
+private:
     Channel                     m_eventChannel;
     HANDLE                      m_eventThread = NULL;
 
@@ -60,6 +75,11 @@ private:
     std::vector<StackFrame>     m_stackFrames;
 
     State                       m_state;
+
+
+public:
+    std::unordered_map<unsigned int, std::string> m_vmNames;
+    std::unordered_map<int, Script*> m_virtualSources;
 
 public:
     DecodaDAP() : m_vm(0) {}
@@ -79,12 +99,18 @@ private:
     bool InjectDll(DWORD processId, const char* dllFileName);
     bool GetStartupDirectory(char* path, int maxPathLength);
     bool ProcessInitialization(const char* symbolsDirectory);
-    DWORD WINAPI StaticEventThreadProc(LPVOID param);
     void EventThreadProc();
     std::string MakeValidFileName(const std::string& name);
     HWND GetProcessWindow(DWORD processId) const;
 
+    /**
+     * Static version of the event handler thread entry point. This just
+     * forwards to the non-static version.
+     */
+    static DWORD WINAPI StaticEventThreadProc(LPVOID param);
+
 public:
+    bool Attach(unsigned int processId, const char* symbolsDirectory);
 
     void Continue(unsigned int vm);
     void Break(unsigned int vm);
@@ -94,14 +120,13 @@ public:
     bool Evaluate(unsigned int vm, std::string expression, unsigned int stackLevel, std::string& result);
 
     void ToggleBreakpoint(unsigned int vm, unsigned int scriptIndex, unsigned int line);
-    void RemoveAllBreakPoints(unsigned int vm);
+    void RemoveAllBreakPoints();
+    void SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYTE* data) const;
 
-    unsigned int GetNumStackFrames() const
-    const StackFrame GetStackFrame(unsigned int i) const
+    unsigned int GetNumStackFrames() const;
+    const StackFrame GetStackFrame(unsigned int i) const;
 
-    DebugFrontend::Script* getScript(unsigned int scriptIndex) {
-        return DebugFrontend::Get().GetScript(scriptIndex);
-    }
+    Script* GetScript(unsigned int scriptIndex);
 
     unsigned int m_vm; // For now, always 0
 };
