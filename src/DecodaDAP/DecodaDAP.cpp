@@ -24,7 +24,7 @@ std::string BytesToHex(const std::vector<unsigned char>&bytes) {
     return hex;
 }
 
-std::vector<unsigned char> ComputeSHA256(const std::string& filePath) {
+/*std::vector<unsigned char> ComputeSHA256(const std::string& filePath) {
     std::vector<unsigned char> hash(32); // SHA-256 is 32 bytes
     HCRYPTPROV hProv = 0;
     HCRYPTHASH hHash = 0;
@@ -43,6 +43,38 @@ std::vector<unsigned char> ComputeSHA256(const std::string& filePath) {
     char buffer[4096];
     while (file.read(buffer, sizeof(buffer)) || file.gcount()) {
         if (!CryptHashData(hHash, reinterpret_cast<BYTE*>(buffer), static_cast<DWORD>(file.gcount()), 0)) {
+            CryptDestroyHash(hHash);
+            CryptReleaseContext(hProv, 0);
+            return {};
+        }
+    }
+
+    DWORD hashLen = static_cast<DWORD>(hash.size());
+    if (!CryptGetHashParam(hHash, HP_HASHVAL, hash.data(), &hashLen, 0)) {
+        hash.clear();
+    }
+
+    CryptDestroyHash(hHash);
+    CryptReleaseContext(hProv, 0);
+    return hash;
+}*/
+
+std::vector<unsigned char> ComputeSHA256(const std::string& code) {
+    std::vector<unsigned char> hash(32); // SHA-256 is 32 bytes
+    HCRYPTPROV hProv = 0;
+    HCRYPTHASH hHash = 0;
+
+    if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+        return {};
+
+    if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
+        CryptReleaseContext(hProv, 0);
+        return {};
+    }
+
+    // Hash the code string directly
+    if (!code.empty()) {
+        if (!CryptHashData(hHash, reinterpret_cast<const BYTE*>(code.data()), static_cast<DWORD>(code.size()), 0)) {
             CryptDestroyHash(hHash);
             CryptReleaseContext(hProv, 0);
             return {};
@@ -539,29 +571,23 @@ void DecodaDAP::EventThreadProc()
 
         if (eventId == EventId_CreateVM)
         {
-            unsigned int newThreadId;
-            m_eventChannel.ReadUInt32(newThreadId);
-
-            if (m_vmNames.find(newThreadId) == m_vmNames.end())
+            if (m_vmNames.find(vm) == m_vmNames.end())
             {
-                m_vmNames[newThreadId] = "VM " + std::to_string(newThreadId);
+                m_vmNames[vm] = "VM " + std::to_string(vm);
             }
 
             dap::ThreadEvent threadStartedEvent;
             threadStartedEvent.reason = "started";
-            threadStartedEvent.threadId = newThreadId;
+            threadStartedEvent.threadId = vm;
             session->send(threadStartedEvent);
         }
         else if (eventId == EventId_DestroyVM)
         {
-            unsigned int deadThreadId;
-            m_eventChannel.ReadUInt32(deadThreadId);
-
-            m_vmNames.erase(deadThreadId);
+            m_vmNames.erase(vm);
 
             dap::ThreadEvent threadExitedEvent;
             threadExitedEvent.reason = "exited";
-            threadExitedEvent.threadId = deadThreadId;
+            threadExitedEvent.threadId = vm;
             session->send(threadExitedEvent);
         }
         else if (eventId == EventId_LoadScript)
@@ -614,6 +640,11 @@ void DecodaDAP::EventThreadProc()
             }
 
             session->send(loadedEvent);
+
+            // tell the backend we finished loading the file so it can continue
+            m_commandChannel.WriteUInt32(CommandId_LoadDone);
+            m_commandChannel.WriteUInt32(vm);
+            m_commandChannel.Flush();
         }
         else if (eventId == EventId_Break)
         {
@@ -755,6 +786,10 @@ void DecodaDAP::EventThreadProc()
             output.output = "VM Name: " + message + "\n";
             session->send(output);
         }
+        else
+        {
+            // well this is bad since we don't know how many other values to pop off
+        }
 
         // Dispatch the message to the UI.
         //if (m_eventHandler != NULL)
@@ -857,24 +892,20 @@ void DecodaDAP::SetBreakpoint(HANDLE p_process, unsigned int scriptIndex, bool s
 
 void DecodaDAP::SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYTE* data) const
 {
-
     DWORD protection;
 
     // Give ourself write access to the region.
     if (VirtualProtectEx(p_process, entryPoint, 1, PAGE_EXECUTE_READWRITE, &protection))
     {
-
         BYTE buffer[1];
 
         if (set)
         {
-
             DWORD numBytesRead;
             ReadProcessMemory(p_process, entryPoint, data, 1, &numBytesRead);
 
             // Write the int 3 instruction.
             buffer[0] = 0xCC;
-
         }
         else
         {
@@ -890,9 +921,7 @@ void DecodaDAP::SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYT
 
         // Flush the cache so we know that our new code gets executed.
         FlushInstructionCache(p_process, entryPoint, 1);
-
     }
-
 }
 
 bool DecodaDAP::Attach(unsigned int processId, const char* symbolsDirectory)
@@ -1178,12 +1207,11 @@ int main(int, char* []) {
         decoda.session->send(dap::InitializedEvent());
     });
 
-
     // Start debugging a new process.
     decoda.session->registerHandler([&](const dap::LaunchRequestEx& request)
         -> dap::ResponseOrError<dap::LaunchResponse> {
 
-            //Sleep(30000);
+            Sleep(30000);
 
             std::string exe = request.program.value("");
             std::string args = request.args.value("");
@@ -1220,7 +1248,6 @@ int main(int, char* []) {
         return dap::DisconnectResponse();
     });
 
-
     // Set breakpoints in a source file.
     decoda.session->registerHandler([&](const dap::SetBreakpointsRequest& request) {
         decoda.RemoveAllBreakPoints();
@@ -1236,6 +1263,7 @@ int main(int, char* []) {
 
     // Notify that the client has finished configuration (breakpoints, etc.).
     decoda.session->registerHandler([&](const dap::ConfigurationDoneRequest&) {
+        Sleep(30000);
         configured.fire();
         return dap::ConfigurationDoneResponse();
     });
