@@ -253,7 +253,7 @@ bool DebugBackend::Initialize(HINSTANCE hInstance)
 {
 
     DWORD processId = GetCurrentProcessId();
-
+    
     char eventChannelName[256];
     _snprintf(eventChannelName, 256, "Decoda.Event.%x", processId);
 
@@ -698,8 +698,10 @@ void DebugBackend::HookCallback(unsigned long api, lua_State* L, lua_Debug* ar)
 
     m_criticalSection.Enter(); 
     
+#ifdef VERBOSE
     // Log for debugging.
-    //LogHookEvent(api, L, ar);
+    LogHookEvent(api, L, ar);
+#endif
 
     if (!lua_checkstack_dll(api, L, 2))
     {

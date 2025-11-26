@@ -38,7 +38,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved)
         // This line can be uncommented to give yourself an opportunity to attach
         // the MSVC debugger to the process being debugged in Decoda to allow
         // LuaInject to be debugged.
-        //MessageBox(NULL, "Waiting to attach the debugger", NULL, MB_OK);
+        MessageBox(NULL, "Waiting to attach the debugger", NULL, MB_OK);
 
         if (!DebugBackend::Get().Initialize(hInstance))
         {

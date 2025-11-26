@@ -24,6 +24,9 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #define LUA_DLL_H
 
 #include <windows.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include "LuaTypes.h"
 
