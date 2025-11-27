@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 Decoda
 Copyright (C) 2007-2013 Unknown Worlds Entertainment, Inc. 
@@ -615,6 +615,7 @@ void SetHookMode(unsigned long api, lua_State* L, HookMode mode)
 
   if(mode == HookMode_None)
   {
+      DebugBackend::Get().Log("SetHookMode(0)\n");
       lua_sethook_dll(api, L, NULL, 0, 0);
   }
   else
@@ -633,7 +634,7 @@ void SetHookMode(unsigned long api, lua_State* L, HookMode mode)
         mask = LUA_MASKCALL|LUA_MASKRET|LUA_MASKLINE;
         break;
       }
-
+      //DebugBackend::Get().Log("SetHookMode(%d)\n", mask);
       lua_sethook_dll(api, L, g_interfaces[api].HookHandler, mask, 0);
   }
 
@@ -656,6 +657,8 @@ HookMode GetHookMode(unsigned long api, lua_State* L)
 {
 
   int mask = lua_gethookmask(api, L);
+
+  //DebugBackend::Get().Log("GetHookMode %d\n", mask);
 
   if(mask == 0)
   {
@@ -2054,8 +2057,8 @@ HMODULE WINAPI LoadLibraryExW_intercept(LPCWSTR fileName, HANDLE hFile, DWORD dw
     // in the case where Dll initialization acquires the loader lock and calls LoadLibrary
     // while another thread is inside PostLoadLibrary.
 
-    ULONG cookie;
-
+    //ULONG cookie;
+    //
     //if (LdrLockLoaderLock_dll   != NULL &&
     //    LdrUnlockLoaderLock_dll != NULL)
     //{
@@ -2086,8 +2089,8 @@ HMODULE WINAPI LoadLibraryA_intercept(LPCSTR fileName)
     // in the case where Dll initialization acquires the loader lock and calls LoadLibrary
     // while another thread is inside PostLoadLibrary.
 
-    ULONG cookie;
-
+    //ULONG cookie;
+    //
     //if (LdrLockLoaderLock_dll != NULL &&
     //    LdrUnlockLoaderLock_dll != NULL)
     //{
@@ -2118,8 +2121,8 @@ HMODULE WINAPI LoadLibraryW_intercept(LPCWSTR fileName)
     // in the case where Dll initialization acquires the loader lock and calls LoadLibrary
     // while another thread is inside PostLoadLibrary.
 
-    ULONG cookie;
-
+    //ULONG cookie;
+    //
     //if (LdrLockLoaderLock_dll != NULL &&
     //    LdrUnlockLoaderLock_dll != NULL)
     //{
@@ -3507,7 +3510,7 @@ bool LoadLuaFunctions(const std::unordered_map<std::string, DWORD64>& symbols, H
     HOOK_FUNCTION(lua_callk);
     HOOK_FUNCTION(lua_load);
     HOOK_FUNCTION(lua_load_510);
-    HOOK_FUNCTION(luaL_newmetatable);
+    //HOOK_FUNCTION(luaL_newmetatable);
     HOOK_FUNCTION(lua_sethook);
 
     HOOK_FUNCTION(luaL_loadbuffer);
