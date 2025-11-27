@@ -441,8 +441,8 @@ struct CPCallHandlerArgs
 LoadLibraryExW_t                LoadLibraryExW_dll      = NULL;
 LoadLibraryA_t					LoadLibraryA_dll = NULL;
 LoadLibraryW_t					LoadLibraryW_dll = NULL;
-LdrLockLoaderLock_t             LdrLockLoaderLock_dll   = NULL;
-LdrUnlockLoaderLock_t           LdrUnlockLoaderLock_dll = NULL;
+//LdrLockLoaderLock_t             LdrLockLoaderLock_dll   = NULL;
+//LdrUnlockLoaderLock_t           LdrUnlockLoaderLock_dll = NULL;
 
 bool                            g_loadedLuaFunctions = false;
 std::set<std::string>           g_loadedModules;
@@ -2056,11 +2056,11 @@ HMODULE WINAPI LoadLibraryExW_intercept(LPCWSTR fileName, HANDLE hFile, DWORD dw
 
     ULONG cookie;
 
-    if (LdrLockLoaderLock_dll   != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrLockLoaderLock_dll(0, 0, &cookie);
-    }
+    //if (LdrLockLoaderLock_dll   != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrLockLoaderLock_dll(0, 0, &cookie);
+    //}
 
     HMODULE hModule = LoadLibraryExW_dll(fileName, hFile, dwFlags);
 
@@ -2069,11 +2069,11 @@ HMODULE WINAPI LoadLibraryExW_intercept(LPCWSTR fileName, HANDLE hFile, DWORD dw
         PostLoadLibrary(hModule);
     }
 
-    if (LdrLockLoaderLock_dll   != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrUnlockLoaderLock_dll(0, cookie);
-    }
+    //if (LdrLockLoaderLock_dll   != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrUnlockLoaderLock_dll(0, cookie);
+    //}
 
     return hModule;
 
@@ -2088,11 +2088,11 @@ HMODULE WINAPI LoadLibraryA_intercept(LPCSTR fileName)
 
     ULONG cookie;
 
-    if (LdrLockLoaderLock_dll != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrLockLoaderLock_dll(0, 0, &cookie);
-    }
+    //if (LdrLockLoaderLock_dll != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrLockLoaderLock_dll(0, 0, &cookie);
+    //}
 
     HMODULE hModule = LoadLibraryA_dll(fileName);
 
@@ -2101,11 +2101,11 @@ HMODULE WINAPI LoadLibraryA_intercept(LPCSTR fileName)
         PostLoadLibrary(hModule);
     }
 
-    if (LdrLockLoaderLock_dll != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrUnlockLoaderLock_dll(0, cookie);
-    }
+    //if (LdrLockLoaderLock_dll != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrUnlockLoaderLock_dll(0, cookie);
+    //}
 
     return hModule;
 
@@ -2120,11 +2120,11 @@ HMODULE WINAPI LoadLibraryW_intercept(LPCWSTR fileName)
 
     ULONG cookie;
 
-    if (LdrLockLoaderLock_dll != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrLockLoaderLock_dll(0, 0, &cookie);
-    }
+    //if (LdrLockLoaderLock_dll != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrLockLoaderLock_dll(0, 0, &cookie);
+    //}
 
     HMODULE hModule = LoadLibraryW_dll(fileName);
 
@@ -2133,11 +2133,11 @@ HMODULE WINAPI LoadLibraryW_intercept(LPCWSTR fileName)
         PostLoadLibrary(hModule);
     }
 
-    if (LdrLockLoaderLock_dll != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrUnlockLoaderLock_dll(0, cookie);
-    }
+    //if (LdrLockLoaderLock_dll != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrUnlockLoaderLock_dll(0, cookie);
+    //}
 
     return hModule;
 
@@ -2243,6 +2243,9 @@ void FinishLoadingLua(unsigned long api, bool stdcall)
 #pragma auto_inline(off)
 void lua_call_worker(unsigned long api, lua_State* L, int nargs, int nresults, bool& stdcall)
 {
+    // Ensure the backend is initialized before proceeding
+    //extern void EnsureInitialized();
+    //EnsureInitialized();
 
     if (!g_interfaces[api].finishedLoading)
     {
@@ -2304,7 +2307,6 @@ __declspec(naked) void lua_call_intercept(unsigned long api, lua_State* L, int n
 #pragma auto_inline(off)
 void lua_callk_worker(unsigned long api, lua_State* L, int nargs, int nresults, int ctk, lua_CFunction k, bool& stdcall)
 {
-
     if (!g_interfaces[api].finishedLoading)
     {
         
@@ -4131,7 +4133,6 @@ void PostLoadLibrary(HMODULE hModule)
 
 void HookLoadLibrary()
 {
-
     HMODULE hModuleKernel = GetModuleHandle("kernel32.dll");
 
     if (hModuleKernel != NULL)
@@ -4145,19 +4146,18 @@ void HookLoadLibrary()
 
     // These NTDLL functions are undocumented and don't exist in Windows 2000.
 
-    HMODULE hModuleNt = GetModuleHandle("ntdll.dll");
-
-    if (hModuleNt != NULL)
-    {
-        LdrLockLoaderLock_dll   = (LdrLockLoaderLock_t)   GetProcAddress(hModuleNt, "LdrLockLoaderLock");
-        LdrUnlockLoaderLock_dll = (LdrUnlockLoaderLock_t) GetProcAddress(hModuleNt, "LdrUnlockLoaderLock");
-    }
-
+    // Removed because it didn't actually prevent the modules from changing during enumeration and resulted in deadlock in some cases
+    //HMODULE hModuleNt = GetModuleHandle("ntdll.dll");
+    //
+    //if (hModuleNt != NULL)
+    //{
+    //    LdrLockLoaderLock_dll   = (LdrLockLoaderLock_t)   GetProcAddress(hModuleNt, "LdrLockLoaderLock");
+    //    LdrUnlockLoaderLock_dll = (LdrUnlockLoaderLock_t) GetProcAddress(hModuleNt, "LdrUnlockLoaderLock");
+    //}
 }
 
 bool InstallLuaHooker(HINSTANCE hInstance, const char* symbolsDirectory)
 {
-
     // Load the dbghelp functions. We have to do this dynamically since the
     // older version of dbghelp that ships with Windows doesn't successfully
     // load the symbols from PDBs. We can't simply include our new DLL since
@@ -4179,14 +4179,15 @@ bool InstallLuaHooker(HINSTANCE hInstance, const char* symbolsDirectory)
     // for Lua functions.
     HookLoadLibrary();
 
+    // Removed as this didn't resolve the risk of modules mutating while iterating anyway and caused a deadlock in some games
     // Avoid deadlock if a new DLL is loaded during this function.
-    ULONG cookie;
-
-    if (LdrLockLoaderLock_dll   != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrLockLoaderLock_dll(0, 0, &cookie);
-    }
+    //ULONG cookie;
+    //
+    //if (LdrLockLoaderLock_dll   != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrLockLoaderLock_dll(0, 0, &cookie);
+    //}
 
     // Process all of the loaded modules.
 
@@ -4201,11 +4202,11 @@ bool InstallLuaHooker(HINSTANCE hInstance, const char* symbolsDirectory)
         HMODULE hModule = GetModuleHandle(NULL);
         PostLoadLibrary(hModule);
 
-        if (LdrLockLoaderLock_dll   != NULL &&
-            LdrUnlockLoaderLock_dll != NULL)
-        {
-            LdrUnlockLoaderLock_dll(0, cookie);
-        }
+        //if (LdrLockLoaderLock_dll   != NULL &&
+        //    LdrUnlockLoaderLock_dll != NULL)
+        //{
+        //    LdrUnlockLoaderLock_dll(0, cookie);
+        //}
 
         return true;
 
@@ -4235,11 +4236,11 @@ bool InstallLuaHooker(HINSTANCE hInstance, const char* symbolsDirectory)
     CloseHandle(hSnapshot);
     hSnapshot = NULL;
 
-    if (LdrLockLoaderLock_dll   != NULL &&
-        LdrUnlockLoaderLock_dll != NULL)
-    {
-        LdrUnlockLoaderLock_dll(0, cookie);
-    }
+    //if (LdrLockLoaderLock_dll   != NULL &&
+    //    LdrUnlockLoaderLock_dll != NULL)
+    //{
+    //    LdrUnlockLoaderLock_dll(0, cookie);
+    //}
 
     return true;
 

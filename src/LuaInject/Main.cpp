@@ -26,6 +26,7 @@ along with Decoda.  If not, see <http://www.gnu.org/licenses/>.
 #include "DebugBackend.h"
 
 HINSTANCE g_hInstance = NULL;
+//static bool g_initialized = false;
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved)
 {
@@ -40,9 +41,15 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved)
         // LuaInject to be debugged.
         MessageBox(NULL, "Waiting to attach the debugger", NULL, MB_OK);
 
-        if (!DebugBackend::Get().Initialize(hInstance))
+        // Check for the delay environment variable
+        //if (GetEnvironmentVariableA("DELAY_LUAINJECT_INIT", NULL, 0) == 0)
         {
-            return FALSE;
+            // No delay requested, initialize immediately
+            if (!DebugBackend::Get().Initialize(hInstance))
+            {
+                return FALSE;
+            }
+            //g_initialized = true;
         }
 
     }
@@ -54,3 +61,17 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved)
     return TRUE;
 
 }
+
+// Add a helper function to ensure initialization
+//void EnsureInitialized()
+//{
+//    if (!g_initialized)
+//    {
+//        if (!DebugBackend::Get().Initialize(g_hInstance))
+//        {
+//            // Handle initialization failure (e.g., log or abort)
+//            return;
+//        }
+//        g_initialized = true;
+//    }
+//}

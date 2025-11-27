@@ -309,7 +309,7 @@ bool DecodaDAP::InitializeBackend(const char* symbolsDirectory)
     {
         return false;
     }
-
+    //Sleep(30000);
     // Inject our debugger DLL into the process so that we can monitor from
     // inside the process's memory space.
     if (!InjectDll(m_processId, "LuaInject.dll"))
@@ -1211,7 +1211,7 @@ int main(int, char* []) {
     decoda.session->registerHandler([&](const dap::LaunchRequestEx& request)
         -> dap::ResponseOrError<dap::LaunchResponse> {
 
-            Sleep(30000);
+            //Sleep(30000);
 
             std::string exe = request.program.value("");
             std::string args = request.args.value("");
@@ -1263,7 +1263,7 @@ int main(int, char* []) {
 
     // Notify that the client has finished configuration (breakpoints, etc.).
     decoda.session->registerHandler([&](const dap::ConfigurationDoneRequest&) {
-        Sleep(30000);
+        //Sleep(30000);
         configured.fire();
         return dap::ConfigurationDoneResponse();
     });
