@@ -3510,7 +3510,7 @@ bool LoadLuaFunctions(const std::unordered_map<std::string, DWORD64>& symbols, H
     HOOK_FUNCTION(lua_callk);
     HOOK_FUNCTION(lua_load);
     HOOK_FUNCTION(lua_load_510);
-    //HOOK_FUNCTION(luaL_newmetatable);
+    //HOOK_FUNCTION(luaL_newmetatable); // disabled because the hook breaks BZ98R due to preventing lightuserdata from getting its type string
     HOOK_FUNCTION(lua_sethook);
 
     HOOK_FUNCTION(luaL_loadbuffer);
