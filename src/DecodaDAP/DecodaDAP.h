@@ -90,11 +90,12 @@ private:
 
     struct ScriptBreakpoint
     {
-        bool active;
+        bool desireActive;
         dap::SourceBreakpoint dap;
+        std::unordered_map<unsigned int, bool> VmIsActiveMap; // current state of breakpoint in a VM
 
-        ScriptBreakpoint() : active(false) {}
-        ScriptBreakpoint(dap::SourceBreakpoint dap) : dap(dap), active(false) {}
+        ScriptBreakpoint() : desireActive(false) {}
+        ScriptBreakpoint(dap::SourceBreakpoint dap) : dap(dap), desireActive(false) {}
     };
 
     struct ScriptData
@@ -192,6 +193,9 @@ private:
     static DWORD WINAPI StaticEventThreadProc(LPVOID param);
 
 public:
+    dap::SetBreakpointsResponse HandleSetBreakpointsRequest(const dap::SetBreakpointsRequest& request);
+
+public:
     bool Attach(unsigned int processId, const char* symbolsDirectory);
 
     void Continue(unsigned int vm);
@@ -205,10 +209,10 @@ public:
     void RemoveAllBreakPoints();
 
     bool BreakpointIsActive(dap::string name, dap::SourceBreakpoint breakpoint);
-    bool SetBreakpointsForScript(dap::string name, dap::array<dap::SourceBreakpoint> breakpoints);
+    void SetBreakpointsForScript(dap::Source source, dap::array<dap::SourceBreakpoint> breakpoints, dap::array<dap::Breakpoint>& breakpointsOut);
 
     // used for internal tracking
-    void SetScriptBreakpoint(unsigned int vm, unsigned int scriptIndex, bool set, dap::integer line);
+    void ApplyScriptBreakpoint(unsigned int vm, unsigned int scriptIndex, dap::integer line);
 
     // used for system breakpoints
     void SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYTE* data) const;
