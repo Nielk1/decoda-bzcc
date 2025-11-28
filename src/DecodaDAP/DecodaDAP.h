@@ -26,19 +26,23 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#include <filesystem>
+
 namespace dap {
 
     class AttachRequestEx : public AttachRequest {
     public:
         optional<dap::integer> processId;
         optional<std::string> symbols;
+        optional<dap::array<dap::string>> luaWorkspaceLibrary;
     };
 
     DAP_STRUCT_TYPEINFO_EXT(AttachRequestEx,
         AttachRequest,
         "attach", // This is the wire protocol name for the AttachRequest
         DAP_FIELD(processId, "processId"),
-        DAP_FIELD(symbols, "symbols"));
+        DAP_FIELD(symbols, "symbols"),
+        DAP_FIELD(luaWorkspaceLibrary, "luaWorkspaceLibrary"));
 
 
     class LaunchRequestEx : public LaunchRequest {
@@ -48,6 +52,7 @@ namespace dap {
         optional<dap::string> cwd;
         optional<dap::string> symbols;
         optional<dap::boolean> breakOnStart;
+        optional<dap::array<dap::string>> luaWorkspaceLibrary;
     };
 
     DAP_STRUCT_TYPEINFO_EXT(LaunchRequestEx,
@@ -57,9 +62,11 @@ namespace dap {
         DAP_FIELD(args, "args"),
         DAP_FIELD(cwd, "cwd"),
         DAP_FIELD(symbols, "symbols"),
-        DAP_FIELD(breakOnStart, "breakOnStart"));
+        DAP_FIELD(breakOnStart, "breakOnStart"),
+        DAP_FIELD(luaWorkspaceLibrary, "luaWorkspaceLibrary"));
 
 }  // namespace dap
+
 
 class DecodaDAP {
 private:
@@ -151,6 +158,8 @@ public:
 public:
     std::unordered_map<unsigned int, std::string> m_vmNames;
     //std::unordered_map<int, Script*> m_virtualSources;
+    std::unordered_map<std::string, dap::string> sourceMap;
+
 
 public:
     DecodaDAP() : m_vm(0) {}

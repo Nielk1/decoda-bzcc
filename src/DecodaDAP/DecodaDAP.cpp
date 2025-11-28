@@ -662,6 +662,35 @@ void DecodaDAP::EventThreadProc()
                 };
                 loadedEvent.source.checksums.value().push_back(check);
             }
+
+            if (sourceMap.find(script_name) != sourceMap.end())
+            {
+                loadedEvent.source.path = sourceMap[script_name];
+            }
+            else
+            {
+                // check if script_name is an absolute path
+                if (std::filesystem::path(script_name).is_absolute() && std::filesystem::exists(script_name))
+                {
+                    loadedEvent.source.path = script_name;
+                }
+                else
+                {
+                    // extract filename from script_name
+                    size_t lastSlash = script_name.find_last_of("/\\");
+                    auto cleanname = script_name;
+                    if (lastSlash != std::string::npos)
+                    {
+                        cleanname = script_name.substr(lastSlash + 1);
+                    }
+                    auto foundMap = sourceMap.find(cleanname);
+                    if (foundMap != sourceMap.end())
+                    {
+                        loadedEvent.source.path = foundMap->second;
+                    }
+                }
+            }
+
             //script->sourceInfo = loadedEvent.source;
             m_scriptData[script_name].sourceInfo = loadedEvent.source;
 
@@ -1403,6 +1432,37 @@ int main(int, char* []) {
             std::string cwd = request.cwd.value("");
             std::string symbols = request.symbols.value("");
             bool breakOnStart = request.breakOnStart.value(false);
+
+            if (request.luaWorkspaceLibrary.has_value())
+            {
+                for (const auto& lib_path : request.luaWorkspaceLibrary.value())
+                {
+                    std::filesystem::path path(lib_path);
+
+                    if (std::filesystem::exists(path))
+                    {
+                        if (std::filesystem::is_regular_file(path))
+                        {
+                            // Only add .lua files
+                            if (path.extension() == ".lua")
+                            {
+                                decoda.sourceMap[path.filename().string()] = std::filesystem::absolute(path).string();
+                            }
+                        }
+                        else if (std::filesystem::is_directory(path))
+                        {
+                            // Recursively add all .lua files in the directory
+                            for (const auto& entry : std::filesystem::recursive_directory_iterator(path))
+                            {
+                                if (entry.is_regular_file() && entry.path().extension() == ".lua")
+                                {
+                                    decoda.sourceMap[entry.path().filename().string()] = std::filesystem::absolute(entry.path()).string();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             bool debug = !request.noDebug.value(false);
 

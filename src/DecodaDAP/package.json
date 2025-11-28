@@ -1,0 +1,77 @@
+{
+  "name": "decoda-dap",
+  "displayName": "Decoda DAP",
+  "description": "Minimal VSCode extension for Decoda Debug Adapter",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Debuggers"],
+  "activationEvents": [
+    "onDebug",
+    "onLanguage:lua"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "breakpoints": [ { "language": "lua" } ],
+    "debuggers": [
+      {
+        "type": "decoda",
+        "label": "Decoda Debugger",
+        "languages": [ "lua" ],
+        "program": "./DecodaDAP.exe",
+        "args": [],
+        "runtime": "",
+        "configurationAttributes": {
+          "launch": {
+            "required": [ "program" ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the program to debug"
+              },
+              "args": {
+                "type": "string",
+                "description": "Arguments for the program"
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Working directory"
+              },
+              "symbols": {
+                "type": "string",
+                "description": "Path to symbols directory"
+              },
+              "breakOnStart": {
+                "type": "boolean",
+                "description": "Break at program entry"
+              },
+              "luaWorkspaceLibrary": {
+                "type": "array",
+                "description": "Paths to Lua workspace libraries (location of lua files)",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "name": "Launch Decoda",
+            "type": "decoda",
+            "request": "launch",
+            "program": "${workspaceFolder}/yourapp.exe",
+            "args": "",
+            "cwd": "${workspaceFolder}",
+            "luaWorkspaceLibrary": [
+              "${workspaceFolder}"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {},
+  "devDependencies": {}
+}
