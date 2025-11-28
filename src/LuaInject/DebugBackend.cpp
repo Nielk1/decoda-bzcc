@@ -520,6 +520,7 @@ int DebugBackend::PostLoadScript(unsigned long api, int result, lua_State* L, co
 
 }
 
+// TODO WARNING script list will grow forever, should consider methods to purge it, like tracking what scripts are loaded per VM and removing some after VM unloads, which would require moving from a vector to a map (or sparse vector)
 int DebugBackend::RegisterScript(lua_State* L, const char* source, size_t size, const char* name, bool unavailable)
 {
 

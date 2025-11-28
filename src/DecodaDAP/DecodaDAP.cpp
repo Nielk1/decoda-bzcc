@@ -247,7 +247,7 @@ bool DecodaDAP::GetExeInfo(LPCSTR fileName, ExeInfo& info) const
 
 }
 
-void DecodaDAP::MessageEvent(const std::string& message, MessageType type)
+void DecodaDAP::MessageEvent(const std::string& message, MessageType type) const
 {
     switch (type)
     {
@@ -594,29 +594,66 @@ void DecodaDAP::EventThreadProc()
         {
             CriticalSectionLock lock(m_criticalSection);
 
-            Script* script = new Script;
+            //Script* script = new Script;
+            std::string script_name;
+            std::string script_source;
 
-            m_eventChannel.ReadString(script->name);
-            m_eventChannel.ReadString(script->source);
+            //m_eventChannel.ReadString(script->name);
+            m_eventChannel.ReadString(script_name);
+            //m_eventChannel.ReadString(script->source);
+            m_eventChannel.ReadString(script_source);
 
             unsigned int codeState;
             m_eventChannel.ReadUInt32(codeState);
 
-            script->state = static_cast<CodeState>(codeState);
+            //script->state = static_cast<CodeState>(codeState);
+            CodeState script_state = static_cast<CodeState>(codeState);
 
             // If the debuggee does wacky things when it specifies the file name
             // we need to correct for that or it can make trying to access the
             // file bad.
-            script->name = MakeValidFileName(script->name);
+            //script->name = MakeValidFileName(script->name);
+            script_name = MakeValidFileName(script_name);
 
-            unsigned int scriptIndex = m_scripts.size();
-            m_scripts.push_back(script);
+            //unsigned int scriptIndex = m_scripts.size();
+            unsigned int scriptIndex = m_scriptIndexes.size();
+            //m_scriptIndexes.push_back(script->name);
+            m_scriptIndexes.push_back(script_name);
+            //auto foundScriptData = m_scriptData.find(script->name);
+            auto foundScriptData = m_scriptData.find(script_name);
+            if (foundScriptData == m_scriptData.end())
+            {
+                //auto newscriptdata = ScriptData(script->name);
+                auto newscriptdata = ScriptData(script_name);
+                newscriptdata.indexMap[scriptIndex] = vm;
+
+                newscriptdata.source = script_source;
+                newscriptdata.state = script_state;
+
+                //m_scriptData[script->name] = newscriptdata;
+                m_scriptData[script_name] = newscriptdata;
+                // TODO update existing breakpoints for DAP and inject them into backend
+            }
+            else
+            {
+                foundScriptData->second.indexMap[scriptIndex] = vm;
+                // TODO update existing breakpoints for DAP and inject them into backend
+            }
+            //m_scripts.push_back(script);
+
+            //for (const auto& existingBp : m_scriptData[script->name].breakpoints)
+            for (const auto& existingBp : m_scriptData[script_name].breakpoints)
+            {
+                SetScriptBreakpoint(vm, scriptIndex, true, existingBp.first);
+            }
 
             // DAP: Determine if this is a real file
             dap::LoadedSourceEvent loadedEvent;
             loadedEvent.reason = "new";
-            loadedEvent.source.name = script->name;
-            auto sha256 = ComputeSHA256(script->source);
+            //loadedEvent.source.name = script->name;
+            loadedEvent.source.name = script_name;
+            //auto sha256 = ComputeSHA256(script->source);
+            auto sha256 = ComputeSHA256(script_source);
             if (!sha256.empty()) {
                 loadedEvent.source.checksums = std::vector<dap::Checksum>();
                 dap::Checksum check = {
@@ -625,19 +662,21 @@ void DecodaDAP::EventThreadProc()
                 };
                 loadedEvent.source.checksums.value().push_back(check);
             }
-            script->sourceInfo = loadedEvent.source;
+            //script->sourceInfo = loadedEvent.source;
+            m_scriptData[script_name].sourceInfo = loadedEvent.source;
 
+            // TODO virtual source files
             //if (IsRealFile(script->name)) {
             //    loadedEvent.source.path = script->name;
             //}
             //else
-            {
-                // Assign a unique sourceReference for virtual files
-                static int nextSourceRef = 1000;
-                loadedEvent.source.sourceReference = nextSourceRef;
-                m_virtualSources[nextSourceRef] = script;
-                ++nextSourceRef;
-            }
+            //{
+            //    // Assign a unique sourceReference for virtual files
+            //    static int nextSourceRef = 1000;
+            //    loadedEvent.source.sourceReference = nextSourceRef;
+            //    m_virtualSources[nextSourceRef] = script;
+            //    ++nextSourceRef;
+            //}
 
             session->send(loadedEvent);
 
@@ -660,7 +699,8 @@ void DecodaDAP::EventThreadProc()
 
                 if (m_stackFrames[i].scriptIndex != -1)
                 {
-                    assert(m_stackFrames[i].scriptIndex < m_scripts.size());
+                    //assert(m_stackFrames[i].scriptIndex < m_scripts.size());
+                    assert(m_stackFrames[i].scriptIndex < m_scriptIndexes.size());
                 }
 
                 m_eventChannel.ReadUInt32(m_stackFrames[i].line);
@@ -682,9 +722,6 @@ void DecodaDAP::EventThreadProc()
         }
         else if (eventId == EventId_SetBreakpoint)
         {
-            // TODO figure out if this is used for every breakpoint set or when breakpoints become valid/invalid due to script loading/unloading
-            // if it runs when a breakpoint is added/removed than we can NOP this out since DAP handles that via the SetBreakpoints response
-
             unsigned int scriptIndex;
             m_eventChannel.ReadUInt32(scriptIndex);
 
@@ -693,6 +730,18 @@ void DecodaDAP::EventThreadProc()
 
             unsigned int set;
             m_eventChannel.ReadUInt32(set);
+
+            MessageEvent(
+                "EVENT Set Breakpoint(vm: " + std::to_string(vm) +
+                ", scriptIndex: " + std::to_string(scriptIndex) +
+                //" (\"" + m_scripts[scriptIndex]->name + "\"), set: " + std::to_string(set) +
+                " (\"" + m_scriptIndexes[scriptIndex] + "\"), set: " + std::to_string(set) +
+                ", line: " + std::to_string(line) + ")",
+                MessageType_Normal);
+
+            auto scriptName = m_scriptIndexes.at(scriptIndex);
+            auto& scriptData = m_scriptData[scriptName];
+            scriptData.breakpoints[line].active = (set != 0);
 
             // Only send if this is an async change (not in direct response to setBreakpoints)
             dap::BreakpointEvent bpEvent;
@@ -857,11 +906,42 @@ HWND DecodaDAP::GetProcessWindow(DWORD processId) const
     //delete session;
 //}
 
-void DecodaDAP::SetBreakpoint(HANDLE p_process, unsigned int scriptIndex, bool set, dap::integer line) const
+void DecodaDAP::SetScriptBreakpoint(unsigned int vm, unsigned int scriptIndex, bool set, dap::integer line)
 {
-    auto script = m_scripts.at(scriptIndex);
+    //auto script = m_scripts.at(scriptIndex);
+    auto scriptName = m_scriptIndexes.at(scriptIndex);
+    auto script = m_scriptData.find(scriptName);
 
+    MessageEvent(
+        "SetScriptBreakpoint(vm: " + std::to_string(vm) +
+        ", scriptIndex: " + std::to_string(scriptIndex) +
+        //" (\"" + script->name + "\"), set: " + std::to_string(set) +
+        " (\"" + script->second.name + "\"), set: " + std::to_string(set) +
+        ", line: " + std::to_string(line) + ")",
+        MessageType_Normal
+    );
+
+    for (const auto& bp : script->second.breakpoints)
     {
+        for (const auto& scriptIndexes : script->second.indexMap)
+        {
+            // Check if the breakpoint's active state differs from the desired state
+            if (bp.second.active != set)
+            {
+                // Extract VM ID and script index
+                unsigned int vm = scriptIndexes.second;
+                unsigned int scriptindex = scriptIndexes.first;
+
+                // Extract the line number
+                unsigned int line = static_cast<unsigned int>(bp.first);
+
+                // Call ToggleBreakpoint with the correct parameters
+                ToggleBreakpoint(vm, scriptindex, line);
+            }
+        }
+    }
+
+    /*{
         std::vector<unsigned int>::iterator iterator;
         iterator = std::find(script->breakpoints.begin(), script->breakpoints.end(), line);
 
@@ -887,7 +967,7 @@ void DecodaDAP::SetBreakpoint(HANDLE p_process, unsigned int scriptIndex, bool s
                 //}
             }
         }
-    }
+    }*/
 }
 
 void DecodaDAP::SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYTE* data) const
@@ -1025,7 +1105,7 @@ bool DecodaDAP::Evaluate(unsigned int vm, std::string expression, unsigned int s
     return success != 0;
 }
 
-void DecodaDAP::ToggleBreakpoint(unsigned int vm, unsigned int scriptIndex, unsigned int line)
+void DecodaDAP::ToggleBreakpoint(unsigned int vm, unsigned int scriptIndex, unsigned int line) 
 {
     m_commandChannel.WriteUInt32(CommandId_ToggleBreakpoint);
     m_commandChannel.WriteUInt32(vm);
@@ -1051,18 +1131,18 @@ const DecodaDAP::StackFrame DecodaDAP::GetStackFrame(unsigned int i) const
     return m_stackFrames[i];
 }
 
-DecodaDAP::Script* DecodaDAP::GetScript(unsigned int scriptIndex)
-{
-    CriticalSectionLock lock(m_criticalSection);
-    if (scriptIndex == -1)
-    {
-        return NULL;
-    }
-    else
-    {
-        return m_scripts[scriptIndex];
-    }
-}
+//DecodaDAP::Script* DecodaDAP::GetScript(unsigned int scriptIndex)
+//{
+//    CriticalSectionLock lock(m_criticalSection);
+//    if (scriptIndex == -1)
+//    {
+//        return NULL;
+//    }
+//    else
+//    {
+//        return m_scripts[scriptIndex];
+//    }
+//}
 
 
 
@@ -1180,9 +1260,104 @@ void DecodaDAP::Stop(bool kill)
     CloseHandle(hProcess);
 }
 
+bool DecodaDAP::BreakpointIsActive(dap::string name, dap::SourceBreakpoint breakpoint)
+{
+    if (name == "")
+        return false; // invalid script name
 
+    auto scriptData = m_scriptData.find(name);
+    if (scriptData == m_scriptData.end())
+        return false; // script not tracked
 
+    if (!scriptData->second.indexMap.empty())
+        return true; // script tracked but no entries (for example if old entries for old VMs removed)
 
+    // TODO add logic to check against any active VMs, above check would catch it if they are deleted after deactivation
+
+    return false;
+}
+
+bool DecodaDAP::SetBreakpointsForScript(dap::string name, dap::array<dap::SourceBreakpoint> breakpoints)
+{
+    if (name == "")
+        return false; // invalid script name
+
+    if (m_scriptData.find(name) == m_scriptData.end())
+    {
+        if (breakpoints.empty())
+            return true; // no breakpoints and we already have none on file
+
+        // create entry in m_scriptData[name]
+        m_scriptData[name] = ScriptData(name);
+    }
+    ScriptData& scriptData = m_scriptData[name];
+
+    // reset contents of map, emptying it and filling it with the new lines
+    // we need to call a function for each one we are adding new and each one we are removing
+    std::unordered_map<int64_t, dap::SourceBreakpoint> newBreakpoints; // line -> true
+    for (const auto& bp : breakpoints)
+    {
+        newBreakpoints[bp.line] = bp;
+    }
+    // (this code will need to change if we allow breakpoints to be updated, as existing ones will need to possibly get an update)
+    // (that said, if we end up doing conditional breakpoints we'd probably evaluate them in our DAP so we don't need to update them
+    // now compare newBreakpoints with scriptData.breakpoints to see what changed
+    // first handle removals
+    for (const auto& existingBp : scriptData.breakpoints)
+    {
+        int64_t line = existingBp.first;
+        if (newBreakpoints.find(line) == newBreakpoints.end())
+        {
+            // breakpoint was removed
+            //SetScriptBreakpoint(0, scriptData.scriptIndex, false, line);
+
+            // TODO inform all VMs to add these breakpoints if they have the file loaded
+            for (const auto& scriptIndex : scriptData.indexMap)
+            {
+                SetScriptBreakpoint(scriptIndex.second, scriptIndex.first, false, line);
+            }
+        }
+    }
+    // now handle additions
+    for (const auto& newBp : newBreakpoints)
+    {
+        int64_t line = newBp.first;
+        if (scriptData.breakpoints.find(line) == scriptData.breakpoints.end())
+        {
+            scriptData.breakpoints[line] = newBp.second;
+
+            // breakpoint was added
+            //SetScriptBreakpoint(0, scriptData.scriptIndex, true, line);
+
+            // TODO inform all VMs to remove these breakpoints if they have the file loaded
+            for (const auto& scriptIndex : scriptData.indexMap)
+            {
+                SetScriptBreakpoint(scriptIndex.second, scriptIndex.first, true, line);
+            }
+        }
+        else
+        {
+            // breakpoint was updated (for example adding a condition)
+            scriptData.breakpoints[line] = newBp.second;
+        }
+    }
+}
+
+dap::Source DecodaDAP::GetDapSource(int scriptIndex)
+{
+    auto name = m_scriptIndexes.at(scriptIndex);
+    auto scriptData = m_scriptData.find(name);
+    if (scriptData != m_scriptData.end())
+    {
+        return scriptData->second.sourceInfo;
+    }
+    else
+    {
+        dap::Source source;
+        source.name = name;
+        return source;
+    }
+}
 
 int main(int, char* []) {
 #ifdef OS_WINDOWS
@@ -1192,14 +1367,23 @@ int main(int, char* []) {
 
     MutexEvent configured;
     MutexEvent terminate;
+    
+    auto log = std::ofstream("F:\\Programming\\decoda-bzcc\\build\\Debug\\log.txt", std::ios::app);
+
+    // log start time and date
+    log << "Startup: " << std::to_string(std::time(nullptr)) << std::endl;
 
     DecodaDAP decoda;
     decoda.session = std::unique_ptr<dap::Session>(dap::Session::create());
 
     // Sent first to initialize the debug adapter.
-    decoda.session->registerHandler([](const dap::InitializeRequest&) {
+    decoda.session->registerHandler([&](const dap::InitializeRequest&) {
+        log << "InitializeRequest received" << std::endl;
         dap::InitializeResponse response;
         response.supportsConfigurationDoneRequest = true;
+        response.supportsSetExpression = true;
+        response.supportsSetVariable = true; // Optional, if you support variable setting
+        response.supportsEvaluateForHovers = true; // Optional, if you support hover evaluation
         return response;
     });
 
@@ -1211,6 +1395,7 @@ int main(int, char* []) {
     decoda.session->registerHandler([&](const dap::LaunchRequestEx& request)
         -> dap::ResponseOrError<dap::LaunchResponse> {
 
+            log << "LaunchRequest received" << std::endl;
             //Sleep(30000);
 
             std::string exe = request.program.value("");
@@ -1231,6 +1416,8 @@ int main(int, char* []) {
     decoda.session->registerHandler([&](const dap::AttachRequestEx& request)
         -> dap::ResponseOrError<dap::AttachResponse> {
 
+            log << "AttachRequest received" << std::endl;
+
             unsigned int pid = pid = request.processId.value(0);
             std::string symbols = request.symbols.value("");
 
@@ -1242,6 +1429,9 @@ int main(int, char* []) {
 
     // End the debug session.
     decoda.session->registerHandler([&](const dap::DisconnectRequest& request) {
+
+        log << "DisconnectRequest received" << std::endl;
+
         if (request.terminateDebuggee.value(false)) {
             terminate.fire();
         }
@@ -1250,12 +1440,46 @@ int main(int, char* []) {
 
     // Set breakpoints in a source file.
     decoda.session->registerHandler([&](const dap::SetBreakpointsRequest& request) {
-        decoda.RemoveAllBreakPoints();
+        log << "SetBreakpointsRequest received for file: " << request.source.name.value("") << std::endl;
         for (const auto& bp : request.breakpoints.value({})) {
-            unsigned int scriptIndex = 0; // TODO: lookup by file name/path
-            decoda.SetBreakpoint(decoda.m_process, scriptIndex, true, bp.line);
+            log << "Requested breakpoint at line: " << std::to_string(bp.line) << std::endl;;
         }
-        return dap::SetBreakpointsResponse();
+
+        dap::SetBreakpointsResponse response;
+
+        bool breakpointSyncSuccess = false;
+        if (request.source.name.has_value() && request.source.name.value() != "")
+        {
+            breakpointSyncSuccess = decoda.SetBreakpointsForScript(request.source.name.value(), request.breakpoints.value({}));
+        }
+
+        // Iterate over the requested breakpoints
+        for (const auto& bp : request.breakpoints.value({})) {
+            dap::Breakpoint dapBreakpoint;
+            dapBreakpoint.line = bp.line;
+            dapBreakpoint.source = request.source;
+
+            if (breakpointSyncSuccess)
+            {
+                if (decoda.BreakpointIsActive(request.source.name.value(), bp))
+                {
+                    dapBreakpoint.verified = true;
+                }
+                else
+                {
+                    dapBreakpoint.verified = false;
+                }
+            }
+            else
+            {
+                dapBreakpoint.verified = false;
+                dapBreakpoint.message = "Failed to set breakpoint at this location.";
+            }
+
+            response.breakpoints.push_back(dapBreakpoint);
+        }
+
+        return response;
     });
 
     // Set exception breakpoints.
@@ -1263,6 +1487,9 @@ int main(int, char* []) {
 
     // Notify that the client has finished configuration (breakpoints, etc.).
     decoda.session->registerHandler([&](const dap::ConfigurationDoneRequest&) {
+
+        log << "ConfigurationDoneRequest received" << std::endl;
+
         //Sleep(30000);
         configured.fire();
         return dap::ConfigurationDoneResponse();
@@ -1271,6 +1498,8 @@ int main(int, char* []) {
     // Request the list of threads (VMs).
     decoda.session->registerHandler([&](const dap::ThreadsRequest&) {
         dap::ThreadsResponse response;
+
+        log << "ThreadsRequest received" << std::endl;
 
         // Loop over m_vmNames to get all VM IDs and names
         for (const auto& entry : decoda.m_vmNames) {
@@ -1286,15 +1515,25 @@ int main(int, char* []) {
     decoda.session->registerHandler([&](const dap::StackTraceRequest& request)
         -> dap::ResponseOrError<dap::StackTraceResponse> {
         dap::StackTraceResponse response;
+
+        log << "StackTraceRequest received for threadId: " << std::to_string(request.threadId) << std::endl;
+
         unsigned int numFrames = decoda.GetNumStackFrames();
         for (unsigned int i = 0; i < numFrames; ++i) {
             auto frame = decoda.GetStackFrame(i);
             dap::StackFrame dapFrame;
-            dapFrame.id = i + 1;
+            dapFrame.id = i + 1; // TODO should we start at 1 or is 0 fine?
             dapFrame.name = frame.function;
             dapFrame.line = frame.line;
-            auto script = decoda.m_virtualSources[frame.scriptIndex];
-            dapFrame.source = script->sourceInfo;
+            //auto script = decoda.m_virtualSources[frame.scriptIndex];
+            //dapFrame.source = script->sourceInfo;
+            if (frame.line == 0)
+            {
+            }
+            else
+            {
+                dapFrame.source = decoda.GetDapSource(frame.scriptIndex);
+            }
             response.stackFrames.push_back(dapFrame);
         }
         return response;
@@ -1304,6 +1543,8 @@ int main(int, char* []) {
     decoda.session->registerHandler([&](const dap::ScopesRequest& request)
         -> dap::ResponseOrError<dap::ScopesResponse> {
         dap::ScopesResponse response;
+
+        log << "ScopesRequest received for frameId: " << std::to_string(request.frameId) << std::endl;
 
             // Map DAP frameId to Decoda stack frame index
         unsigned int frameIndex = static_cast<unsigned int>(request.frameId - 1);
@@ -1329,6 +1570,9 @@ int main(int, char* []) {
     });
 
     decoda.session->registerHandler([&](const dap::SetExceptionBreakpointsRequest&) {
+
+        log << "SetExceptionBreakpointsRequest received" << std::endl;
+
         return dap::SetExceptionBreakpointsResponse();
     });
 
@@ -1337,6 +1581,9 @@ int main(int, char* []) {
     decoda.session->registerHandler([&](const dap::VariablesRequest& request)
         -> dap::ResponseOrError<dap::VariablesResponse> {
         dap::VariablesResponse response;
+
+        log << "VariablesRequest received for variablesReference: " << std::to_string(request.variablesReference) << std::endl;
+
         unsigned int frameIndex;
         bool isGlobal;
         decodeVariablesReference(request.variablesReference, frameIndex, isGlobal);
@@ -1361,24 +1608,36 @@ int main(int, char* []) {
 
     // Continue execution.
     decoda.session->registerHandler([&](const dap::ContinueRequest& request) {
+
+        log << "ContinueRequest received for threadId: " << std::to_string(request.threadId) << std::endl;
+
         decoda.Continue(request.threadId);
         return dap::ContinueResponse();
     });
 
     // Step over.
     decoda.session->registerHandler([&](const dap::NextRequest& request) {
+
+        log << "NextRequest received for threadId: " << std::to_string(request.threadId) << std::endl;
+
         decoda.StepOver(request.threadId);
         return dap::NextResponse();
     });
 
     // Step into.
     decoda.session->registerHandler([&](const dap::StepInRequest& request) {
+
+        log << "StepInRequest received for threadId: " << std::to_string(request.threadId) << std::endl;
+
         decoda.StepInto(request.threadId);
         return dap::StepInResponse();
     });
 
     // Step out.
     decoda.session->registerHandler([&](const dap::StepOutRequest& request) {
+
+        log << "StepOutRequest received for threadId: " << std::to_string(request.threadId) << std::endl;
+
         // simulate step out with multiple step overs
         decoda.StepOut(request.threadId);
         return dap::StepOutResponse();
@@ -1386,25 +1645,34 @@ int main(int, char* []) {
 
     // Pause execution.
     decoda.session->registerHandler([&](const dap::PauseRequest& request) {
+
+        log << "PauseRequest received for threadId: " << std::to_string(request.threadId) << std::endl;
+
         decoda.Break(request.threadId);
         return dap::PauseResponse();
     });
 
     // Request the source code for a file or virtual source.
     // TODO handle unknown source file
-    decoda.session->registerHandler([&](const dap::SourceRequest& request) -> dap::ResponseOrError<dap::SourceResponse> {
-        auto it = decoda.m_virtualSources.find(request.sourceReference);
-        if (it != decoda.m_virtualSources.end()) {
-            dap::SourceResponse response;
-            response.content = it->second->source;
-            return response;
-        }
-        return dap::Error("Unknown sourceReference");
-    });
+    //decoda.session->registerHandler([&](const dap::SourceRequest& request) -> dap::ResponseOrError<dap::SourceResponse> {
+    //
+    //    log << "SourceRequest received for sourceReference: " << std::to_string(request.sourceReference) << std::endl;
+    //
+    //    auto it = decoda.m_virtualSources.find(request.sourceReference);
+    //    if (it != decoda.m_virtualSources.end()) {
+    //        dap::SourceResponse response;
+    //        response.content = it->second->source;
+    //        return response;
+    //    }
+    //    return dap::Error("Unknown sourceReference");
+    //});
 
     // Evaluate an expression in the current context.
     decoda.session->registerHandler([&](const dap::EvaluateRequest& request)
         -> dap::ResponseOrError<dap::EvaluateResponse> {
+
+            log << "EvaluateRequest received for expression: " << request.expression << std::endl;
+
             dap::EvaluateResponse response;
             std::string result;
 

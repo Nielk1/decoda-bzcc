@@ -82,7 +82,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\bin\release\</OutDir>
     <IntDir>obj\Release\LuaInject\</IntDir>
-    <TargetName>LuaInject32</TargetName>
+    <TargetName>LuaInject</TargetName>
     <TargetExt>.dll</TargetExt>
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <LinkIncremental>false</LinkIncremental>

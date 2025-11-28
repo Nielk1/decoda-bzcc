@@ -23,6 +23,9 @@
 #include <vector>
 #include <fstream>
 
+#include <unordered_set>
+#include <unordered_map>
+
 namespace dap {
 
     class AttachRequestEx : public AttachRequest {
@@ -67,15 +70,41 @@ private:
         bool            i386;
     };
 
-    struct Script
+    //struct Script
+    //{
+    //    std::string     name;       // Identifying name of the script (usually a file name)
+    //    std::string     source;     // Source code for the script
+    //    CodeState       state;
+    //    //LineMapper      lineMapper; // Current mapping from lines in the local file to backend script lines.
+    //
+    //    dap::Source  sourceInfo; // DAP source info
+    //    std::vector<unsigned int>   breakpoints; // breakpoint lines
+    //};
+
+    struct ScriptBreakpoint
     {
-        std::string     name;       // Identifying name of the script (usually a file name)
+        bool active;
+        dap::SourceBreakpoint dap;
+
+        ScriptBreakpoint() : active(false) {}
+        ScriptBreakpoint(dap::SourceBreakpoint dap) : dap(dap), active(false) {}
+    };
+
+    struct ScriptData
+    {
+        std::string name; // name of the script, generally filename
+        std::unordered_map<unsigned int, unsigned int> indexMap; // what script indexes there are and what VM index it is loaded for (allow cleaning when VMs are gone)
+
+        std::unordered_map<int64_t, ScriptBreakpoint> breakpoints; // set of breakpoint lines
+
+
         std::string     source;     // Source code for the script
         CodeState       state;
-        //LineMapper      lineMapper; // Current mapping from lines in the local file to backend script lines.
-
         dap::Source  sourceInfo; // DAP source info
-        std::vector<unsigned int>   breakpoints; // breakpoint lines
+
+
+        ScriptData() : name("") {}
+        ScriptData(const std::string& scriptName) : name(scriptName) {}
     };
 
     struct StackFrame
@@ -109,15 +138,19 @@ private:
 
     mutable CriticalSection     m_criticalSection;
 
-    std::vector<Script*>        m_scripts;
+    //std::vector<Script*>        m_scripts;
     std::vector<StackFrame>     m_stackFrames;
 
-    State                       m_state;
+    std::unordered_map<std::string, ScriptData> m_scriptData;
+    std::vector<std::string>                    m_scriptIndexes;
 
+    State                       m_state;
+public:
+    dap::Source GetDapSource(int scriptIndex);
 
 public:
     std::unordered_map<unsigned int, std::string> m_vmNames;
-    std::unordered_map<int, Script*> m_virtualSources;
+    //std::unordered_map<int, Script*> m_virtualSources;
 
 public:
     DecodaDAP() : m_vm(0) {}
@@ -128,7 +161,7 @@ public:
 private:
     bool StartProcessAndRunToEntry(LPCSTR exeFileName, LPSTR commandLine, LPCSTR directory, PROCESS_INFORMATION& processInfo);
     bool GetExeInfo(LPCSTR fileName, ExeInfo& info) const;
-    void MessageEvent(const std::string& message, MessageType type);
+    void MessageEvent(const std::string& message, MessageType type) const;
     void OutputError(DWORD error);
     bool InitializeBackend(const char* symbolsDirectory);
     bool GetIsBeingDebugged(DWORD processId);
@@ -160,8 +193,11 @@ public:
     void ToggleBreakpoint(unsigned int vm, unsigned int scriptIndex, unsigned int line);
     void RemoveAllBreakPoints();
 
+    bool BreakpointIsActive(dap::string name, dap::SourceBreakpoint breakpoint);
+    bool SetBreakpointsForScript(dap::string name, dap::array<dap::SourceBreakpoint> breakpoints);
+
     // used for internal tracking
-    void SetBreakpoint(HANDLE p_process, unsigned int scriptIndex, bool set, dap::integer line) const;
+    void SetScriptBreakpoint(unsigned int vm, unsigned int scriptIndex, bool set, dap::integer line);
 
     // used for system breakpoints
     void SetBreakpoint(HANDLE p_process, LPVOID entryPoint, bool set, BYTE* data) const;
@@ -169,7 +205,7 @@ public:
     unsigned int GetNumStackFrames() const;
     const StackFrame GetStackFrame(unsigned int i) const;
 
-    Script* GetScript(unsigned int scriptIndex);
+    //Script* GetScript(unsigned int scriptIndex);
 
     unsigned int m_vm; // For now, always 0
 };
