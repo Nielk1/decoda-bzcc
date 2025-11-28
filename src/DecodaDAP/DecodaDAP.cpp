@@ -733,6 +733,7 @@ void DecodaDAP::EventThreadProc()
                 }
 
                 m_eventChannel.ReadUInt32(m_stackFrames[i].line);
+                m_stackFrames[i].line++;
                 m_eventChannel.ReadString(m_stackFrames[i].function);
                 m_stackFrames[i].vm = vm;
             }
@@ -756,6 +757,7 @@ void DecodaDAP::EventThreadProc()
 
             unsigned int line;
             m_eventChannel.ReadUInt32(line);
+            line++;
 
             unsigned int set;
             m_eventChannel.ReadUInt32(set);
@@ -1139,7 +1141,7 @@ void DecodaDAP::ToggleBreakpoint(unsigned int vm, unsigned int scriptIndex, unsi
     m_commandChannel.WriteUInt32(CommandId_ToggleBreakpoint);
     m_commandChannel.WriteUInt32(vm);
     m_commandChannel.WriteUInt32(scriptIndex);
-    m_commandChannel.WriteUInt32(line);
+    m_commandChannel.WriteUInt32(line - 1);
     m_commandChannel.Flush();
 }
 
@@ -1584,14 +1586,15 @@ int main(int, char* []) {
             dap::StackFrame dapFrame;
             dapFrame.id = i + 1; // TODO should we start at 1 or is 0 fine?
             dapFrame.name = frame.function;
-            dapFrame.line = frame.line;
             //auto script = decoda.m_virtualSources[frame.scriptIndex];
             //dapFrame.source = script->sourceInfo;
-            if (frame.line == 0)
+            if (frame.scriptIndex == 0xffffffff)
             {
+                dapFrame.line = 0;
             }
             else
             {
+                dapFrame.line = frame.line;
                 dapFrame.source = decoda.GetDapSource(frame.scriptIndex);
             }
             response.stackFrames.push_back(dapFrame);
