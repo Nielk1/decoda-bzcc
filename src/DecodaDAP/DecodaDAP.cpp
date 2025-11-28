@@ -744,11 +744,15 @@ void DecodaDAP::EventThreadProc()
             //    event.SetLine(m_stackFrames[0].line);
             //}
 
-            // DAP: Send stopped event
-            dap::StoppedEvent stopped;
-            stopped.reason = "breakpoint";
-            stopped.threadId = vm;
-            session->send(stopped);
+            // only send event if the step doesn't have another step next
+            if (!PerformAutoStep(vm))
+            {
+                // DAP: Send stopped event
+                dap::StoppedEvent stopped;
+                stopped.reason = "breakpoint";
+                stopped.threadId = vm;
+                session->send(stopped);
+            }
         }
         else if (eventId == EventId_SetBreakpoint)
         {
@@ -1099,6 +1103,20 @@ void DecodaDAP::StepInto(unsigned int vm)
     m_commandChannel.Flush();
 }
 
+bool DecodaDAP::PerformAutoStep(unsigned int vm) {
+    if (m_step_until_under_depth == 0)
+        return false;
+
+    unsigned int currentDepth = GetNumStackFrames();
+    if (currentDepth >= m_step_until_under_depth) {
+        StepOver(vm); // trigger a Break event
+        return true;
+    }
+
+    m_step_until_under_depth = 0;
+    return false;
+}
+
 void DecodaDAP::StepOut(unsigned int vm) {
     unsigned int initialDepth = GetNumStackFrames();
     if (initialDepth <= 1) {
@@ -1106,14 +1124,9 @@ void DecodaDAP::StepOut(unsigned int vm) {
         Continue(vm);
         return;
     }
-    while (true) {
-        StepOver(vm);
-        unsigned int currentDepth = GetNumStackFrames();
-        if (currentDepth < initialDepth || currentDepth == 0) {
-            break;
-        }
-        // TODO Optionally: add a timeout or max step count to avoid infinite loops.
-    }
+    m_step_until_under_depth = initialDepth;
+    StepOver(vm); // trigger a Break event
+    return;
 }
 
 bool DecodaDAP::Evaluate(unsigned int vm, std::string expression, unsigned int stackLevel, std::string& result)

@@ -152,6 +152,9 @@ private:
     std::vector<std::string>                    m_scriptIndexes;
 
     State                       m_state;
+
+    unsigned int m_step_until_under_depth = 0;
+
 public:
     dap::Source GetDapSource(int scriptIndex);
 
@@ -159,7 +162,6 @@ public:
     std::unordered_map<unsigned int, std::string> m_vmNames;
     //std::unordered_map<int, Script*> m_virtualSources;
     std::unordered_map<std::string, dap::string> sourceMap;
-
 
 public:
     DecodaDAP() : m_vm(0) {}
@@ -213,6 +215,8 @@ public:
 
     unsigned int GetNumStackFrames() const;
     const StackFrame GetStackFrame(unsigned int i) const;
+
+    bool PerformAutoStep(unsigned int vm);
 
     //Script* GetScript(unsigned int scriptIndex);
 
