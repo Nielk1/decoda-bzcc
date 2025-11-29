@@ -36,6 +36,7 @@ namespace dap {
     public:
         optional<dap::integer> processId;
         optional<std::string> symbols;
+        optional<dap::boolean> ignorePureNativeExceptions;
         optional<dap::array<dap::string>> luaWorkspaceLibrary;
     };
 
@@ -44,6 +45,7 @@ namespace dap {
         "attach", // This is the wire protocol name for the AttachRequest
         DAP_FIELD(processId, "processId"),
         DAP_FIELD(symbols, "symbols"),
+        DAP_FIELD(ignorePureNativeExceptions, "ignorePureNativeExceptions"),
         DAP_FIELD(luaWorkspaceLibrary, "luaWorkspaceLibrary"));
 
 
@@ -53,6 +55,7 @@ namespace dap {
         optional<dap::string> args;
         optional<dap::string> cwd;
         optional<dap::string> symbols;
+        optional<dap::boolean> ignorePureNativeExceptions;
         optional<dap::boolean> breakOnStart;
         optional<dap::integer> delayedAttach;
         optional<dap::array<dap::string>> luaWorkspaceLibrary;
@@ -65,6 +68,7 @@ namespace dap {
         DAP_FIELD(args, "args"),
         DAP_FIELD(cwd, "cwd"),
         DAP_FIELD(symbols, "symbols"),
+        DAP_FIELD(ignorePureNativeExceptions, "ignorePureNativeExceptions"),
         DAP_FIELD(breakOnStart, "breakOnStart"),
         DAP_FIELD(delayedAttach, "delayedAttach"),
         DAP_FIELD(luaWorkspaceLibrary, "luaWorkspaceLibrary"));
@@ -175,6 +179,21 @@ public:
     //std::unordered_map<int, Script*> m_virtualSources;
     std::unordered_map<std::string, dap::string> sourceMap;
 
+    bool ignorePureNativeExceptions = true;
+
+public:
+    // Event buffer
+    std::mutex eventMutex;
+    std::condition_variable eventCv;
+    std::unique_ptr<dap::StoppedEvent> bufferedEvent;
+    bool eventHandled = false;
+    std::thread eventThread;
+
+    void BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayMs);
+    void HandleBufferedEvent();
+    void DiscardBufferedEvent();
+    void OutOfBandThreadFunc(int delayMs);
+
 public:
     DecodaDAP() : m_vm(0) {}
 
@@ -220,7 +239,6 @@ public:
     void ToggleBreakpoint(unsigned int vm, unsigned int scriptIndex, unsigned int line);
     void RemoveAllBreakPoints();
 
-    bool BreakpointIsActive(dap::string name, dap::SourceBreakpoint breakpoint);
     void SetBreakpointsForScript(dap::Source source, dap::array<dap::SourceBreakpoint> breakpoints, dap::array<dap::Breakpoint>& breakpointsOut);
 
     // used for internal tracking

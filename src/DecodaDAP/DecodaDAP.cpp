@@ -653,6 +653,15 @@ void DecodaDAP::EventThreadProc()
 
         //wxDebugEvent event(static_cast<EventId>(eventId), vm);
 
+        if (eventId == EventId_Exception)
+        {
+            DiscardBufferedEvent();
+        }
+        else
+        {
+            HandleBufferedEvent();
+        }
+
         if (eventId == EventId_CreateVM)
         {
             if (m_vmNames.find(vm) == m_vmNames.end())
@@ -698,6 +707,11 @@ void DecodaDAP::EventThreadProc()
             // file bad.
             //script->name = MakeValidFileName(script->name);
             script_name = MakeValidFileName(script_name);
+
+            // extract filename from script_name
+            size_t lastSlash = script_name.find_last_of("/\\");
+            if (lastSlash != std::string::npos)
+                script_name = script_name.substr(lastSlash + 1);
 
             //unsigned int scriptIndex = m_scripts.size();
             unsigned int scriptIndex = m_scriptIndexes.size();
@@ -828,6 +842,7 @@ void DecodaDAP::EventThreadProc()
             //    event.SetLine(m_stackFrames[0].line);
             //}
 
+            bool wasBreakpoint = false;
             // Only check condition for the top stack frame
             if (!m_stackFrames.empty()) {
                 const auto& frame = m_stackFrames[0];
@@ -837,6 +852,7 @@ void DecodaDAP::EventThreadProc()
                     if (scriptIt != m_scriptData.end()) {
                         auto bpIt = scriptIt->second.breakpoints.find(frame.line);
                         if (bpIt != scriptIt->second.breakpoints.end()) {
+                            wasBreakpoint = true;
                             const std::string& cond = bpIt->second.condition;
                             if (!cond.empty()) {
                                 std::string evalResult;
@@ -849,6 +865,7 @@ void DecodaDAP::EventThreadProc()
                                     dap::StoppedEvent stopped;
                                     stopped.reason = "exception"; // or "breakpoint" if you prefer
                                     stopped.description = "Error evaluating breakpoint condition: " + cond;
+                                    stopped.text = "Error evaluating breakpoint condition: " + cond;
                                     stopped.threadId = frame.vm;
                                     session->send(stopped);
                                     return;
@@ -892,11 +909,21 @@ void DecodaDAP::EventThreadProc()
             // only send event if the step doesn't have another step next
             if (!PerformAutoStep(vm))
             {
-                // DAP: Send stopped event
-                dap::StoppedEvent stopped;
-                stopped.reason = "breakpoint";
-                stopped.threadId = vm;
-                session->send(stopped);
+                if (wasBreakpoint)
+                {
+                    dap::StoppedEvent stopped;
+                    stopped.reason = "breakpoint";
+                    stopped.threadId = vm;
+                    session->send(stopped);
+                }
+                else
+                {
+                    //deffer
+                    dap::StoppedEvent stopped;
+                    stopped.reason = "breakpoint";
+                    stopped.threadId = vm;
+                    BufferEvent(std::make_unique<dap::StoppedEvent>(stopped), 1000);
+                }
             }
         }
         else if (eventId == EventId_SetBreakpoint)
@@ -940,18 +967,41 @@ void DecodaDAP::EventThreadProc()
             std::string message;
             m_eventChannel.ReadString(message);
 
-            // Send StoppedEvent with reason "exception"
-            dap::StoppedEvent stopped;
-            stopped.reason = "exception";
-            stopped.description = message; // Optional: VS Code will show this in the UI
-            stopped.threadId = vm;
-            session->send(stopped);
+            // scan entire callstack
+            bool emitException = true;
+            if (ignorePureNativeExceptions)
+            {
+                if (!m_stackFrames.empty()) {
+                    emitException = false;
 
-            // Optionally, send OutputEvent for more details
-            dap::OutputEvent output;
-            output.category = "stderr";
-            output.output = "Exception: " + message + "\n";
-            session->send(output);
+                    for (unsigned int i = 0; i < m_stackFrames.size(); ++i) {
+                        if (m_stackFrames[i].scriptIndex != 0xffffffff) { // not native
+                            emitException = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (emitException) {
+                // Send StoppedEvent with reason "exception"
+                dap::StoppedEvent stopped;
+                stopped.reason = "exception";
+                stopped.description = message;
+                stopped.text = message;
+                stopped.threadId = vm;
+                session->send(stopped);
+
+                // Optionally, send OutputEvent for more details
+                //dap::OutputEvent output;
+                //output.category = "stderr";
+                //output.output = "Exception: " + message + "\n";
+                //session->send(output);
+            }
+            else
+            {
+                Continue(vm);
+            }
         }
         else if (eventId == EventId_LoadError)
         {
@@ -1050,40 +1100,7 @@ dap::SetBreakpointsResponse DecodaDAP::HandleSetBreakpointsRequest(const dap::Se
     // lock the event processor here
     CriticalSectionLock lock(m_criticalSection);
 
-    bool breakpointSyncSuccess = false;
-    //if (request.source.name.has_value() && request.source.name.value() != "")
-    //{
-    //    // this sends breakpoint adjustments to backend and queues up processing the responses
-    //    breakpointSyncSuccess = SetBreakpointsForScript(request.source.name.value(), request.breakpoints.value({}));
-    //}
-
     SetBreakpointsForScript(request.source, request.breakpoints.value({}), response.breakpoints);
-
-    // Iterate over the requested breakpoints
-    //for (const auto& bp : request.breakpoints.value({})) {
-    //    dap::Breakpoint dapBreakpoint;
-    //    dapBreakpoint.line = bp.line;
-    //    dapBreakpoint.source = request.source;
-    //
-    //    if (breakpointSyncSuccess)
-    //    {
-    //        if (BreakpointIsActive(request.source.name.value(), bp))
-    //        {
-    //            dapBreakpoint.verified = true;
-    //        }
-    //        else
-    //        {
-    //            dapBreakpoint.verified = false;
-    //        }
-    //    }
-    //    else
-    //    {
-    //        dapBreakpoint.verified = false;
-    //        dapBreakpoint.message = "Failed to set breakpoint at this location.";
-    //    }
-    //
-    //    response.breakpoints.push_back(dapBreakpoint);
-    //}
 
     //unlock the event processor here
 
@@ -1367,6 +1384,70 @@ const DecodaDAP::StackFrame DecodaDAP::GetStackFrame(unsigned int i) const
 
 
 
+
+
+// In your implementation file (e.g., DecodaDAP.cpp)
+void DecodaDAP::BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayMs) {
+    {
+        std::lock_guard<std::mutex> lock(eventMutex);
+        bufferedEvent = std::move(event);
+        eventHandled = false;
+    }
+    // Start or notify the out-of-band thread
+    if (!eventThread.joinable()) {
+        eventThread = std::thread(&DecodaDAP::OutOfBandThreadFunc, this, delayMs);
+    }
+    else {
+        eventCv.notify_one();
+    }
+}
+
+void DecodaDAP::HandleBufferedEvent() {
+    std::unique_ptr<dap::StoppedEvent> eventToHandle;
+    {
+        std::lock_guard<std::mutex> lock(eventMutex);
+        if (bufferedEvent) {
+            eventToHandle = std::move(bufferedEvent);
+            eventHandled = true;
+        }
+    }
+    if (eventToHandle) {
+        // Send the event now
+        //SendEvent(*eventToHandle);
+        session->send(*eventToHandle);
+    }
+}
+
+void DecodaDAP::DiscardBufferedEvent() {
+    std::lock_guard<std::mutex> lock(eventMutex);
+    bufferedEvent.reset();
+    eventHandled = true;
+    eventCv.notify_one(); // Wake up the out-of-band thread if waiting
+}
+
+void DecodaDAP::OutOfBandThreadFunc(int delayMs) {
+    std::unique_lock<std::mutex> lock(eventMutex);
+    while (true) {
+        if (eventCv.wait_for(lock, std::chrono::milliseconds(delayMs), [this] { return eventHandled; })) {
+            // Event was handled in time
+            continue;
+        }
+        // Timeout expired, send the event if still present
+        if (bufferedEvent) {
+            auto eventToSend = std::move(bufferedEvent);
+            lock.unlock();
+            //SendEvent(*eventToSend);
+            session->send(*eventToSend);
+            lock.lock();
+        }
+    }
+}
+
+
+
+
+
+
 DWORD DecodaDAP::Start(const char* command, const char* commandArguments, const char* currentDirectory, const char* symbolsDirectory, bool debug, bool startBroken)
 {
     //Stop(false);
@@ -1475,23 +1556,6 @@ void DecodaDAP::Stop(bool kill)
     CloseHandle(hProcess);
 }
 
-bool DecodaDAP::BreakpointIsActive(dap::string name, dap::SourceBreakpoint breakpoint)
-{
-    if (name == "")
-        return false; // invalid script name
-
-    auto scriptData = m_scriptData.find(name);
-    if (scriptData == m_scriptData.end())
-        return false; // script not tracked
-
-    if (!scriptData->second.indexMap.empty())
-        return true; // script tracked but no entries (for example if old entries for old VMs removed)
-
-    // TODO add logic to check against any active VMs, above check would catch it if they are deleted after deactivation
-
-    return false;
-}
-
 void DecodaDAP::SetBreakpointsForScript(dap::Source source, dap::array<dap::SourceBreakpoint> breakpoints, dap::array<dap::Breakpoint>& breakpointsOut)
 {
     if (!source.name.has_value() || source.name.value() == "")
@@ -1509,6 +1573,11 @@ void DecodaDAP::SetBreakpointsForScript(dap::Source source, dap::array<dap::Sour
     }
 
     dap::string name = source.name.value();
+
+    // extract filename from script_name
+    size_t lastSlash = name.find_last_of("/\\");
+    if (lastSlash != std::string::npos)
+        name = name.substr(lastSlash + 1);
 
     bool scriptIsLoaded = false;
     if (m_scriptData.find(name) == m_scriptData.end())
@@ -1637,12 +1706,13 @@ int main(int, char* []) {
         -> dap::ResponseOrError<dap::LaunchResponse> {
 
             //log << "LaunchRequest received" << std::endl;
-            Sleep(30000);
+            //Sleep(30000);
 
             std::string exe = request.program.value("");
             std::string args = request.args.value("");
             std::string cwd = request.cwd.value("");
             std::string symbols = request.symbols.value("");
+            decoda.ignorePureNativeExceptions = request.ignorePureNativeExceptions.value(true);
             bool breakOnStart = request.breakOnStart.value(false);
 
             if (request.luaWorkspaceLibrary.has_value())
@@ -1711,6 +1781,7 @@ int main(int, char* []) {
 
             unsigned int pid = pid = request.processId.value(0);
             std::string symbols = request.symbols.value("");
+            decoda.ignorePureNativeExceptions = request.ignorePureNativeExceptions.value(true);
 
             if (request.luaWorkspaceLibrary.has_value())
             {
@@ -1764,53 +1835,6 @@ int main(int, char* []) {
     decoda.session->registerHandler([&](const dap::SetBreakpointsRequest& request) {
         return decoda.HandleSetBreakpointsRequest(request);
         });
-    /*decoda.session->registerHandler([&](const dap::SetBreakpointsRequest& request) {
-        log << "SetBreakpointsRequest received for file: " << request.source.name.value("") << std::endl;
-        for (const auto& bp : request.breakpoints.value({})) {
-            log << "Requested breakpoint at line: " << std::to_string(bp.line) << std::endl;;
-        }
-
-        dap::SetBreakpointsResponse response;
-
-        // lock the event processor here
-        CriticalSectionLock lock(m_criticalSection);
-
-        bool breakpointSyncSuccess = false;
-        if (request.source.name.has_value() && request.source.name.value() != "")
-        {
-            breakpointSyncSuccess = decoda.SetBreakpointsForScript(request.source.name.value(), request.breakpoints.value({}));
-        }
-
-        // Iterate over the requested breakpoints
-        for (const auto& bp : request.breakpoints.value({})) {
-            dap::Breakpoint dapBreakpoint;
-            dapBreakpoint.line = bp.line;
-            dapBreakpoint.source = request.source;
-
-            if (breakpointSyncSuccess)
-            {
-                if (decoda.BreakpointIsActive(request.source.name.value(), bp))
-                {
-                    dapBreakpoint.verified = true;
-                }
-                else
-                {
-                    dapBreakpoint.verified = false;
-                }
-            }
-            else
-            {
-                dapBreakpoint.verified = false;
-                dapBreakpoint.message = "Failed to set breakpoint at this location.";
-            }
-
-            response.breakpoints.push_back(dapBreakpoint);
-        }
-
-        //unlock the event processor here
-
-        return response;
-    });*/
 
     // Set exception breakpoints.
     // setExceptionBreakpoints

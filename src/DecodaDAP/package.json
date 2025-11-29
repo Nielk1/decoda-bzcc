@@ -56,6 +56,10 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "ignorePureNativeExceptions": {
+                "type": "boolean",
+                "description": "Ignore exceptions where the entire static is native, such as those under pcall or xpcall"
               }
             }
           }
@@ -71,6 +75,7 @@
             "luaWorkspaceLibrary": [
               "${workspaceFolder}"
             ],
+            "ignorePureNativeExceptions": true,
             "breakOnStart": false,
             "delayedAttach": null
           }
