@@ -28,6 +28,8 @@
 
 #include <filesystem>
 
+#include "tinyxml.h"
+
 namespace dap {
 
     class AttachRequestEx : public AttachRequest {
@@ -157,6 +159,12 @@ private:
     unsigned int m_step_until_under_depth = 0;
 
 public:
+    std::unordered_map<int, std::vector<dap::Variable>> variableStore;
+    int StoreVariables(const std::vector<dap::Variable>& vars);
+private:
+    int nextVariableReference = 1;
+
+public:
     dap::Source GetDapSource(int scriptIndex);
 
 public:
@@ -185,6 +193,7 @@ private:
     void EventThreadProc();
     std::string MakeValidFileName(const std::string& name);
     HWND GetProcessWindow(DWORD processId) const;
+
 
     /**
      * Static version of the event handler thread entry point. This just

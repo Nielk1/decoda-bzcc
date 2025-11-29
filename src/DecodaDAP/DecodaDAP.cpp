@@ -12,6 +12,90 @@
 #endif
 
 
+int DecodaDAP::StoreVariables(const std::vector<dap::Variable>& vars) {
+    int ref = nextVariableReference++;
+    variableStore[ref] = vars;
+    return ref;
+}
+
+dap::Variable ParseXmlToVariable(TiXmlElement* elem, DecodaDAP* dap, int depth = 0) {
+    dap::Variable var;
+    if (!elem) return var;
+
+    std::string tag = elem->Value();
+
+    if (tag == "value") {
+        // <value><data>foo</data><type>string</type></value>
+        TiXmlElement* dataElem = elem->FirstChildElement("data");
+        TiXmlElement* typeElem = elem->FirstChildElement("type");
+        var.value = dataElem && dataElem->GetText() ? dataElem->GetText() : "";
+        var.type = typeElem && typeElem->GetText() ? typeElem->GetText() : "";
+        var.variablesReference = 0;
+    }
+    else if (tag == "function") {
+        // <function><script>24</script><line>105</line></function>
+        std::string script = elem->FirstChildElement("script") && elem->FirstChildElement("script")->GetText() ? elem->FirstChildElement("script")->GetText() : "";
+        std::string line = elem->FirstChildElement("line") && elem->FirstChildElement("line")->GetText() ? elem->FirstChildElement("line")->GetText() : "";
+        var.value = "function (script: " + script + ", line: " + line + ")";
+        var.type = "function";
+        var.variablesReference = 0;
+    }
+    else if (tag == "table") {
+        // <table>...</table>
+        var.type = "table";
+        var.value = "table";
+        std::vector<dap::Variable> children;
+        for (TiXmlElement* el = elem->FirstChildElement("element"); el; el = el->NextSiblingElement("element")) {
+            // Each <element> has <key> and <data>
+            TiXmlElement* keyElem = el->FirstChildElement("key");
+            TiXmlElement* dataElem = el->FirstChildElement("data");
+            std::string keyStr;
+            if (keyElem) {
+                // Key can be a <value> or <table>
+                TiXmlElement* keyVal = keyElem->FirstChildElement();
+                if (keyVal) {
+                    dap::Variable keyVar = ParseXmlToVariable(keyVal, dap, depth + 1);
+                    keyStr = keyVar.value;
+                }
+            }
+            if (dataElem) {
+                TiXmlElement* dataVal = dataElem->FirstChildElement();
+                if (dataVal) {
+                    dap::Variable child = ParseXmlToVariable(dataVal, dap, depth + 1);
+                    child.name = keyStr;
+                    children.push_back(child);
+                }
+            }
+        }
+        var.variablesReference = !children.empty() ? dap->StoreVariables(children) : 0;
+    }
+    return var;
+}
+
+// Helper to extract value/type from Decoda XML
+/*void ParseDecodaXmlResult(const std::string& xml, std::string& value, std::string& type) {
+    TiXmlDocument doc;
+    doc.Parse(xml.c_str());
+    TiXmlElement* root = doc.RootElement();
+    if (!root) {
+        value = xml;
+        type = "";
+        return;
+    }
+
+    // Example Decoda XML: <value type="number">42</value>
+    const char* typeAttr = root->Attribute("type");
+    if (typeAttr)
+        type = typeAttr;
+    else
+        type = "";
+
+    if (root->GetText())
+        value = root->GetText();
+    else
+        value = "";
+}*/
+
 // Helper to convert bytes to hex string
 std::string BytesToHex(const std::vector<unsigned char>&bytes) {
     static const char hex_digits[] = "0123456789abcdef";
@@ -95,10 +179,10 @@ unsigned int makeVariablesReference(unsigned int frameIndex, bool isGlobal) {
     return (frameIndex << 1) | (isGlobal ? 1 : 0);
 }
 
-void decodeVariablesReference(unsigned int variablesReference, unsigned int& frameIndex, bool& isGlobal) {
-    frameIndex = variablesReference >> 1;
-    isGlobal = (variablesReference & 1) != 0;
-}
+//void decodeVariablesReference(unsigned int variablesReference, unsigned int& frameIndex, bool& isGlobal) {
+//    frameIndex = variablesReference >> 1;
+//    isGlobal = (variablesReference & 1) != 0;
+//}
 
 
 bool DecodaDAP::StartProcessAndRunToEntry(LPCSTR exeFileName, LPSTR commandLine, LPCSTR directory, PROCESS_INFORMATION& processInfo)
@@ -1718,12 +1802,21 @@ int main(int, char* []) {
 
         //log << "VariablesRequest received for variablesReference: " << std::to_string(request.variablesReference) << std::endl;
 
-        unsigned int frameIndex;
-        bool isGlobal;
-        decodeVariablesReference(request.variablesReference, frameIndex, isGlobal);
-        if (frameIndex >= decoda.GetNumStackFrames()) {
-            return dap::Error("Invalid variablesReference");
+        //unsigned int frameIndex;
+        //bool isGlobal;
+        //decodeVariablesReference(request.variablesReference, frameIndex, isGlobal);
+        //if (frameIndex >= decoda.GetNumStackFrames()) {
+        //    return dap::Error("Invalid variablesReference");
+        //}
+        
+        auto it = decoda.variableStore.find(request.variablesReference);
+        if (it != decoda.variableStore.end()) {
+            response.variables = it->second;
+            return response;
         }
+        return dap::Error("Unknown variablesReference");
+
+
         //std::vector<DebugFrontend::Variable> vars;
         //if (isGlobal) {
         //    decoda.getGlobalVariables(frameIndex, vars);
@@ -1830,9 +1923,24 @@ int main(int, char* []) {
                 return dap::Error("EvaluateRequest missing frameId; cannot determine thread context");
             }
 
+            //if (decoda.Evaluate(vm, request.expression, stackLevel, result)) {
+            //    std::string value, type;
+            //    ParseDecodaXmlResult(result, value, type);
+            //    response.result = value;
+            //    if (!type.empty())
+            //        response.type = type;
+            //    response.variablesReference = 0; // Set to nonzero if you support children/expansion
+            //    return response;
+            //}
             if (decoda.Evaluate(vm, request.expression, stackLevel, result)) {
-                response.result = result;
-                response.variablesReference = 0; // or set if result is complex
+                TiXmlDocument doc;
+                doc.Parse(result.c_str());
+                TiXmlElement* root = doc.RootElement();
+                dap::Variable topVar = ParseXmlToVariable(root, &decoda);
+                response.result = topVar.value;
+                if (topVar.type.has_value())
+                    response.type = topVar.type;
+                response.variablesReference = topVar.variablesReference;
                 return response;
             }
             return dap::Error("Failed to evaluate expression");
