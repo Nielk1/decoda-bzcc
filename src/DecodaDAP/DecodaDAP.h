@@ -183,16 +183,23 @@ public:
 
 public:
     bool m_stepping = false;
-    // Event buffer
-    std::unique_ptr<dap::StoppedEvent> bufferedEvent;
-    //std::thread eventThread;
 
     void BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayMs);
-    void HandleBufferedEvent();
-    std::unique_ptr<dap::StoppedEvent> DiscardBufferedEvent();
+
+    std::thread eventTimerThread;
+    std::atomic<bool> stopEventTimer{ false };
+    std::mutex bufferedEventMutex;
+    std::unique_ptr<dap::StoppedEvent> bufferedEvent;
+    std::chrono::steady_clock::time_point bufferedEventEmitTime;
+    int bufferedEventDelayMs = 0;
+    void DiscardBufferedEvent();
+    void EventTimerLoop();
+    void EmitBufferedEventIfReady();
+    void ShutdownEventTimer();
 
 public:
-    DecodaDAP() : m_vm(0) {}
+    DecodaDAP();
+    ~DecodaDAP();
 
     DWORD Start(const char* command, const char* commandArguments, const char* currentDirectory, const char* symbolsDirectory, bool debug, bool startBroken);
     void Stop(bool kill);

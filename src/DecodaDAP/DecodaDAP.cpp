@@ -655,16 +655,11 @@ void DecodaDAP::EventThreadProc()
 
         if (eventId == EventId_Exception)
         {
-            std::unique_ptr<dap::StoppedEvent> oldEvent = DiscardBufferedEvent();
-
-            // this is bad, we shouldn't be doing it, but we're trying to figure out af freeze
-            //auto eventToSend = std::move(bufferedEvent);
-            //if (eventToSend && eventToSend->threadId.has_value())
-            //    Continue(eventToSend->threadId.value());
+            DiscardBufferedEvent();
         }
         else
         {
-            HandleBufferedEvent();
+            BufferEvent(nullptr, 0);
         }
 
         if (eventId == EventId_CreateVM)
@@ -1400,39 +1395,64 @@ const DecodaDAP::StackFrame DecodaDAP::GetStackFrame(unsigned int i) const
 
 
 
-
-
-
-
-
-
-
-// In your implementation file (e.g., DecodaDAP.cpp)
 void DecodaDAP::BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayMs) {
-    HandleBufferedEvent();
-
-    bufferedEvent = std::move(event);
-    //eventThread = std::thread(&DecodaDAP::OutOfBandThreadFunc, this, delayMs);
-
-    // TODO make event auto fire after a delay, use HandleBufferedEvent to do so
-}
-
-void DecodaDAP::HandleBufferedEvent() {
-    CriticalSectionLock lock(m_criticalSection);
-
-    std::unique_ptr<dap::StoppedEvent> eventToHandle;
-    eventToHandle = std::move(bufferedEvent);
-    if (eventToHandle) {
-        session->send(*eventToHandle);
+    std::unique_ptr<dap::StoppedEvent> toSend;
+    {
+        std::lock_guard<std::mutex> lock(bufferedEventMutex);
+        // If an event is already buffered, emit it immediately
+        if (bufferedEvent) {
+            toSend = std::move(bufferedEvent);
+        }
+        if (event) {
+            bufferedEvent = std::move(event);
+            bufferedEventDelayMs = delayMs;
+            bufferedEventEmitTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(delayMs);
+        }
+    }
+    if (toSend) {
+        session->send(*toSend);
     }
 }
 
-std::unique_ptr<dap::StoppedEvent> DecodaDAP::DiscardBufferedEvent() {
-    return std::move(bufferedEvent);
+void DecodaDAP::DiscardBufferedEvent() {
+    std::move(bufferedEvent);
+}
+
+void DecodaDAP::EventTimerLoop() {
+    while (!stopEventTimer) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200)); // check 5x/sec for lower latency
+        EmitBufferedEventIfReady();
+    }
+}
+
+void DecodaDAP::EmitBufferedEventIfReady() {
+    std::unique_ptr<dap::StoppedEvent> toSend;
+    {
+        std::lock_guard<std::mutex> lock(bufferedEventMutex);
+        if (bufferedEvent && std::chrono::steady_clock::now() >= bufferedEventEmitTime) {
+            toSend = std::move(bufferedEvent);
+        }
+    }
+    if (toSend) {
+        session->send(*toSend);
+    }
+}
+
+void DecodaDAP::ShutdownEventTimer() {
+    stopEventTimer = true;
+    if (eventTimerThread.joinable())
+        eventTimerThread.join();
 }
 
 
 
+DecodaDAP::DecodaDAP() {
+    stopEventTimer = false;
+    eventTimerThread = std::thread(&DecodaDAP::EventTimerLoop, this);
+}
+DecodaDAP::~DecodaDAP() {
+    ShutdownEventTimer();
+}
 
 
 DWORD DecodaDAP::Start(const char* command, const char* commandArguments, const char* currentDirectory, const char* symbolsDirectory, bool debug, bool startBroken)
