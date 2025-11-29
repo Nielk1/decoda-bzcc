@@ -842,7 +842,14 @@ void DecodaDAP::EventThreadProc()
             //    event.SetLine(m_stackFrames[0].line);
             //}
 
-            if (m_stepping)
+            if (m_paused)
+            {
+                dap::StoppedEvent stopped;
+                stopped.reason = "pause";
+                stopped.threadId = vm;
+                session->send(stopped);
+            }
+            else if (m_stepping)
             {
                 // only send event if the step doesn't have another step next
                 if (!PerformAutoStep(vm))
@@ -1005,10 +1012,10 @@ void DecodaDAP::EventThreadProc()
                 session->send(stopped);
 
                 // Optionally, send OutputEvent for more details
-                //dap::OutputEvent output;
-                //output.category = "stderr";
-                //output.output = "Exception: " + message + "\n";
-                //session->send(output);
+                dap::OutputEvent output;
+                output.category = "stderr";
+                output.output = "Exception: " + message + "\n";
+                session->send(output);
             }
             else
             {
@@ -1284,6 +1291,7 @@ void DecodaDAP::Continue(unsigned int vm)
 
 void DecodaDAP::Break(unsigned int vm)
 {
+    m_paused = true;
     m_commandChannel.WriteUInt32(CommandId_Break);
     m_commandChannel.WriteUInt32(vm);
     m_commandChannel.Flush();
@@ -1415,7 +1423,8 @@ void DecodaDAP::BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayM
 }
 
 void DecodaDAP::DiscardBufferedEvent() {
-    std::move(bufferedEvent);
+    //std::move(bufferedEvent);
+    bufferedEvent.reset();
 }
 
 void DecodaDAP::EventTimerLoop() {

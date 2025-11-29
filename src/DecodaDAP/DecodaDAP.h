@@ -183,6 +183,7 @@ public:
 
 public:
     bool m_stepping = false;
+    bool m_paused = false;
 
     void BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayMs);
 
