@@ -182,17 +182,14 @@ public:
     bool ignorePureNativeExceptions = true;
 
 public:
+    bool m_stepping = false;
     // Event buffer
-    std::mutex eventMutex;
-    std::condition_variable eventCv;
     std::unique_ptr<dap::StoppedEvent> bufferedEvent;
-    bool eventHandled = false;
-    std::thread eventThread;
+    //std::thread eventThread;
 
     void BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayMs);
     void HandleBufferedEvent();
-    void DiscardBufferedEvent();
-    void OutOfBandThreadFunc(int delayMs);
+    std::unique_ptr<dap::StoppedEvent> DiscardBufferedEvent();
 
 public:
     DecodaDAP() : m_vm(0) {}

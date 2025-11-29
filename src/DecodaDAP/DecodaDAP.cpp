@@ -655,7 +655,12 @@ void DecodaDAP::EventThreadProc()
 
         if (eventId == EventId_Exception)
         {
-            DiscardBufferedEvent();
+            std::unique_ptr<dap::StoppedEvent> oldEvent = DiscardBufferedEvent();
+
+            // this is bad, we shouldn't be doing it, but we're trying to figure out af freeze
+            //auto eventToSend = std::move(bufferedEvent);
+            //if (eventToSend && eventToSend->threadId.has_value())
+            //    Continue(eventToSend->threadId.value());
         }
         else
         {
@@ -842,73 +847,84 @@ void DecodaDAP::EventThreadProc()
             //    event.SetLine(m_stackFrames[0].line);
             //}
 
-            bool wasBreakpoint = false;
-            // Only check condition for the top stack frame
-            if (!m_stackFrames.empty()) {
-                const auto& frame = m_stackFrames[0];
-                if (frame.scriptIndex != 0xffffffff) { // not native
-                    auto scriptName = m_scriptIndexes.at(frame.scriptIndex);
-                    auto scriptIt = m_scriptData.find(scriptName);
-                    if (scriptIt != m_scriptData.end()) {
-                        auto bpIt = scriptIt->second.breakpoints.find(frame.line);
-                        if (bpIt != scriptIt->second.breakpoints.end()) {
-                            wasBreakpoint = true;
-                            const std::string& cond = bpIt->second.condition;
-                            if (!cond.empty()) {
-                                std::string evalResult;
-                                // Evaluate the condition in the context of this frame
-                                // stackLevel = 0 for top frame
-                                bool evalSuccess = Evaluate(frame.vm, cond, 0, evalResult);
-                                bool shouldBreak = false;
-                                if (!evalSuccess) {
-                                    // Evaluation failed: treat as break due to error
-                                    dap::StoppedEvent stopped;
-                                    stopped.reason = "exception"; // or "breakpoint" if you prefer
-                                    stopped.description = "Error evaluating breakpoint condition: " + cond;
-                                    stopped.text = "Error evaluating breakpoint condition: " + cond;
-                                    stopped.threadId = frame.vm;
-                                    session->send(stopped);
-                                    return;
-                                }
-                                else
-                                {
-                                    // Accept "true" (string or boolean) as break, everything else as continue
-                                    // You may want to parse XML more robustly if needed
-                                    TiXmlDocument doc;
-                                    doc.Parse(evalResult.c_str());
-                                    TiXmlElement* root = doc.RootElement();
-                                    if (root) {
-                                        if (std::string(root->Value()) == "value") {
-                                            TiXmlElement* dataElem = root->FirstChildElement("data");
-                                            if (dataElem && dataElem->GetText()) {
-                                                std::string val = dataElem->GetText();
-                                                if (val != "false" && val != "nil") {
-                                                    shouldBreak = true;
+            if (m_stepping)
+            {
+                // only send event if the step doesn't have another step next
+                if (!PerformAutoStep(vm))
+                {
+                    dap::StoppedEvent stopped;
+                    stopped.reason = "step";
+                    stopped.threadId = vm;
+                    //session->send(stopped);
+                    BufferEvent(std::make_unique<dap::StoppedEvent>(stopped), 1000);
+                }
+            }
+            else
+            {
+                bool wasBreakpoint = false;
+                // Only check condition for the top stack frame
+                if (!m_stackFrames.empty()) {
+                    const auto& frame = m_stackFrames[0];
+                    if (frame.scriptIndex != 0xffffffff) { // not native
+                        auto scriptName = m_scriptIndexes.at(frame.scriptIndex);
+                        auto scriptIt = m_scriptData.find(scriptName);
+                        if (scriptIt != m_scriptData.end()) {
+                            auto bpIt = scriptIt->second.breakpoints.find(frame.line);
+                            if (bpIt != scriptIt->second.breakpoints.end()) {
+                                wasBreakpoint = true;
+                                const std::string& cond = bpIt->second.condition;
+                                if (!cond.empty()) {
+                                    std::string evalResult;
+                                    // Evaluate the condition in the context of this frame
+                                    // stackLevel = 0 for top frame
+                                    bool evalSuccess = Evaluate(frame.vm, cond, 0, evalResult);
+                                    bool shouldBreak = false;
+                                    if (!evalSuccess) {
+                                        // Evaluation failed: treat as break due to error
+                                        dap::StoppedEvent stopped;
+                                        stopped.reason = "exception"; // or "breakpoint" if you prefer
+                                        stopped.description = "Error evaluating breakpoint condition: " + cond;
+                                        stopped.text = "Error evaluating breakpoint condition: " + cond;
+                                        stopped.threadId = frame.vm;
+                                        session->send(stopped);
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        // Accept "true" (string or boolean) as break, everything else as continue
+                                        // You may want to parse XML more robustly if needed
+                                        TiXmlDocument doc;
+                                        doc.Parse(evalResult.c_str());
+                                        TiXmlElement* root = doc.RootElement();
+                                        if (root) {
+                                            if (std::string(root->Value()) == "value") {
+                                                TiXmlElement* dataElem = root->FirstChildElement("data");
+                                                if (dataElem && dataElem->GetText()) {
+                                                    std::string val = dataElem->GetText();
+                                                    if (val != "false" && val != "nil") {
+                                                        shouldBreak = true;
+                                                    }
                                                 }
                                             }
-                                        }
-                                        else if (std::string(root->Value()) == "table") {
-                                            shouldBreak = true; // a table means complex data, which is not false or nil
-                                        }
-                                        else if (std::string(root->Value()) == "function") {
-                                            shouldBreak = true; // a function exists and thus is not false or nil
+                                            else if (std::string(root->Value()) == "table") {
+                                                shouldBreak = true; // a table means complex data, which is not false or nil
+                                            }
+                                            else if (std::string(root->Value()) == "function") {
+                                                shouldBreak = true; // a function exists and thus is not false or nil
+                                            }
                                         }
                                     }
-                                }
-                                if (!shouldBreak) {
-                                    // Condition not met, auto-continue
-                                    Continue(frame.vm);
-                                    return;
+                                    if (!shouldBreak) {
+                                        // Condition not met, auto-continue
+                                        Continue(frame.vm);
+                                        return;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // only send event if the step doesn't have another step next
-            if (!PerformAutoStep(vm))
-            {
                 if (wasBreakpoint)
                 {
                     dap::StoppedEvent stopped;
@@ -918,10 +934,11 @@ void DecodaDAP::EventThreadProc()
                 }
                 else
                 {
-                    //deffer
+                    // might be a step, might be an exception, find out shortly
                     dap::StoppedEvent stopped;
-                    stopped.reason = "breakpoint";
+                    stopped.reason = "step";
                     stopped.threadId = vm;
+                    //session->send(stopped);
                     BufferEvent(std::make_unique<dap::StoppedEvent>(stopped), 1000);
                 }
             }
@@ -1264,6 +1281,7 @@ void DecodaDAP::Continue(unsigned int vm)
     }
 
     m_state = State_Running;
+    m_stepping = false;
     m_commandChannel.WriteUInt32(CommandId_Continue);
     m_commandChannel.WriteUInt32(vm);
     m_commandChannel.Flush();
@@ -1278,6 +1296,7 @@ void DecodaDAP::Break(unsigned int vm)
 
 void DecodaDAP::StepOver(unsigned int vm)
 {
+    m_stepping = true;
     m_state = State_Running;
     m_commandChannel.WriteUInt32(CommandId_StepOver);
     m_commandChannel.WriteUInt32(vm);
@@ -1286,6 +1305,7 @@ void DecodaDAP::StepOver(unsigned int vm)
 
 void DecodaDAP::StepInto(unsigned int vm)
 {
+    m_stepping = true;
     m_state = State_Running;
     m_commandChannel.WriteUInt32(CommandId_StepInto);
     m_commandChannel.WriteUInt32(vm);
@@ -1313,6 +1333,7 @@ void DecodaDAP::StepOut(unsigned int vm) {
         Continue(vm);
         return;
     }
+    m_stepping = true;
     m_step_until_under_depth = initialDepth;
     StepOver(vm); // trigger a Break event
     return;
@@ -1388,61 +1409,27 @@ const DecodaDAP::StackFrame DecodaDAP::GetStackFrame(unsigned int i) const
 
 // In your implementation file (e.g., DecodaDAP.cpp)
 void DecodaDAP::BufferEvent(std::unique_ptr<dap::StoppedEvent> event, int delayMs) {
-    {
-        std::lock_guard<std::mutex> lock(eventMutex);
-        bufferedEvent = std::move(event);
-        eventHandled = false;
-    }
-    // Start or notify the out-of-band thread
-    if (!eventThread.joinable()) {
-        eventThread = std::thread(&DecodaDAP::OutOfBandThreadFunc, this, delayMs);
-    }
-    else {
-        eventCv.notify_one();
-    }
+    HandleBufferedEvent();
+
+    bufferedEvent = std::move(event);
+    //eventThread = std::thread(&DecodaDAP::OutOfBandThreadFunc, this, delayMs);
+
+    // TODO make event auto fire after a delay, use HandleBufferedEvent to do so
 }
 
 void DecodaDAP::HandleBufferedEvent() {
+    CriticalSectionLock lock(m_criticalSection);
+
     std::unique_ptr<dap::StoppedEvent> eventToHandle;
-    {
-        std::lock_guard<std::mutex> lock(eventMutex);
-        if (bufferedEvent) {
-            eventToHandle = std::move(bufferedEvent);
-            eventHandled = true;
-        }
-    }
+    eventToHandle = std::move(bufferedEvent);
     if (eventToHandle) {
-        // Send the event now
-        //SendEvent(*eventToHandle);
         session->send(*eventToHandle);
     }
 }
 
-void DecodaDAP::DiscardBufferedEvent() {
-    std::lock_guard<std::mutex> lock(eventMutex);
-    bufferedEvent.reset();
-    eventHandled = true;
-    eventCv.notify_one(); // Wake up the out-of-band thread if waiting
+std::unique_ptr<dap::StoppedEvent> DecodaDAP::DiscardBufferedEvent() {
+    return std::move(bufferedEvent);
 }
-
-void DecodaDAP::OutOfBandThreadFunc(int delayMs) {
-    std::unique_lock<std::mutex> lock(eventMutex);
-    while (true) {
-        if (eventCv.wait_for(lock, std::chrono::milliseconds(delayMs), [this] { return eventHandled; })) {
-            // Event was handled in time
-            continue;
-        }
-        // Timeout expired, send the event if still present
-        if (bufferedEvent) {
-            auto eventToSend = std::move(bufferedEvent);
-            lock.unlock();
-            //SendEvent(*eventToSend);
-            session->send(*eventToSend);
-            lock.lock();
-        }
-    }
-}
-
 
 
 
@@ -1694,6 +1681,7 @@ int main(int, char* []) {
         response.supportsSetVariable = true; // Optional, if you support variable setting
         response.supportsEvaluateForHovers = true; // Optional, if you support hover evaluation
         response.supportsConditionalBreakpoints = true;
+        //response.supportsPauseRequest = true;
         return response;
     });
 
