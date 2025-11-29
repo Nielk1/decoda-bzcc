@@ -179,10 +179,10 @@ unsigned int makeVariablesReference(unsigned int frameIndex, bool isGlobal) {
     return (frameIndex << 1) | (isGlobal ? 1 : 0);
 }
 
-//void decodeVariablesReference(unsigned int variablesReference, unsigned int& frameIndex, bool& isGlobal) {
-//    frameIndex = variablesReference >> 1;
-//    isGlobal = (variablesReference & 1) != 0;
-//}
+void decodeVariablesReference(unsigned int variablesReference, unsigned int& frameIndex, bool& isGlobal) {
+    frameIndex = variablesReference >> 1;
+    isGlobal = (variablesReference & 1) != 0;
+}
 
 
 bool DecodaDAP::StartProcessAndRunToEntry(LPCSTR exeFileName, LPSTR commandLine, LPCSTR directory, PROCESS_INFORMATION& processInfo)
@@ -1770,18 +1770,18 @@ int main(int, char* []) {
             return dap::Error("Invalid frameId");
         }
 
-            // Locals scope
-        dap::Scope locals;
-        locals.name = "Locals";
-        locals.presentationHint = "locals";
-            locals.variablesReference = makeVariablesReference(frameIndex, /*isGlobal=*/false);
-        response.scopes.push_back(locals);
+        // Locals scope
+        //dap::Scope locals;
+        //locals.name = "Locals";
+        //locals.presentationHint = "locals";
+        //    locals.variablesReference = makeVariablesReference(frameIndex, /*isGlobal=*/false);
+        //response.scopes.push_back(locals);
 
-            // Globals scope (optional)
+        // Globals scope (optional)
         dap::Scope globals;
         globals.name = "Globals";
         globals.presentationHint = "globals";
-            globals.variablesReference = makeVariablesReference(frameIndex, /*isGlobal=*/true);
+        globals.variablesReference = makeVariablesReference(frameIndex, /*isGlobal=*/true);
         response.scopes.push_back(globals);
 
         return response;
@@ -1795,43 +1795,68 @@ int main(int, char* []) {
     });
 
     // Request the variables for a scope.
-    // TODO: implement, for the moment we return an empty list and hope evaluate will get us around it
     decoda.session->registerHandler([&](const dap::VariablesRequest& request)
         -> dap::ResponseOrError<dap::VariablesResponse> {
-        dap::VariablesResponse response;
+            dap::VariablesResponse response;
 
-        //log << "VariablesRequest received for variablesReference: " << std::to_string(request.variablesReference) << std::endl;
+            unsigned int frameIndex;
+            bool isGlobal;
+            decodeVariablesReference(request.variablesReference, frameIndex, isGlobal);
 
-        //unsigned int frameIndex;
-        //bool isGlobal;
-        //decodeVariablesReference(request.variablesReference, frameIndex, isGlobal);
-        //if (frameIndex >= decoda.GetNumStackFrames()) {
-        //    return dap::Error("Invalid variablesReference");
-        //}
-        
-        auto it = decoda.variableStore.find(request.variablesReference);
-        if (it != decoda.variableStore.end()) {
-            response.variables = it->second;
-            return response;
-        }
-        return dap::Error("Unknown variablesReference");
+            if (frameIndex < decoda.GetNumStackFrames()) {
+                if (isGlobal) {
+                    // Only support globals
+                    const auto& frame = decoda.GetStackFrame(frameIndex);
+                    unsigned int vm = frame.vm;
+                    unsigned int stackLevel = frameIndex;
 
+                    std::string result;
+                    if (decoda.Evaluate(vm, "_G", stackLevel, result)) {
+                        TiXmlDocument doc;
+                        doc.Parse(result.c_str());
+                        TiXmlElement* root = doc.RootElement();
+                        if (root && std::string(root->Value()) == "table") {
+                            std::vector<dap::Variable> vars;
+                            for (TiXmlElement* el = root->FirstChildElement("element"); el; el = el->NextSiblingElement("element")) {
+                                TiXmlElement* keyElem = el->FirstChildElement("key");
+                                TiXmlElement* dataElem = el->FirstChildElement("data");
+                                std::string keyStr;
+                                if (keyElem) {
+                                    TiXmlElement* keyVal = keyElem->FirstChildElement();
+                                    if (keyVal) {
+                                        dap::Variable keyVar = ParseXmlToVariable(keyVal, &decoda, 1);
+                                        keyStr = keyVar.value;
+                                    }
+                                }
+                                if (dataElem) {
+                                    TiXmlElement* dataVal = dataElem->FirstChildElement();
+                                    if (dataVal) {
+                                        dap::Variable child = ParseXmlToVariable(dataVal, &decoda, 1);
+                                        child.name = keyStr;
+                                        vars.push_back(child);
+                                    }
+                                }
+                            }
+                            response.variables = vars;
+                        }
+                    }
+                    return response;
+                }
+                else {
+                    // Locals not supported: return empty list
+                    response.variables.clear();
+                    return response;
+                }
+            }
 
-        //std::vector<DebugFrontend::Variable> vars;
-        //if (isGlobal) {
-        //    decoda.getGlobalVariables(frameIndex, vars);
-        //} else {
-        //    decoda.getLocalVariables(frameIndex, vars);
-        //}
-        //for (const auto& var : vars) {
-        //    dap::Variable dapVar;
-        //    dapVar.name = var.name;
-        //    dapVar.value = var.value;
-        //    dapVar.variablesReference = 0; // Set if var is complex
-        //    response.variables.push_back(dapVar);
-        //}
-        return response;
-    });
+            // Fallback: check variableStore for Evaluate expansion
+            auto it = decoda.variableStore.find(request.variablesReference);
+            if (it != decoda.variableStore.end()) {
+                response.variables = it->second;
+                return response;
+            }
+            return dap::Error("Unknown variablesReference");
+        });
 
     // Continue execution.
     decoda.session->registerHandler([&](const dap::ContinueRequest& request) {
