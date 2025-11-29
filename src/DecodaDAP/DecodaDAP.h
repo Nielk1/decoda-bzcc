@@ -95,6 +95,7 @@ private:
         bool desireActive;
         dap::SourceBreakpoint dap;
         std::unordered_map<unsigned int, bool> VmIsActiveMap; // current state of breakpoint in a VM
+        std::string condition;
 
         ScriptBreakpoint() : desireActive(false) {}
         ScriptBreakpoint(dap::SourceBreakpoint dap) : dap(dap), desireActive(false) {}

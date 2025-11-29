@@ -828,6 +828,67 @@ void DecodaDAP::EventThreadProc()
             //    event.SetLine(m_stackFrames[0].line);
             //}
 
+            // Only check condition for the top stack frame
+            if (!m_stackFrames.empty()) {
+                const auto& frame = m_stackFrames[0];
+                if (frame.scriptIndex != 0xffffffff) { // not native
+                    auto scriptName = m_scriptIndexes.at(frame.scriptIndex);
+                    auto scriptIt = m_scriptData.find(scriptName);
+                    if (scriptIt != m_scriptData.end()) {
+                        auto bpIt = scriptIt->second.breakpoints.find(frame.line);
+                        if (bpIt != scriptIt->second.breakpoints.end()) {
+                            const std::string& cond = bpIt->second.condition;
+                            if (!cond.empty()) {
+                                std::string evalResult;
+                                // Evaluate the condition in the context of this frame
+                                // stackLevel = 0 for top frame
+                                bool evalSuccess = Evaluate(frame.vm, cond, 0, evalResult);
+                                bool shouldBreak = false;
+                                if (!evalSuccess) {
+                                    // Evaluation failed: treat as break due to error
+                                    dap::StoppedEvent stopped;
+                                    stopped.reason = "exception"; // or "breakpoint" if you prefer
+                                    stopped.description = "Error evaluating breakpoint condition: " + cond;
+                                    stopped.threadId = frame.vm;
+                                    session->send(stopped);
+                                    return;
+                                }
+                                else
+                                {
+                                    // Accept "true" (string or boolean) as break, everything else as continue
+                                    // You may want to parse XML more robustly if needed
+                                    TiXmlDocument doc;
+                                    doc.Parse(evalResult.c_str());
+                                    TiXmlElement* root = doc.RootElement();
+                                    if (root) {
+                                        if (std::string(root->Value()) == "value") {
+                                            TiXmlElement* dataElem = root->FirstChildElement("data");
+                                            if (dataElem && dataElem->GetText()) {
+                                                std::string val = dataElem->GetText();
+                                                if (val != "false" && val != "nil") {
+                                                    shouldBreak = true;
+                                                }
+                                            }
+                                        }
+                                        else if (std::string(root->Value()) == "table") {
+                                            shouldBreak = true; // a table means complex data, which is not false or nil
+                                        }
+                                        else if (std::string(root->Value()) == "function") {
+                                            shouldBreak = true; // a function exists and thus is not false or nil
+                                        }
+                                    }
+                                }
+                                if (!shouldBreak) {
+                                    // Condition not met, auto-continue
+                                    Continue(frame.vm);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // only send event if the step doesn't have another step next
             if (!PerformAutoStep(vm))
             {
@@ -1475,12 +1536,14 @@ void DecodaDAP::SetBreakpointsForScript(dap::Source source, dap::array<dap::Sour
         {
             // update existing
             existing->second.dap = bp;
+            existing->second.condition = bp.condition.value("");
         }
         else
         {
             // add new
             scriptData.breakpoints[bp.line].dap = bp;
             scriptData.breakpoints[bp.line].desireActive = true;
+            scriptData.breakpoints[bp.line].condition = bp.condition.value("");
 
             // new breakpoint so activate it
             for (const auto& scriptIndex : scriptData.indexMap)
@@ -1562,6 +1625,7 @@ int main(int, char* []) {
         response.supportsSetExpression = true;
         response.supportsSetVariable = true; // Optional, if you support variable setting
         response.supportsEvaluateForHovers = true; // Optional, if you support hover evaluation
+        response.supportsConditionalBreakpoints = true;
         return response;
     });
 
