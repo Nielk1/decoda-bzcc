@@ -3838,13 +3838,18 @@ bool LoadFunctionOffsetsFromMap(
             continue;
         }
 
-        // If not in a section, look for CRC32
+        // If not in a section, look for CRC32s (possibly multiple per line)
         if (!inTargetSection) {
-            uint32_t crc = 0;
             std::istringstream iss(line);
-            iss >> std::hex >> crc;
-            if (crc == moduleCRC32) {
-                inTargetSection = true;
+            std::string token;
+            while (iss >> token) {
+                uint32_t crc = 0;
+                std::istringstream crcStream(token);
+                crcStream >> std::hex >> crc;
+                if (crc == moduleCRC32) {
+                    inTargetSection = true;
+                    break;
+                }
             }
             continue;
         }
