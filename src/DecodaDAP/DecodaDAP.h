@@ -54,6 +54,7 @@ namespace dap {
         optional<dap::string> cwd;
         optional<dap::string> symbols;
         optional<dap::boolean> breakOnStart;
+        optional<dap::integer> delayedAttach;
         optional<dap::array<dap::string>> luaWorkspaceLibrary;
     };
 
@@ -65,6 +66,7 @@ namespace dap {
         DAP_FIELD(cwd, "cwd"),
         DAP_FIELD(symbols, "symbols"),
         DAP_FIELD(breakOnStart, "breakOnStart"),
+        DAP_FIELD(delayedAttach, "delayedAttach"),
         DAP_FIELD(luaWorkspaceLibrary, "luaWorkspaceLibrary"));
 
 }  // namespace dap
@@ -176,7 +178,7 @@ public:
 public:
     DecodaDAP() : m_vm(0) {}
 
-    bool Start(const char* command, const char* commandArguments, const char* currentDirectory, const char* symbolsDirectory, bool debug, bool startBroken);
+    DWORD Start(const char* command, const char* commandArguments, const char* currentDirectory, const char* symbolsDirectory, bool debug, bool startBroken);
     void Stop(bool kill);
 
 private:

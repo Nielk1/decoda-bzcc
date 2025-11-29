@@ -1367,7 +1367,7 @@ const DecodaDAP::StackFrame DecodaDAP::GetStackFrame(unsigned int i) const
 
 
 
-bool DecodaDAP::Start(const char* command, const char* commandArguments, const char* currentDirectory, const char* symbolsDirectory, bool debug, bool startBroken)
+DWORD DecodaDAP::Start(const char* command, const char* commandArguments, const char* currentDirectory, const char* symbolsDirectory, bool debug, bool startBroken)
 {
     //Stop(false);
 
@@ -1392,7 +1392,7 @@ bool DecodaDAP::Start(const char* command, const char* commandArguments, const c
     {
         if (!StartProcessAndRunToEntry(command, commandLine, directory.c_str(), processInfo))
         {
-            return false;
+            return 0;
         }
     }
     else
@@ -1401,14 +1401,13 @@ bool DecodaDAP::Start(const char* command, const char* commandArguments, const c
         if (!CreateProcessA(NULL, commandLine, NULL, NULL, TRUE, 0, NULL, directory.c_str(), &startUpInfo, &processInfo))
         {
             OutputError(GetLastError());
-            return false;
+            return 0;
         }
 
         // We're not debugging, so no need to proceed.
         CloseHandle(processInfo.hThread);
         CloseHandle(processInfo.hProcess);
-        return true;
-
+        return processInfo.dwProcessId;
     }
 
     DWORD exitCode;
@@ -1416,7 +1415,7 @@ bool DecodaDAP::Start(const char* command, const char* commandArguments, const c
     if (GetExitCodeProcess(processInfo.hProcess, &exitCode) && exitCode != STILL_ACTIVE)
     {
         MessageEvent("The process has terminated unexpectedly", MessageType_Error);
-        return false;
+        return 0;
     }
 
     m_process = processInfo.hProcess;
@@ -1425,7 +1424,7 @@ bool DecodaDAP::Start(const char* command, const char* commandArguments, const c
     if (!InitializeBackend(symbolsDirectory))
     {
         Stop(true);
-        return false;
+        return 0;
     }
 
     if (startBroken)
@@ -1437,7 +1436,7 @@ bool DecodaDAP::Start(const char* command, const char* commandArguments, const c
     ResumeThread(processInfo.hThread);
     CloseHandle(processInfo.hThread);
 
-    return true;
+    return processInfo.dwProcessId;
 }
 
 void DecodaDAP::Stop(bool kill)
@@ -1638,7 +1637,7 @@ int main(int, char* []) {
         -> dap::ResponseOrError<dap::LaunchResponse> {
 
             //log << "LaunchRequest received" << std::endl;
-            //Sleep(30000);
+            Sleep(30000);
 
             std::string exe = request.program.value("");
             std::string args = request.args.value("");
@@ -1678,9 +1677,28 @@ int main(int, char* []) {
             }
 
             bool debug = !request.noDebug.value(false);
+            int delay = request.delayedAttach.value(0);
 
-            if (!decoda.Start(exe.c_str(), args.c_str(), cwd.c_str(), symbols.c_str(), debug, breakOnStart)) {
-                return dap::Error("Failed to launch target application");
+            if (debug && delay > 0)
+            {
+                DWORD pid = decoda.Start(exe.c_str(), args.c_str(), cwd.c_str(), symbols.c_str(), false, breakOnStart);
+                if (pid)
+                {
+                    Sleep(delay);
+                    if (!decoda.Attach(pid, symbols.c_str())) {
+                        return dap::Error("Failed to attach to process after delay");
+                    }
+                }
+                else
+                {
+                    return dap::Error("Failed to launch target application");
+                }
+            }
+            else
+            {
+                if (!decoda.Start(exe.c_str(), args.c_str(), cwd.c_str(), symbols.c_str(), debug, breakOnStart)) {
+                    return dap::Error("Failed to launch target application");
+                }
             }
             return dap::LaunchResponse();
         });
@@ -1693,6 +1711,37 @@ int main(int, char* []) {
 
             unsigned int pid = pid = request.processId.value(0);
             std::string symbols = request.symbols.value("");
+
+            if (request.luaWorkspaceLibrary.has_value())
+            {
+                for (const auto& lib_path : request.luaWorkspaceLibrary.value())
+                {
+                    std::filesystem::path path(lib_path);
+
+                    if (std::filesystem::exists(path))
+                    {
+                        if (std::filesystem::is_regular_file(path))
+                        {
+                            // Only add .lua files
+                            if (path.extension() == ".lua")
+                            {
+                                decoda.sourceMap[path.filename().string()] = std::filesystem::absolute(path).string();
+                            }
+                        }
+                        else if (std::filesystem::is_directory(path))
+                        {
+                            // Recursively add all .lua files in the directory
+                            for (const auto& entry : std::filesystem::recursive_directory_iterator(path))
+                            {
+                                if (entry.is_regular_file() && entry.path().extension() == ".lua")
+                                {
+                                    decoda.sourceMap[entry.path().filename().string()] = std::filesystem::absolute(entry.path()).string();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             if (!decoda.Attach(pid, symbols.c_str())) {
                 return dap::Error("Failed to attach to process");

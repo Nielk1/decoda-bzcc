@@ -6,7 +6,7 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["Debuggers"],
+  "categories": [ "Debuggers" ],
   "activationEvents": [
     "onDebug",
     "onLanguage:lua"
@@ -46,6 +46,10 @@
                 "type": "boolean",
                 "description": "Break at program entry"
               },
+              "delayedAttach": {
+                "type": "integer",
+                "description": "Delay attachment to target application by MS"
+              },
               "luaWorkspaceLibrary": {
                 "type": "array",
                 "description": "Paths to Lua workspace libraries (location of lua files)",
@@ -66,7 +70,9 @@
             "cwd": "${workspaceFolder}",
             "luaWorkspaceLibrary": [
               "${workspaceFolder}"
-            ]
+            ],
+            "breakOnStart": false,
+            "delayedAttach": null
           }
         ]
       }
